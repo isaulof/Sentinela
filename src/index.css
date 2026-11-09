@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/plus-jakarta-sans';
 
 /* ───────── Tokens (OKLCH). Claro por padrão; escuro por preferência do sistema ou data-theme. ───────── */
 :root {
@@ -25,9 +24,9 @@
   --info: oklch(0.47 0.12 245);
   --info-soft: oklch(0.945 0.03 240);
   --ring: oklch(0.58 0.15 150);
-  --hero: linear-gradient(135deg, oklch(0.36 0.09 157), oklch(0.47 0.11 150));
-  --shadow: 0 1px 2px oklch(0.25 0.04 150 / 0.05), 0 10px 30px -8px oklch(0.25 0.05 150 / 0.12);
-  --shadow-lift: 0 2px 4px oklch(0.25 0.04 150 / 0.06), 0 18px 40px -10px oklch(0.25 0.05 150 / 0.22);
+  --hero: var(--brand);
+  --shadow: 0 1px 2px oklch(0.25 0.04 150 / 0.06);
+  --shadow-lift: 0 4px 16px -4px oklch(0.25 0.05 150 / 0.18);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
@@ -52,7 +51,7 @@
     --info: oklch(0.77 0.12 235);
     --info-soft: oklch(0.29 0.05 240);
     --ring: oklch(0.8 0.17 150);
-    --hero: linear-gradient(135deg, oklch(0.3 0.07 160), oklch(0.38 0.09 152));
+    --hero: var(--brand);
     --shadow: 0 1px 2px oklch(0 0 0 / 0.35), 0 10px 30px -8px oklch(0 0 0 / 0.45);
     --shadow-lift: 0 2px 4px oklch(0 0 0 / 0.4), 0 18px 40px -10px oklch(0 0 0 / 0.6);
   }
@@ -79,7 +78,7 @@
   --info: oklch(0.77 0.12 235);
   --info-soft: oklch(0.29 0.05 240);
   --ring: oklch(0.8 0.17 150);
-  --hero: linear-gradient(135deg, oklch(0.3 0.07 160), oklch(0.38 0.09 152));
+  --hero: var(--brand);
   --shadow: 0 1px 2px oklch(0 0 0 / 0.35), 0 10px 30px -8px oklch(0 0 0 / 0.45);
   --shadow-lift: 0 2px 4px oklch(0 0 0 / 0.4), 0 18px 40px -10px oklch(0 0 0 / 0.6);
 }
@@ -105,8 +104,8 @@
   --color-info-soft: var(--info-soft);
   --color-accent: var(--accent);
   --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Plus Jakarta Sans Variable', 'Inter Variable', system-ui, sans-serif;
-  --radius-card: 1.5rem;
+  --font-display: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --radius-card: 1rem;
   --shadow-card: var(--shadow);
   --shadow-lift: var(--shadow-lift);
 }
@@ -127,11 +126,13 @@
     -webkit-tap-highlight-color: transparent;
     font-variant-numeric: tabular-nums;
   }
-  h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; letter-spacing: -0.02em; font-weight: 800; }
-  h1 { letter-spacing: -0.03em; }
+  h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; letter-spacing: -0.015em; font-weight: 700; }
+  h1 { letter-spacing: -0.025em; font-weight: 700; }
   :focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; border-radius: 0.5rem; }
   ::selection { background: var(--brand-soft); }
   button { font: inherit; }
+  html, body { overscroll-behavior-y: none; }
+  button, a, [role='tab'] { user-select: none; -webkit-user-select: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

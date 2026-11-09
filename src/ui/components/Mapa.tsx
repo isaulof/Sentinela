@@ -7,6 +7,7 @@ import type { LngLat } from '@/domain/geo'
 import type { PlanPoint } from '@/domain/sampling'
 import type { CelulaCalor } from '@/domain/resultados'
 import { COR_ESTADO, type MarcadorPonto } from './estadoPonto'
+import { Icon } from './Icon'
 
 type Base = 'satelite' | 'ruas'
 
@@ -30,7 +31,25 @@ const ESTILO: StyleSpecification = {
   ],
 }
 
+/** Folga ao enquadrar: sobra espaço para os botões à direita e a atribuição embaixo. */
+const MARGEM = { top: 48, left: 32, right: 56, bottom: 44 }
+
+const TEXTOS = {
+  'CooperativeGesturesHandler.MobileHelpText': 'Use dois dedos para mover o mapa',
+  'CooperativeGesturesHandler.WindowsHelpText': 'Use Ctrl + rolagem para dar zoom',
+  'CooperativeGesturesHandler.MacHelpText': 'Use ⌘ + rolagem para dar zoom',
+}
+
 const pos = (p: LngLat): [number, number] => [p[0], p[1]]
+/** Selo de câmera no canto do marcador. */
+function selo(): HTMLElement {
+  const b = document.createElement('span')
+  b.setAttribute('aria-hidden', 'true')
+  b.style.cssText = 'position:absolute;right:-5px;top:-6px;width:16px;height:16px;border-radius:9999px;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 1.5px #0b1410'
+  b.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0b1410" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg>'
+  return b
+}
+
 const vazio = (): FeatureCollection => ({ type: 'FeatureCollection', features: [] })
 const feat = (geometry: Geometry, properties: GeoJsonProperties = {}): Feature => ({ type: 'Feature', geometry, properties })
 
@@ -51,28 +70,28 @@ interface Props {
   desenho?: readonly LngLat[] | null
   onVertice?: (p: LngLat) => void
   enquadrar: LngLat[] | null
-  /** Mapa fixo no talhão (sem arrastar nem dar zoom). Padrão: fixo sempre que há um talhão enquadrado e não se está desenhando. */
+  /** Miniatura sem gestos. Padrão: livre (um dedo rola a página, dois dedos movem o mapa). */
   travar?: boolean
+  /** Leva a câmera até o ponto (use `n` diferente a cada pedido). */
+  irPara?: { ponto: LngLat; n: number } | null
   className?: string
 }
 
 /** Base única de mapa (MapLibre) com o talhão sempre ao fundo. */
-export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcadores, pontoSelecionado = null, pontoProximo = null, onPonto, calor = null, caminho = [], desenho = null, onVertice, enquadrar, travar, className }: Props) {
+export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcadores, pontoSelecionado = null, pontoProximo = null, onPonto, calor = null, caminho = [], desenho = null, onVertice, enquadrar, travar, irPara = null, className }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const mapa = useRef<MLMap | null>(null)
   const [pronto, setPronto] = useState(false)
   const [base, setBase] = useState<Base>('satelite')
-  const fixo = travar ?? (!desenho && !!enquadrar && enquadrar.length > 0)
-  const zoomCtl = useRef<maplibregl.NavigationControl | null>(null)
+  const fixo = travar ?? false
   // Os handlers do mapa são registrados uma vez; os valores atuais vêm por ref.
-  const vivo = useRef({ desenho, onVertice, onSelecionar, onPonto })
-  useEffect(() => { vivo.current = { desenho, onVertice, onSelecionar, onPonto } })
+  const vivo = useRef<{ desenho: typeof desenho; onVertice: typeof onVertice; onSelecionar: typeof onSelecionar; onPonto: typeof onPonto; enquadre: maplibregl.LngLatBounds | null; mexeu: boolean }>({ desenho, onVertice, onSelecionar, onPonto, enquadre: null, mexeu: false })
+  useEffect(() => { Object.assign(vivo.current, { desenho, onVertice, onSelecionar, onPonto }) })
 
   useEffect(() => {
     if (!el.current) return
-    const m = new maplibregl.Map({ container: el.current, style: ESTILO, center: [-55.805, -13.255], zoom: 14, maxZoom: 20, attributionControl: { compact: true } })
+    const m = new maplibregl.Map({ container: el.current, style: ESTILO, center: [-55.805, -13.255], zoom: 14, maxZoom: 20, attributionControl: { compact: true }, cooperativeGestures: true, locale: TEXTOS })
     mapa.current = m
-    zoomCtl.current = new maplibregl.NavigationControl({ showCompass: false })
     m.on('load', () => {
       for (const id of ['talhoes', 'calor', 'caminho', 'desenho-linha', 'desenho-vertices']) m.addSource(id, { type: 'geojson', data: vazio() })
       m.addLayer({ id: 'talhoes-fill', type: 'fill', source: 'talhoes', paint: { 'fill-color': ['case', ['get', 'sel'], '#5ee19a', '#7cc7ff'], 'fill-opacity': ['case', ['get', 'sel'], 0.18, 0.08] } })
@@ -92,7 +111,13 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     })
     m.on('mousemove', 'talhoes-fill', () => { if (!vivo.current.desenho) m.getCanvas().style.cursor = 'pointer' })
     m.on('mouseleave', 'talhoes-fill', () => { m.getCanvas().style.cursor = '' })
-    const ro = new ResizeObserver(() => m.resize())
+    // Se o contêiner mudar de tamanho (layout, rotação) e a pessoa ainda não mexeu no mapa, reenquadra o talhão.
+    const ro = new ResizeObserver(() => {
+      m.resize()
+      const b = vivo.current.enquadre
+      if (b && !vivo.current.mexeu) m.fitBounds(b, { padding: MARGEM, maxZoom: 17, duration: 0 })
+    })
+    for (const ev of ['dragstart', 'zoomstart'] as const) m.on(ev, (e) => { if ('originalEvent' in e && e.originalEvent) vivo.current.mexeu = true })
     ro.observe(el.current)
     return () => { ro.disconnect(); m.remove(); mapa.current = null }
   }, [])
@@ -125,11 +150,12 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
       const n = document.createElement('button')
       n.type = 'button'
       n.textContent = p.estado === 'diagnostico' ? '?' : String(p.ordem)
+      if (p.temFoto) n.appendChild(selo())
       n.title = p.rotuloEstado ? `Ponto ${p.ordem} · ${p.rotuloEstado}` : p.id
       n.setAttribute('aria-label', p.rotuloEstado ? `Ponto ${p.ordem}, ${p.rotuloEstado}` : `Ponto ${p.ordem}`)
       n.setAttribute('aria-pressed', String(sel))
       const tam = sel ? 38 : 30
-      n.style.cssText = `width:${tam}px;height:${tam}px;border-radius:9999px;display:grid;place-items:center;font:700 ${sel ? 15 : 13}px system-ui;background:${cor.fundo};color:${cor.texto};border:${sel ? 4 : 2}px solid ${sel ? '#ffd666' : p.id === pontoProximo ? '#7cf0b0' : '#fff'};box-shadow:0 1px 5px #0008;cursor:${onPonto ? 'pointer' : 'default'};padding:0`
+      n.style.cssText = `width:${tam}px;height:${tam}px;border-radius:9999px;display:grid;place-items:center;font:700 ${sel ? 15 : 13}px system-ui;background:${cor.fundo};color:${cor.texto};border:${sel ? 4 : 2}px solid ${sel ? '#ffd666' : p.id === pontoProximo ? '#7cf0b0' : '#fff'};box-shadow:0 1px 5px #0008;cursor:${onPonto ? 'pointer' : 'default'};padding:0;position:relative`
       n.addEventListener('click', (e) => { e.stopPropagation(); vivo.current.onPonto?.(p.id) })
       return new maplibregl.Marker({ element: n }).setLngLat(pos(p.posicao)).addTo(m)
     })
@@ -148,8 +174,16 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     if (!pronto || !enquadrar || enquadrar.length === 0) return
     const b = new maplibregl.LngLatBounds()
     for (const p of enquadrar) b.extend(pos(p))
-    mapa.current?.fitBounds(b, { padding: 28, maxZoom: 17, duration: 400 })
+    vivo.current.enquadre = b
+    vivo.current.mexeu = false
+    mapa.current?.resize()
+    mapa.current?.fitBounds(b, { padding: MARGEM, maxZoom: 17, duration: 400 })
   }, [pronto, enquadrar])
+
+  useEffect(() => {
+    if (!pronto || !irPara) return
+    mapa.current?.flyTo({ center: pos(irPara.ponto), zoom: 17, duration: 800 })
+  }, [pronto, irPara])
 
   useEffect(() => {
     if (!pronto || !mapa.current) return
@@ -157,29 +191,30 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     mapa.current.setLayoutProperty('ruas', 'visibility', base === 'ruas' ? 'visible' : 'none')
   }, [pronto, base])
 
-  // Fixo no talhão: sem arrastar, sem zoom, sem girar. Os pontos continuam clicáveis e a página rola normalmente por cima do mapa.
+  // Fixo (miniatura): sem gestos. Livre: um dedo rola a página, dois dedos movem o mapa; ao desenhar, um dedo basta.
   useEffect(() => {
     const m = mapa.current
     if (!pronto || !m) return
     const gestos = [m.dragPan, m.scrollZoom, m.boxZoom, m.doubleClickZoom, m.touchZoomRotate, m.keyboard, m.dragRotate, m.touchPitch]
     for (const g of gestos) { if (fixo) g.disable(); else g.enable() }
-    const ctl = zoomCtl.current
-    if (ctl) {
-      if (fixo && m.hasControl(ctl)) m.removeControl(ctl)
-      if (!fixo && !m.hasControl(ctl)) m.addControl(ctl, 'top-left')
-    }
-  }, [pronto, fixo])
+    m.dragRotate.disable()
+    m.touchPitch.disable()
+    m.touchZoomRotate.disableRotation()
+    if (desenho || fixo) m.cooperativeGestures.disable(); else m.cooperativeGestures.enable()
+  }, [pronto, fixo, desenho])
 
   return (
     <div className={`relative ${className ?? ''}`} style={{ minHeight: 280 }}>
       <div ref={el} style={{ position: 'absolute', inset: 0 }} />
-      <div role="group" aria-label="Fundo do mapa" className="absolute right-2 top-2 flex overflow-hidden rounded-xl border border-line bg-surface/95 text-sm font-semibold shadow">
-        {(['satelite', 'ruas'] as const).map((b) => (
-          <button key={b} type="button" aria-pressed={base === b} onClick={() => setBase(b)} className={`min-h-10 px-3 ${base === b ? 'bg-brand text-on-brand' : 'text-text-2 hover:bg-surface-2'}`}>
-            {b === 'satelite' ? 'Satélite' : 'Ruas'}
-          </button>
-        ))}
-      </div>
+      {!fixo && (
+        <div className="absolute right-2.5 top-2.5 flex flex-col gap-2">
+          <div className="overflow-hidden rounded-xl bg-surface/95 shadow-card ring-1 ring-line">
+            <button type="button" aria-label="Aproximar" onClick={() => mapa.current?.zoomIn()} className="grid size-10 place-items-center text-text hover:bg-surface-2"><Icon name="mais1" size={20} /></button>
+            <button type="button" aria-label="Afastar" onClick={() => mapa.current?.zoomOut()} className="grid size-10 place-items-center border-t border-line text-text hover:bg-surface-2"><Icon name="menos" size={20} /></button>
+          </div>
+          <button type="button" aria-label={base === 'satelite' ? 'Trocar para mapa de ruas' : 'Trocar para imagem de satélite'} aria-pressed={base === 'ruas'} onClick={() => setBase(base === 'satelite' ? 'ruas' : 'satelite')} className="grid size-10 place-items-center rounded-xl bg-surface/95 text-text shadow-card ring-1 ring-line hover:bg-surface-2"><Icon name="camadas" size={20} /></button>
+        </div>
+      )}
     </div>
   )
 }

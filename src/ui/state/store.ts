@@ -32,13 +32,15 @@ export const useSessao = create<Sessao>()(
       setGpsReal: (gpsReal) => set({ gpsReal }),
       pontoFoco: null,
       setPontoFoco: (pontoFoco) => set({ pontoFoco }),
-      talhaoAba: 'plano',
+      talhaoAba: 'resultados',
       setTalhaoAba: (talhaoAba) => set({ talhaoAba }),
       diagnosticoPara: null,
       setDiagnosticoPara: (diagnosticoPara) => set({ diagnosticoPara }),
     }),
     {
       name: 'sentinela:sessao',
+      // A aba aberta no talhão não é preferência: cada visita começa no mapa inteligente.
+      partialize: ({ talhaoAba: _aba, pontoFoco: _foco, diagnosticoPara: _diag, ...resto }) => resto,
       storage: createJSONStorage(() => ({
         getItem: (k) => { try { return localStorage.getItem(k) } catch { return null } },
         setItem: (k, v) => { try { localStorage.setItem(k, v) } catch { /* sem armazenamento: segue em memória */ } },

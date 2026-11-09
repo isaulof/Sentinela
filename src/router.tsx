@@ -11,6 +11,8 @@ const rota = (path: string, component: ReturnType<typeof lazyRouteComponent> | (
 const arvore = raiz.addChildren([
   rota('/', Painel),
   createRoute({ getParentRoute: () => raiz, path: '/talhoes', component: lazyRouteComponent(() => import('./ui/pages/Talhoes'), 'Talhoes') }),
+  createRoute({ getParentRoute: () => raiz, path: '/talhoes/novo', component: lazyRouteComponent(() => import('./ui/pages/Talhoes'), 'NovoTalhao') }),
+  createRoute({ getParentRoute: () => raiz, path: '/talhoes/$id', component: lazyRouteComponent(() => import('./ui/pages/Talhoes'), 'TalhaoDetalhe') }),
   createRoute({ getParentRoute: () => raiz, path: '/coleta', component: lazyRouteComponent(() => import('./ui/pages/Campo'), 'Campo') }),
   createRoute({ getParentRoute: () => raiz, path: '/alertas', component: lazyRouteComponent(() => import('./ui/pages/Alertas'), 'Alertas') }),
   createRoute({ getParentRoute: () => raiz, path: '/diagnostico', component: lazyRouteComponent(() => import('./ui/pages/Diagnostico'), 'Diagnostico') }),

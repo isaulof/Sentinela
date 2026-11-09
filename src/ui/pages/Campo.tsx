@@ -53,7 +53,7 @@ export function Campo() {
     return (
       <>
         <Titulo>Coleta</Titulo>
-        <Vazio icone="campo" titulo="Nenhum talhão para monitorar" texto="Desenhe um talhão em Talhões ou carregue a Fazenda Santa Aurora para apresentar o app." acao={<div className="flex flex-wrap justify-center gap-3"><Link to="/talhoes" className="inline-flex min-h-12 items-center rounded-2xl bg-brand px-5 font-semibold text-on-brand">Ir para Talhões</Link><Button variant="secondary" onClick={() => void carregarDemonstracao()}>Carregar demonstração</Button></div>} />
+        <Vazio icone="campo" titulo="Nenhum talhão para monitorar" texto="Desenhe um talhão em Talhões ou carregue a Fazenda Santa Aurora para apresentar o app." acao={<div className="flex flex-wrap justify-center gap-3"><Link to="/talhoes/novo" className="inline-flex min-h-12 items-center rounded-xl bg-brand px-5 font-semibold text-on-brand">Desenhar talhão</Link><Button variant="secondary" onClick={() => void carregarDemonstracao()}>Carregar demonstração</Button></div>} />
       </>
     )
   }
@@ -102,7 +102,7 @@ export function Campo() {
             <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(feitos / pontos.length) * 100}%` }} />
           </div>
           <Mapa
-            className="h-[50dvh] w-full overflow-hidden rounded-card shadow-card ring-1 ring-line/70 lg:h-[66dvh]"
+            className="h-[calc(100dvh-31rem)] min-h-72 w-full overflow-hidden rounded-card ring-1 ring-line lg:h-[66dvh]"
             talhoes={[talhao]} selecionadoId={talhao.id} onSelecionar={() => {}}
             marcadores={marcadores} pontoSelecionado={alvoPonto} pontoProximo={proximo} onPonto={setPonto}
             caminho={plano.caminho} enquadrar={enquadrar}
@@ -184,7 +184,7 @@ export function Campo() {
             <Card className="space-y-2">
               <h2 className="text-lg">Coleta concluída</h2>
               <p className="text-text-2">Veja onde estão os problemas no mapa do talhão.</p>
-              <Link to="/talhoes" onClick={() => { setTalhao(talhao.id); setTalhaoAba('resultados') }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand px-5 font-semibold text-on-brand">Ver resultados no mapa</Link>
+              <Link to="/talhoes/$id" params={{ id: talhao.id }} onClick={() => { setTalhao(talhao.id); setTalhaoAba('resultados') }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 font-semibold text-on-brand">Ver resultados no mapa</Link>
             </Card>
           )}
           <div aria-hidden className="h-40 lg:hidden" />

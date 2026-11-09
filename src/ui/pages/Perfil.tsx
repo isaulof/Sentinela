@@ -5,7 +5,8 @@ import { useOrdens, useTalhoes, useTodosRegistros } from '@/data/hooks'
 import { carregarDemonstracao } from '@/data/seed'
 import { calcularKpis } from '@/domain/hibrido'
 import { FONTES } from '@/knowledge/fontes'
-import { Badge, Button, Campo, Card, Folha, Input, Stat, Titulo } from '../components/kit'
+import { Badge, Button, Campo, Card, Folha, Input, Segmentado, Stat, Titulo } from '../components/kit'
+import { useTema } from '../hooks/useTema'
 import { useSessao } from '../state/store'
 import { useToast } from '../state/toast'
 
@@ -15,6 +16,7 @@ export function Perfil() {
   const talhoes = useTalhoes()
   const registros = useTodosRegistros()
   const ordens = useOrdens()
+  const { tema, definir } = useTema()
   const [apagar, setApagar] = useState(false)
   const temDados = (talhoes?.length ?? 0) > 0
   const kpis = useMemo(() => calcularKpis(ordens ?? [], registros ?? []), [ordens, registros])
@@ -33,7 +35,10 @@ export function Perfil() {
         <Card className="space-y-4">
           <h2 className="text-lg">Preferências</h2>
           <Campo rotulo="Seu nome" ajuda="Assina os registros que você faz."><Input value={amostrador} onChange={(e) => setAmostrador(e.target.value)} placeholder="Nome e sobrenome" /></Campo>
-          <div className="flex items-start justify-between gap-4 rounded-2xl bg-surface-2 p-4">
+          <Campo grupo rotulo="Aparência">
+            <Segmentado rotulo="Aparência" valor={tema} onChange={definir} opcoes={[{ id: 'auto', nome: 'Automática' }, { id: 'claro', nome: 'Clara' }, { id: 'escuro', nome: 'Escura' }]} />
+          </Campo>
+          <div className="flex items-start justify-between gap-4 rounded-xl bg-surface-2 p-4">
             <div>
               <p className="font-semibold">Usar GPS real</p>
               <p className="text-sm text-text-2">{gpsReal ? 'O registro usa a sua posição e avisa se você estiver longe do talhão.' : 'Modo sala de aula: o registro usa a posição planejada do ponto, como se você estivesse lá.'}</p>

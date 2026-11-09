@@ -18,4 +18,6 @@ export interface MarcadorPonto {
   posicao: LngLat
   estado: EstadoPonto
   rotuloEstado: string
+  /** Há foto guardada neste ponto: o marcador ganha um selo de câmera. */
+  temFoto?: boolean
 }

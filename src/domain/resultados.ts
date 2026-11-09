@@ -40,7 +40,7 @@ export function amostrasNaData(regs: readonly Registro[], d: string, alvo: AlvoI
 export interface CelulaCalor { anel: LngLat[]; valor: number }
 
 /** Mapa de calor como polígonos georreferenciados (grade IDW recortada no talhão), para desenhar sobre o mapa. */
-export function celulasCalor(anel: readonly LngLat[], amostras: readonly Amostra[], nx = 28, ny = 24): { celulas: CelulaCalor[]; max: number } {
+export function celulasCalor(anel: readonly LngLat[], amostras: readonly Amostra[], nx = 64, ny = 56): { celulas: CelulaCalor[]; max: number } {
   if (amostras.length === 0) return { celulas: [], max: 0 }
   const g = idwGrade(anel, amostras, nx, ny)
   const proj = makeProjection(anel)
@@ -92,4 +92,25 @@ export function resumirResultado(pontosIds: readonly string[], regs: readonly Re
     alvoDominante: dominante ? dominante[0] : null,
     pontosEmAtencao: pontosIds.filter((p) => EM_ATENCAO.includes(niveis.get(p) ?? 'nao_aplicavel')),
   }
+}
+
+const SETORES = ['norte', 'nordeste', 'leste', 'sudeste', 'sul', 'sudoeste', 'oeste', 'noroeste'] as const
+
+/**
+ * Onde, dentro do talhão, os pontos informados se concentram: "centro" ou um dos 8 setores da bússola.
+ * Compara o centro dos pontos com o centro do contorno; se estão a menos de ~20% do meio-tamanho do talhão, é "centro".
+ */
+export function setorDoFoco(anel: readonly LngLat[], pontos: readonly LngLat[]): string | null {
+  if (anel.length < 3 || pontos.length === 0) return null
+  const proj = makeProjection(anel)
+  const ring = anel.map(proj.toXY)
+  const media = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length
+  const c0: [number, number] = [media(ring.map((p) => p[0])), media(ring.map((p) => p[1]))]
+  const xy = pontos.map(proj.toXY)
+  const dx = media(xy.map((p) => p[0])) - c0[0]
+  const dy = media(xy.map((p) => p[1])) - c0[1]
+  const meio = Math.max(...ring.map((p) => Math.hypot(p[0] - c0[0], p[1] - c0[1])))
+  if (Math.hypot(dx, dy) < meio * 0.2) return 'centro'
+  const graus = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360 // 0 = norte, 90 = leste
+  return SETORES[Math.round(graus / 45) % 8]!
 }

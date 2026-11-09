@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Registro } from './registro'
-import { amostrasNaData, ateODia, celulasCalor, niveisNaData, resumirResultado, visitas } from './resultados'
+import { amostrasNaData, ateODia, celulasCalor, niveisNaData, resumirResultado, setorDoFoco, visitas } from './resultados'
 
 const anel: [number, number][] = [[-55.92, -13.05], [-55.91, -13.05], [-55.91, -13.06], [-55.92, -13.06]]
 let n = 0
@@ -53,4 +53,18 @@ describe('resumo', () => {
     expect(r.alvoDominante).toBeNull()
     expect(r.comOcorrencia).toBe(0)
   })
+})
+
+describe('setor do foco', () => {
+  const quadra: [number, number][] = [[-55.92, -13.05], [-55.91, -13.05], [-55.91, -13.06], [-55.92, -13.06]]
+  it('aponta o lado do talhão onde os pontos se concentram', () => {
+    expect(setorDoFoco(quadra, [[-55.915, -13.0585]])).toBe('sul')
+    expect(setorDoFoco(quadra, [[-55.9115, -13.0515]])).toBe('nordeste')
+    expect(setorDoFoco(quadra, [[-55.9185, -13.055]])).toBe('oeste')
+  })
+  it('pontos perto do meio ou espalhados em volta dão "centro"', () => {
+    expect(setorDoFoco(quadra, [[-55.915, -13.055]])).toBe('centro')
+    expect(setorDoFoco(quadra, [[-55.919, -13.051], [-55.911, -13.059]])).toBe('centro')
+  })
+  it('sem pontos, não inventa setor', () => expect(setorDoFoco(quadra, [])).toBeNull())
 })

@@ -57,18 +57,20 @@ test.describe('fluxos de negócio', () => {
   })
 
   test('desenha um talhão no mapa e gera o plano de amostragem', async ({ page }) => {
-    await page.goto('/#/talhoes')
-    await page.getByRole('button', { name: 'Desenhar talhão' }).click()
+    await page.goto('/#/')
+    await page.getByRole('button', { name: 'Desenhar talhão' }).click() // do Início direto para o desenho, sem passo extra
+    await expect(page).toHaveURL(/#\/talhoes\/novo/)
     const mapa = page.locator('.maplibregl-map')
     const caixa = (await mapa.boundingBox())!
     for (const [fx, fy] of [[0.3, 0.3], [0.7, 0.3], [0.7, 0.7], [0.3, 0.7]] as const) {
       await page.mouse.click(caixa.x + caixa.width * fx, caixa.y + caixa.height * fy)
     }
-    await page.getByRole('button', { name: 'Concluir contorno' }).click()
+    await page.getByRole('button', { name: 'Concluir', exact: true }).click()
     const dialogo = page.getByRole('dialog')
     await dialogo.getByPlaceholder('Ex.: T-05 Sede').fill('T-99 Teste')
     await dialogo.getByRole('button', { name: 'Salvar talhão e gerar plano' }).click()
-    await expect(page.getByText('T-99 Teste').first()).toBeVisible()
+    await expect(page).toHaveURL(/#\/talhoes\/T-/)
+    await expect(page.getByRole('heading', { name: 'T-99 Teste' })).toBeVisible()
     await page.goto('/#/coleta')
     await expect(page.getByText(/\d+ pontos/).first()).toBeVisible()
   })
@@ -143,11 +145,10 @@ test.describe('fluxos de negócio', () => {
   })
 
   test('salva um talhão com o nome sugerido, sem precisar digitar nada', async ({ page }) => {
-    await page.goto('/#/talhoes')
-    await page.getByRole('button', { name: 'Desenhar talhão' }).click()
+    await page.goto('/#/talhoes/novo')
     const c = (await page.locator('.maplibregl-map').boundingBox())!
     for (const [fx, fy] of [[0.35, 0.35], [0.65, 0.35], [0.65, 0.65]] as const) await page.mouse.click(c.x + c.width * fx, c.y + c.height * fy)
-    await page.getByRole('button', { name: 'Concluir contorno' }).click()
+    await page.getByRole('button', { name: 'Concluir', exact: true }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Salvar talhão e gerar plano' }).click()
     await expect(page.getByText(/Talhão 1 salvo com \d+ pontos/)).toBeVisible()
   })
@@ -183,47 +184,72 @@ test.describe('fluxos de negócio', () => {
     await expect(page.getByRole('heading', { name: 'Achados deste ponto' })).toBeVisible()
   })
 
-  test('mapa inteligente: resumo, filtro por alvo com mapa de calor, linha do tempo e cartão do ponto', async ({ page }) => {
+  test('mapa inteligente: leitura em texto, calor por alvo, linha do tempo, ficha do ponto e foto', async ({ page }) => {
     await carregarDemo(page)
-    await page.goto('/#/talhoes')
-    await page.getByRole('radio', { name: 'Resultados' }).click()
-    await expect(page.getByRole('heading', { name: 'Resumo do talhão' })).toBeVisible()
-    await expect(page.getByText(/dos pontos com ocorrência/)).toBeVisible()
-    await expect(page.getByText(/Escolha um alvo acima/)).toBeVisible()
-    await page.getByRole('button', { name: 'Percevejo-marrom', exact: true }).click()
-    await expect(page.getByText(/cores mais fortes indicam valores mais altos/)).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Evolução no tempo' })).toBeVisible()
+    await page.goto('/#/')
+    await page.getByRole('link', { name: /T-01 Mirante/ }).click()
+    await expect(page).toHaveURL(/#\/talhoes\/T-01/)
+    await expect(page.getByRole('tab', { name: 'Mapa inteligente' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('heading', { name: 'Leitura do mapa' })).toBeVisible()
+    await expect(page.getByText(/pontos em atenção/).first()).toBeVisible()
+    // O alvo dominante já vem escolhido, com o mapa de calor ligado.
+    await expect(page.getByRole('button', { name: 'Percevejo-marrom', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('heading', { name: /Evolução · Percevejo-marrom/ })).toBeVisible()
+    await page.getByRole('button', { name: 'Só pontos' }).click()
+    await expect(page.getByRole('heading', { name: /Evolução/ })).toHaveCount(0)
     await expect(page.getByRole('slider', { name: /Visita/ })).toBeVisible()
     await page.getByRole('button', { name: /^Ponto 5,/ }).click()
-    await expect(page.getByRole('heading', { name: 'Ponto 5' })).toBeVisible()
-    await expect(page.getByText(/Percevejo-marrom/).first()).toBeVisible()
+    const ficha = page.getByRole('dialog')
+    await expect(ficha.getByRole('heading', { name: 'Ponto 5' })).toBeVisible()
+    await expect(ficha.getByText(/Percevejo-marrom/).first()).toBeVisible()
+    // Foto direto da ficha do ponto: vira um achado aguardando diagnóstico.
+    const fotosAntes = await ficha.getByRole('button', { name: 'Ampliar foto' }).count()
+    await ficha.getByRole('button', { name: 'Adicionar foto' }).click()
+    const nome = ficha.getByPlaceholder('Nome e sobrenome')
+    if (await nome.isVisible()) await nome.fill('Aluno Teste')
+    await anexarFoto(page)
+    await ficha.getByRole('button', { name: 'Guardar para diagnóstico' }).click()
+    await expect(ficha.getByText('Aguardando diagnóstico').first()).toBeVisible()
+    await expect(ficha.getByRole('button', { name: 'Ampliar foto' })).toHaveCount(fotosAntes + 1)
+  })
+
+  test('Início mostra os talhões salvos com a análise de cada um', async ({ page }) => {
+    await carregarDemo(page)
+    await page.goto('/#/')
+    for (const nome of ['T-01 Mirante', 'T-02 Baixada', 'T-03 Estrada', 'T-04 Cabeceira']) await expect(page.getByRole('link', { name: new RegExp(nome) })).toBeVisible()
+    await expect(page.getByText(/concentrado no|no centro do talhão/).first()).toBeVisible()
+  })
+
+  test('tema escolhido no Perfil vale para o app e fica salvo', async ({ page }) => {
+    await page.goto('/#/perfil')
+    await page.getByRole('radio', { name: 'Escura' }).click()
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+    await page.reload()
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   })
 
   test('mapa inteligente: talhão sem coleta mostra orientação, não um mapa vazio', async ({ page }) => {
     await carregarDemo(page)
-    await page.goto('/#/talhoes')
-    await page.getByRole('button', { name: 'T-04 Cabeceira' }).click()
-    await page.getByRole('radio', { name: 'Resultados' }).click()
+    await page.goto('/#/talhoes/T-04')
     await expect(page.getByText('Ainda não há coleta neste talhão')).toBeVisible()
   })
 
   test('início mostra uma única próxima ação e leva até ela', async ({ page }) => {
     await carregarDemo(page)
     await page.goto('/#/')
-    await expect(page.getByText('Agora', { exact: true })).toBeVisible()
     await expect(page.getByText(/ponto(s)? para checar/)).toBeVisible()
     await page.getByRole('button', { name: 'Ver pontos' }).click()
     await expect(page).toHaveURL(/#\/alertas/)
   })
 
-  test('início: cada talhão tem Coletar e Ver mapa', async ({ page }) => {
+  test('início: o cartão do talhão sem coleta leva ao mapa com orientação', async ({ page }) => {
     await carregarDemo(page)
     await page.goto('/#/')
     await expect(page.getByRole('heading', { name: 'Seus talhões' })).toBeVisible()
-    const card = page.getByRole('listitem').filter({ hasText: 'T-04 Cabeceira' })
-    await expect(card.getByText('Ainda não coletado')).toBeVisible()
-    await card.getByRole('button', { name: 'Ver mapa' }).click()
-    await expect(page).toHaveURL(/#\/talhoes/)
+    const card = page.getByRole('link', { name: /T-04 Cabeceira/ })
+    await expect(card.getByText('Sem coleta')).toBeVisible()
+    await card.click()
+    await expect(page).toHaveURL(/#\/talhoes\/T-04/)
     await expect(page.getByText('Ainda não há coleta neste talhão')).toBeVisible()
   })
 
@@ -235,24 +261,21 @@ test.describe('fluxos de negócio', () => {
     await expect(page.getByText(/Backup|CSV|GeoJSON/)).toHaveCount(0)
   })
 
-  test('mapa fica fixo no talhão selecionado e só é livre ao desenhar um novo', async ({ page }) => {
+  test('mapa não "rouba" a rolagem da página: zoom por botões e Ctrl + roda', async ({ page }) => {
     await carregarDemo(page)
     await page.goto('/#/coleta')
     const mapa = page.locator('.maplibregl-map')
     await expect(mapa).toBeVisible()
-    await expect(page.locator('.maplibregl-ctrl-zoom-in')).toHaveCount(0)
-    const antes = await mapa.evaluate((el) => el.querySelector('canvas')!.toDataURL().length)
+    await page.waitForTimeout(1500)
     const c = (await mapa.boundingBox())!
     await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2)
-    await page.mouse.down()
-    await page.mouse.move(c.x + c.width / 2 - 120, c.y + c.height / 2 - 80, { steps: 8 })
-    await page.mouse.up()
-    await page.mouse.wheel(0, -600)
-    await page.waitForTimeout(600)
-    expect(await mapa.evaluate((el) => el.querySelector('canvas')!.toDataURL().length)).toBe(antes)
-    await page.goto('/#/talhoes')
-    await page.getByRole('button', { name: 'Novo talhão' }).click()
-    await expect(page.locator('.maplibregl-ctrl-zoom-in')).toHaveCount(1)
+    await page.mouse.wheel(0, 300) // roda sem Ctrl: a página rola e o mapa avisa, sem dar zoom
+    await expect(page.locator('.maplibregl-cooperative-gesture-screen.maplibregl-show')).toHaveCount(1)
+    await page.waitForTimeout(3000)
+    const antes = await mapa.screenshot()
+    await page.getByRole('button', { name: 'Aproximar' }).click()
+    await page.waitForTimeout(1200)
+    expect((await mapa.screenshot()).equals(antes)).toBe(false)
   })
 
   test('biblioteca: busca um assunto e abre o texto completo', async ({ page }) => {

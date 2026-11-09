@@ -16,7 +16,7 @@ export function Button({ variant = 'primary', block, icon, className, children, 
       type="button"
       {...p}
       className={clsx(
-        'inline-flex min-h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-2xl px-5 font-semibold tracking-tight transition duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45',
+        'inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 font-semibold transition duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45',
         V[variant], block && 'w-full', className,
       )}
     >
@@ -28,7 +28,7 @@ export function Button({ variant = 'primary', block, icon, className, children, 
 
 /* ─ Card ─ */
 export function Card({ className, ...p }: HTMLAttributes<HTMLDivElement>) {
-  return <div {...p} className={clsx('rounded-card bg-surface p-4 shadow-card ring-1 ring-line/70 sm:p-6', className)} />
+  return <div {...p} className={clsx('rounded-card bg-surface p-4 ring-1 ring-line sm:p-5', className)} />
 }
 
 /* ─ Badge: estados agronômicos têm cor E texto (nunca só cor) ─ */
@@ -72,7 +72,7 @@ export function Campo({ rotulo, ajuda, erro, grupo, children }: { rotulo: string
     </Raiz>
   )
 }
-const CAMPO = 'min-h-12 w-full rounded-2xl border border-line bg-surface-2 px-4 text-base text-text placeholder:text-text-2/70 focus:border-brand'
+const CAMPO = 'min-h-12 w-full rounded-xl border border-line bg-surface-2 px-4 text-base text-text placeholder:text-text-2/70 focus:border-brand'
 export const Input = (p: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={clsx(CAMPO, p.className)} />
 export const Select = (p: SelectHTMLAttributes<HTMLSelectElement>) => <select {...p} className={clsx(CAMPO, p.className)} />
 
@@ -99,8 +99,8 @@ export function Segmentado<T extends string>({ valor, opcoes, onChange, rotulo }
 /* ─ Estado vazio ─ */
 export function Vazio({ icone, titulo, texto, acao }: { icone: IconName; titulo: string; texto: string; acao?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center rounded-card bg-surface px-6 py-14 text-center shadow-card ring-1 ring-line/70">
-      <span className="mb-4 grid size-16 place-items-center rounded-3xl bg-brand-soft text-brand"><Icon name={icone} size={30} /></span>
+    <div className="flex flex-col items-center rounded-card bg-surface px-6 py-12 text-center ring-1 ring-line">
+      <span className="mb-4 grid size-14 place-items-center rounded-2xl bg-brand-soft text-brand"><Icon name={icone} size={30} /></span>
       <h2 className="text-lg">{titulo}</h2>
       <p className="mt-1 max-w-sm text-text-2">{texto}</p>
       {acao && <div className="mt-5">{acao}</div>}
@@ -112,7 +112,7 @@ export function Titulo({ children, sub, acao }: { children: ReactNode; sub?: Rea
   return (
     <header className="mb-4 flex items-start justify-between gap-3 sm:mb-6">
       <div>
-        <h1 className="text-[1.7rem] sm:text-4xl">{children}</h1>
+        <h1 className="text-[1.75rem] sm:text-3xl">{children}</h1>
         {sub && <p className="mt-1 text-base text-text-2 sm:mt-1.5 sm:text-[1.0625rem]">{sub}</p>}
       </div>
       {acao}
@@ -136,7 +136,7 @@ export function Folha({ aberta, onFechar, titulo, children }: { aberta: boolean;
       ref={ref}
       onClose={onFechar}
       onClick={(e) => { if (e.target === ref.current) onFechar() }}
-      className="m-0 mt-auto w-full max-w-none rounded-t-[2rem] border-0 bg-bg p-0 text-text shadow-lift backdrop:bg-black/55 backdrop:backdrop-blur-[2px] open:animate-[subir_.2s_ease-out] sm:m-auto sm:max-w-xl sm:rounded-[1.75rem]"
+      className="m-0 mt-auto w-full max-w-none rounded-t-3xl border-0 bg-bg p-0 text-text shadow-lift backdrop:bg-black/55 backdrop:backdrop-blur-[2px] open:animate-[subir_.2s_ease-out] sm:m-auto sm:max-w-xl sm:rounded-3xl"
     >
       <div className="flex max-h-[92dvh] flex-col">
         <div aria-hidden className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-line sm:hidden" />

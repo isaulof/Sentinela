@@ -41,12 +41,19 @@ test('formulário de diagnóstico pendente aberto não tem violações WCAG 2.1 
   expect(r.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
 })
 
-test('mapa inteligente (Resultados) não tem violações WCAG 2.1 AA', async ({ page }) => {
+test('mapa inteligente (detalhe do talhão) não tem violações WCAG 2.1 AA', async ({ page }) => {
   await carregarDemo(page)
-  await page.goto('/#/talhoes')
-  await page.getByRole('radio', { name: 'Resultados' }).click()
-  await page.getByRole('button', { name: 'Percevejo-marrom', exact: true }).click()
-  await page.getByRole('heading', { name: 'Resumo do talhão' }).waitFor()
+  await page.goto('/#/talhoes/T-01')
+  await page.getByRole('heading', { name: 'Leitura do mapa' }).waitFor()
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-map').analyze()
+  expect(r.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
+})
+
+test('ficha do ponto aberta não tem violações WCAG 2.1 AA', async ({ page }) => {
+  await carregarDemo(page)
+  await page.goto('/#/talhoes/T-01')
+  await page.getByRole('button', { name: /^Ponto 5,/ }).click()
+  await page.getByRole('dialog').waitFor()
+  const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).include('dialog').analyze()
   expect(r.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
 })

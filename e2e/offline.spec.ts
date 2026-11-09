@@ -12,7 +12,7 @@ test('funciona sem internet depois da primeira visita, com os dados salvos', asy
   await page.goto('/#/coleta')
   await page.reload()
   await expect(page.getByRole('button', { name: 'Registrar achado' })).toBeVisible()
-  await expect(page.getByText('Offline').filter({ visible: true })).toBeVisible()
+  await expect(page.getByText(/Sem internet/)).toBeVisible()
 
   // E dá para registrar offline.
   await page.getByRole('button', { name: 'Registrar achado' }).click()
