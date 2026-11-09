@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sentinela</title>
+    <meta name="theme-color" content="#0b1410" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Sentinela" />
+    <meta name="description" content="Monitoramento fitossanitário de soja, offline e com apoio à decisão." />
+    <script>
+      try {
+        var t = localStorage.getItem('sentinela:tema')
+        if (t === 'claro') document.documentElement.setAttribute('data-theme', 'light')
+        if (t === 'escuro') document.documentElement.setAttribute('data-theme', 'dark')
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

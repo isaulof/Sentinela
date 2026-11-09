@@ -1,0 +1,26 @@
+
+coverage
+dist
+dist-ssr
+.DS_Store
+# Editor directories and files
+.idea
+lerna-debug.log*
+*.local
+*.log
+logs
+# Logs
+*.njsproj
+node_modules
+npm-debug.log*
+*.ntvs*
+playwright-report
+pnpm-debug.log*
+*.sln
+*.suo
+*.sw?
+test-results
+.vscode/*
+!.vscode/extensions.json
+yarn-debug.log*
+yarn-error.log*
