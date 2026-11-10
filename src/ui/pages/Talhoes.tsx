@@ -155,6 +155,33 @@ export function TalhaoDetalhe() {
   )
 }
 
+/**
+ * Campo numérico que deixa apagar e digitar à vontade: o texto é livre enquanto se edita, o plano só recebe
+ * valores dentro do limite, e ao sair do campo o número é ajustado a [min, max].
+ */
+function InputNumero({ valor, min, max, onValor }: { valor: number; min: number; max: number; onValor: (n: number) => void }) {
+  const [texto, setTexto] = useState(String(valor))
+  const [anterior, setAnterior] = useState(valor)
+  // Se o valor mudar por fora (outro talhão, plano salvo), o texto acompanha.
+  if (valor !== anterior) { setAnterior(valor); if (Number(texto) !== valor) setTexto(String(valor)) }
+  return (
+    <Input
+      type="number" inputMode="numeric" min={min} max={max} value={texto}
+      onChange={(e) => {
+        setTexto(e.target.value)
+        const n = Number(e.target.value)
+        if (e.target.value.trim() !== '' && Number.isFinite(n) && n >= min && n <= max) { setAnterior(Math.round(n)); onValor(Math.round(n)) }
+      }}
+      onBlur={() => {
+        const n = Number(texto)
+        const ok = Math.max(min, Math.min(max, texto.trim() === '' || !Number.isFinite(n) ? valor : Math.round(n)))
+        setTexto(String(ok))
+        if (ok !== valor) { setAnterior(ok); onValor(ok) }
+      }}
+    />
+  )
+}
+
 function PlanoTalhao({ talhao }: { talhao: Talhao }) {
   const planoSalvo = usePlano(talhao.id)
   const [params, setParams] = useState<SamplingParams | null>(null)
@@ -183,10 +210,10 @@ function PlanoTalhao({ talhao }: { talhao: Talhao }) {
           </Campo>
           <div className="grid grid-cols-2 gap-3">
             <Campo rotulo="Pontos" ajuda={`Sugerido: ${recommendedPointCount(areaHa)} (mín. ${MIN_POINTS})`}>
-              <Input type="number" inputMode="numeric" min={3} max={40} value={efetivo.targetPoints} onChange={(e) => setParams({ ...efetivo, targetPoints: Math.max(3, Math.min(40, Number(e.target.value) || 3)) })} />
+              <InputNumero min={3} max={40} valor={efetivo.targetPoints} onValor={(targetPoints) => setParams({ ...efetivo, targetPoints })} />
             </Campo>
             <Campo rotulo="Bordadura (m)" ajuda="Descartada nas bordas">
-              <Input type="number" inputMode="numeric" min={0} max={100} value={efetivo.bufferM} onChange={(e) => setParams({ ...efetivo, bufferM: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} />
+              <InputNumero min={0} max={100} valor={efetivo.bufferM} onValor={(bufferM) => setParams({ ...efetivo, bufferM })} />
             </Campo>
           </div>
           <ul className="space-y-1.5 text-sm">

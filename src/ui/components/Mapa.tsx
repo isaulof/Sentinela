@@ -15,12 +15,12 @@ const ESTILO: StyleSpecification = {
   version: 8,
   sources: {
     satelite: {
-      type: 'raster', tileSize: 256, maxzoom: 18,
+      type: 'raster', tileSize: 256, maxzoom: 17,
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
       attribution: 'Imagens © Esri, Maxar, Earthstar Geographics',
     },
     ruas: {
-      type: 'raster', tileSize: 256, maxzoom: 19,
+      type: 'raster', tileSize: 256, maxzoom: 18,
       tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
       attribution: '© OpenStreetMap contributors',
     },
@@ -32,6 +32,10 @@ const ESTILO: StyleSpecification = {
 }
 
 /** Folga ao enquadrar: sobra espaço para os botões à direita e a atribuição embaixo. */
+/** Limites de zoom. Na região da fazenda a imagem de satélite real vai até o nível 17; acima disso o servidor devolve "Map data not yet available". Abaixo de 12 o talhão some. */
+const MAX_ZOOM = 17
+const MIN_ZOOM = 12
+
 const MARGEM = { top: 48, left: 32, right: 56, bottom: 44 }
 
 const TEXTOS = {
@@ -83,6 +87,7 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
   const mapa = useRef<MLMap | null>(null)
   const [pronto, setPronto] = useState(false)
   const [base, setBase] = useState<Base>('satelite')
+  const [limiteZoom, setLimiteZoom] = useState<{ max: boolean; min: boolean }>({ max: false, min: false })
   const fixo = travar ?? false
   // Os handlers do mapa são registrados uma vez; os valores atuais vêm por ref.
   const vivo = useRef<{ desenho: typeof desenho; onVertice: typeof onVertice; onSelecionar: typeof onSelecionar; onPonto: typeof onPonto; enquadre: maplibregl.LngLatBounds | null; mexeu: boolean }>({ desenho, onVertice, onSelecionar, onPonto, enquadre: null, mexeu: false })
@@ -90,7 +95,7 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
 
   useEffect(() => {
     if (!el.current) return
-    const m = new maplibregl.Map({ container: el.current, style: ESTILO, center: [-55.805, -13.255], zoom: 14, maxZoom: 20, attributionControl: { compact: true }, cooperativeGestures: true, locale: TEXTOS })
+    const m = new maplibregl.Map({ container: el.current, style: ESTILO, center: [-55.805, -13.255], zoom: 14, maxZoom: MAX_ZOOM, minZoom: MIN_ZOOM, attributionControl: { compact: true }, cooperativeGestures: true, locale: TEXTOS })
     mapa.current = m
     m.on('load', () => {
       for (const id of ['talhoes', 'calor', 'caminho', 'desenho-linha', 'desenho-vertices']) m.addSource(id, { type: 'geojson', data: vazio() })
@@ -112,10 +117,12 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     m.on('mousemove', 'talhoes-fill', () => { if (!vivo.current.desenho) m.getCanvas().style.cursor = 'pointer' })
     m.on('mouseleave', 'talhoes-fill', () => { m.getCanvas().style.cursor = '' })
     // Se o contêiner mudar de tamanho (layout, rotação) e a pessoa ainda não mexeu no mapa, reenquadra o talhão.
+    const marcarLimites = () => setLimiteZoom({ max: m.getZoom() >= MAX_ZOOM - 0.01, min: m.getZoom() <= MIN_ZOOM + 0.01 })
+    m.on('zoom', marcarLimites)
     const ro = new ResizeObserver(() => {
       m.resize()
       const b = vivo.current.enquadre
-      if (b && !vivo.current.mexeu) m.fitBounds(b, { padding: MARGEM, maxZoom: 17, duration: 0 })
+      if (b && !vivo.current.mexeu) m.fitBounds(b, { padding: MARGEM, maxZoom: MAX_ZOOM, duration: 0 })
     })
     for (const ev of ['dragstart', 'zoomstart'] as const) m.on(ev, (e) => { if ('originalEvent' in e && e.originalEvent) vivo.current.mexeu = true })
     ro.observe(el.current)
@@ -155,7 +162,7 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
       n.setAttribute('aria-label', p.rotuloEstado ? `Ponto ${p.ordem}, ${p.rotuloEstado}` : `Ponto ${p.ordem}`)
       n.setAttribute('aria-pressed', String(sel))
       const tam = sel ? 38 : 30
-      n.style.cssText = `width:${tam}px;height:${tam}px;border-radius:9999px;display:grid;place-items:center;font:700 ${sel ? 15 : 13}px system-ui;background:${cor.fundo};color:${cor.texto};border:${sel ? 4 : 2}px solid ${sel ? '#ffd666' : p.id === pontoProximo ? '#7cf0b0' : '#fff'};box-shadow:0 1px 5px #0008;cursor:${onPonto ? 'pointer' : 'default'};padding:0;position:relative`
+      n.style.cssText = `width:${tam}px;height:${tam}px;border-radius:9999px;display:grid;place-items:center;font:700 ${sel ? 15 : 13}px system-ui;background:${cor.fundo};color:${cor.texto};border:${sel ? 4 : 2}px solid ${sel ? '#ffd666' : p.id === pontoProximo ? '#7cf0b0' : '#fff'};box-shadow:0 1px 5px #0008;cursor:${onPonto ? 'pointer' : 'default'};padding:0`
       n.addEventListener('click', (e) => { e.stopPropagation(); vivo.current.onPonto?.(p.id) })
       return new maplibregl.Marker({ element: n }).setLngLat(pos(p.posicao)).addTo(m)
     })
@@ -177,7 +184,7 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     vivo.current.enquadre = b
     vivo.current.mexeu = false
     mapa.current?.resize()
-    mapa.current?.fitBounds(b, { padding: MARGEM, maxZoom: 17, duration: 400 })
+    mapa.current?.fitBounds(b, { padding: MARGEM, maxZoom: MAX_ZOOM, duration: 400 })
   }, [pronto, enquadrar])
 
   useEffect(() => {
@@ -209,8 +216,8 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
       {!fixo && (
         <div className="absolute right-2.5 top-2.5 flex flex-col gap-2">
           <div className="overflow-hidden rounded-xl bg-surface/95 shadow-card ring-1 ring-line">
-            <button type="button" aria-label="Aproximar" onClick={() => mapa.current?.zoomIn()} className="grid size-10 place-items-center text-text hover:bg-surface-2"><Icon name="mais1" size={20} /></button>
-            <button type="button" aria-label="Afastar" onClick={() => mapa.current?.zoomOut()} className="grid size-10 place-items-center border-t border-line text-text hover:bg-surface-2"><Icon name="menos" size={20} /></button>
+            <button type="button" aria-label="Aproximar" disabled={limiteZoom.max} onClick={() => mapa.current?.zoomIn()} className="grid size-10 place-items-center text-text hover:bg-surface-2 disabled:opacity-35"><Icon name="mais1" size={20} /></button>
+            <button type="button" aria-label="Afastar" disabled={limiteZoom.min} onClick={() => mapa.current?.zoomOut()} className="grid size-10 place-items-center border-t border-line text-text hover:bg-surface-2 disabled:opacity-35"><Icon name="menos" size={20} /></button>
           </div>
           <button type="button" aria-label={base === 'satelite' ? 'Trocar para mapa de ruas' : 'Trocar para imagem de satélite'} aria-pressed={base === 'ruas'} onClick={() => setBase(base === 'satelite' ? 'ruas' : 'satelite')} className="grid size-10 place-items-center rounded-xl bg-surface/95 text-text shadow-card ring-1 ring-line hover:bg-surface-2"><Icon name="camadas" size={20} /></button>
         </div>

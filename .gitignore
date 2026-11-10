@@ -24,3 +24,7 @@ test-results
 !.vscode/extensions.json
 yarn-debug.log*
 yarn-error.log*
+
+# Credenciais locais: nunca versionar
+tokengithub.odt
+*.odt

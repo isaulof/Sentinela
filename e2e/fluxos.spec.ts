@@ -278,6 +278,58 @@ test.describe('fluxos de negócio', () => {
     expect((await mapa.screenshot()).equals(antes)).toBe(false)
   })
 
+  test('pontos ficam presos às coordenadas ao dar zoom e o zoom tem limite', async ({ page }) => {
+    await carregarDemo(page)
+    await page.goto('/#/coleta')
+    const mapa = page.locator('.maplibregl-map')
+    const marca = page.locator('button.maplibregl-marker').first()
+    await expect(marca).toBeVisible()
+    await page.waitForTimeout(1500)
+    await expect(marca).toHaveCSS('position', 'absolute') // posicionado pelo MapLibre, não pelo fluxo da página
+    const deslocamento = async () => {
+      const m = (await mapa.boundingBox())!
+      const p = (await marca.boundingBox())!
+      return { dx: p.x + p.width / 2 - (m.x + m.width / 2), dy: p.y + p.height / 2 - (m.y + m.height / 2) }
+    }
+    // Aproximar um nível dobra a distância entre o ponto e o centro do mapa: o ponto não "anda".
+    const antes = await deslocamento()
+    await page.getByRole('button', { name: 'Aproximar' }).click()
+    await page.waitForTimeout(1200)
+    const depois = await deslocamento()
+    expect(Math.abs(depois.dx - 2 * antes.dx)).toBeLessThan(3)
+    expect(Math.abs(depois.dy - 2 * antes.dy)).toBeLessThan(3)
+    // O zoom para onde ainda há imagem de satélite (além disso o servidor devolve "Map data not yet available").
+    const mais = page.getByRole('button', { name: 'Aproximar' })
+    for (let i = 0; i < 8 && (await mais.isEnabled()); i++) { await mais.click(); await page.waitForTimeout(500) }
+    await expect(mais).toBeDisabled()
+  })
+
+  test('plano: o número de pontos pode ser apagado e redigitado, com limite só ao sair do campo', async ({ page }) => {
+    await carregarDemo(page)
+    await page.goto('/#/talhoes/T-04')
+    await page.getByRole('tab', { name: 'Plano de pontos' }).click()
+    const pontos = page.getByLabel(/^Pontos/)
+    await pontos.fill('') // apagar não pode "voltar" para o mínimo
+    await expect(pontos).toHaveValue('')
+    await pontos.pressSequentially('5')
+    await expect(pontos).toHaveValue('5')
+    await expect(page.getByText(/^5 pontos · caminhada/)).toBeVisible()
+    await pontos.fill('12')
+    await expect(page.getByText(/^12 pontos · caminhada/)).toBeVisible()
+    await pontos.fill('2') // abaixo do mínimo: segue o texto digitado e ajusta ao sair
+    await expect(pontos).toHaveValue('2')
+    await pontos.blur()
+    await expect(pontos).toHaveValue('3')
+    await pontos.fill('') // vazio ao sair volta ao último valor válido
+    await pontos.blur()
+    await expect(pontos).toHaveValue('3')
+    const borda = page.getByLabel(/^Bordadura/)
+    await borda.fill('')
+    await expect(borda).toHaveValue('')
+    await borda.pressSequentially('40')
+    await expect(borda).toHaveValue('40')
+  })
+
   test('biblioteca: busca um assunto e abre o texto completo', async ({ page }) => {
     await page.goto('/#/biblioteca')
     await page.getByRole('searchbox', { name: 'Buscar na biblioteca' }).fill('ferrugem')
