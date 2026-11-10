@@ -55,7 +55,7 @@ export interface Pendencia {
   amostrador: string
   criadoEm: string
   /** Preenchido quando o diagnóstico é anexado ao ponto. */
-  resolvida?: { titulo: string; alvoId?: string; compatibilidadePct?: number; em: string }
+  resolvida?: { titulo: string; alvoId?: string; compatibilidadePct?: number; /** Confiança em palavras (alta/media/baixa); registros antigos só têm a porcentagem. */ confianca?: 'alta' | 'media' | 'baixa'; em: string }
 }
 
 export interface FotoMeta {

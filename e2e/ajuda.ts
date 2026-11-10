@@ -7,7 +7,7 @@ export async function carregarDemo(page: Page) {
   await page.getByText('Demonstração carregada').waitFor()
 }
 
-export const ROTAS = ['/', '/talhoes', '/talhoes/novo', '/talhoes/T-01', '/coleta', '/alertas', '/diagnostico', '/biblioteca', '/perfil'] as const
+export const ROTAS = ['/', '/talhoes', '/talhoes/novo', '/talhoes/T-01', '/coleta', '/alertas', '/diagnostico', '/diagnostico/tecnico', '/biblioteca', '/perfil'] as const
 
 /** Gera um PNG real no navegador (a compressão de fotos do app exige uma imagem decodificável). */
 export async function pngBase64(page: Page): Promise<Buffer> {

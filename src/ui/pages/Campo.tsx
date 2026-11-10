@@ -4,6 +4,7 @@ import { registrarSemOcorrencia } from '@/data/coleta'
 import { usePendencias, usePlano, useRegistros, useTalhoes } from '@/data/hooks'
 import { carregarDemonstracao } from '@/data/seed'
 import { avaliarRegistro, daRodada, nivelPorPonto } from '@/domain/analise'
+import { rotuloDiagnostico } from '@/domain/funil'
 import { haversineM } from '@/domain/geo'
 import { estadosDosPontos, ROTULO_ESTADO, type EstadoPonto } from '@/domain/ponto'
 import { ALVOS } from '@/knowledge/alvos'
@@ -161,7 +162,7 @@ export function Campo() {
                       <p className="truncate font-semibold">{p.nota || 'Achado sem descrição'}</p>
                       <p className="text-sm text-text-2">{p.fotoIds.length} foto(s) · {p.amostrador}</p>
                     </div>
-                    <Badge tom={p.resolvida ? 'ok' : 'info'}>{p.resolvida ? `${p.resolvida.titulo} · ${p.resolvida.compatibilidadePct ?? ''}%` : 'Pendente'}</Badge>
+                    <Badge tom={p.resolvida ? 'ok' : 'info'}>{p.resolvida ? rotuloDiagnostico(p.resolvida) : 'Pendente'}</Badge>
                   </li>
                 ))}
               </ul>

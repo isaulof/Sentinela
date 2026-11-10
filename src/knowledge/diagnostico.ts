@@ -109,6 +109,18 @@ export const PERGUNTAS: PerguntaFunil[] = [
       { id: 'isoladas', rotulo: 'Plantas soltas, sem desenho', icone: 'pontos' },
     ],
   },
+  {
+    id: 'recente',
+    texto: 'O que aconteceu na lavoura nos últimos dias?',
+    dica: 'O tempo e o manejo recentes ajudam a separar doença, praga e problema de produto ou de clima.',
+    opcoes: [
+      { id: 'chuva_forte', rotulo: 'Chuva forte, vento ou granizo', icone: 'nuvem' },
+      { id: 'umido', rotulo: 'Muita chuva ou dias nublados e úmidos', icone: 'gota' },
+      { id: 'seco', rotulo: 'Tempo seco e muito quente', icone: 'sol' },
+      { id: 'produto', rotulo: 'Apliquei herbicida ou outro produto', detalhe: 'Na área ou em lavoura vizinha', icone: 'fogo' },
+      { id: 'nada', rotulo: 'Nada de diferente', icone: 'ok' },
+    ],
+  },
 ]
 
 const FOTO = 'Tire uma foto da planta e outra da área toda e marque o ponto no mapa.'
@@ -121,7 +133,9 @@ export const CANDIDATOS: Candidato[] = [
     confundeCom: ['Doenças de final de ciclo', 'Pústula bacteriana', 'Mancha-alvo'],
     comoConfirmar: ['Olhe a face de baixo das folhas do baixeiro com lupa (10x a 20x).', 'Procure pústulas abertas com pó (esporos).'],
     proximosPassos: [FOTO, 'Registre na Coleta como "Ferrugem-asiática".', 'Avise o agrônomo hoje: o momento de agir depende da época e do clima.'],
+    janela: ['V6', 'R6'],
     perfil: {
+      recente: { chuva_forte: P, umido: C, seco: R, produto: P },
       onde: { folha_mancha: T, folha_cor: C, folha_comida: R, vagem: R, haste_raiz: N, murcha: R },
       mancha: { pustula: T, alvo: R, po_branco: N, pardas: P, angular: R, nenhuma: P },
       altura: { baixo: T, meio: C, topo: P, toda: P },
@@ -139,6 +153,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Procure o ponto escuro no centro da mancha e os anéis concêntricos.', 'Confira o histórico da área: é mais comum depois de algodão.'],
     proximosPassos: [FOTO, 'Registre na Coleta como "Mancha-alvo".', AGRONOMO],
     perfil: {
+      recente: { chuva_forte: P, umido: C, seco: R, produto: P },
       onde: { folha_mancha: T, folha_cor: P, folha_comida: N, vagem: R, haste_raiz: R, murcha: R },
       mancha: { alvo: T, pardas: P, pustula: R, po_branco: N, angular: P, nenhuma: R },
       altura: { baixo: C, meio: T, topo: P, toda: P },
@@ -154,7 +169,9 @@ export const CANDIDATOS: Candidato[] = [
     confundeCom: ['Podridões de raiz e haste', 'Antracnose'],
     comoConfirmar: ['Procure o micélio branco e os escleródios pretos na haste.', 'Abra a haste: os escleródios também aparecem por dentro.'],
     proximosPassos: [FOTO, 'Registre na Coleta como "Mofo-branco".', 'Limpe as máquinas ao sair da área, para não levar os escleródios a outro talhão.', AGRONOMO],
+    janela: ['R1', 'R5'],
     perfil: {
+      recente: { chuva_forte: P, umido: T, seco: R, produto: P },
       onde: { haste_raiz: T, murcha: T, vagem: C, folha_mancha: P, folha_cor: P, folha_comida: N },
       mancha: { nenhuma: C, pardas: R, alvo: N, po_branco: N, pustula: N, angular: R },
       altura: { meio: C, baixo: C, topo: P, toda: P },
@@ -172,6 +189,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Passe o dedo na folha: o pó sai e é superficial.', 'Compare folhas de plantas diferentes.'],
     proximosPassos: [FOTO, 'Anote o estádio da lavoura e o clima dos últimos dias.', AGRONOMO],
     perfil: {
+      recente: { chuva_forte: R, umido: R, seco: C, produto: P },
       onde: { folha_mancha: T, folha_cor: P, folha_comida: N, vagem: R, haste_raiz: N, murcha: N },
       mancha: { po_branco: T, pardas: R, alvo: N, pustula: N, angular: N, nenhuma: R },
       altura: { toda: C, topo: C, meio: C, baixo: P },
@@ -187,7 +205,9 @@ export const CANDIDATOS: Candidato[] = [
     confundeCom: ['Ferrugem-asiática', 'Mancha-alvo', 'Pústula bacteriana'],
     comoConfirmar: ['Confira o estádio: é típico a partir do enchimento de grãos.', 'Compare com a ferrugem olhando por baixo da folha: aqui não há pústulas abertas.'],
     proximosPassos: [FOTO, 'Anote o estádio e a posição das lesões na planta.', AGRONOMO],
+    janela: ['R3', 'R7'],
     perfil: {
+      recente: { chuva_forte: P, umido: C, seco: R, produto: P },
       onde: { folha_mancha: T, folha_cor: C, vagem: P, folha_comida: N, haste_raiz: R, murcha: R },
       mancha: { pardas: T, angular: P, pustula: R, alvo: P, po_branco: N, nenhuma: R },
       altura: { baixo: T, meio: C, topo: P, toda: P },
@@ -205,6 +225,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Procure pontinhos pretos (frutificações) sobre as manchas.', 'Abra as vagens afetadas e veja os grãos.'],
     proximosPassos: [FOTO, 'Anote o estádio e a parte da planta atingida.', AGRONOMO],
     perfil: {
+      recente: { chuva_forte: P, umido: C, seco: R, produto: P },
       onde: { vagem: T, haste_raiz: C, folha_mancha: P, murcha: P, folha_cor: P, folha_comida: N },
       mancha: { nenhuma: C, pardas: P, angular: P, alvo: R, pustula: N, po_branco: N },
       bicho: { nenhum: C, lagarta: R, percevejo: P, mosca_branca: R },
@@ -221,6 +242,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Olhe a mancha contra a luz: o halo amarelo e a borda reta ajudam.', 'Pergunte se houve chuva forte, vento ou granizo nos dias anteriores.'],
     proximosPassos: [FOTO, 'Anote chuvas e granizo recentes.', AGRONOMO],
     perfil: {
+      recente: { chuva_forte: T, umido: C, seco: R, produto: P },
       onde: { folha_mancha: T, folha_cor: P, folha_comida: R, vagem: R, haste_raiz: N, murcha: N },
       mancha: { angular: T, pardas: P, pustula: P, alvo: R, po_branco: N, nenhuma: R },
       altura: { meio: C, topo: C, baixo: P, toda: P },
@@ -237,6 +259,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Arranque a planta inteira e corte a haste ao meio para ver a cor por dentro.', 'Compare com uma planta sadia vizinha.'],
     proximosPassos: [FOTO, 'Arranque uma planta murcha inteira, com a raiz, e fotografe.', 'Peça ao agrônomo para coletar amostra de solo e planta.'],
     perfil: {
+      recente: { chuva_forte: P, umido: C, seco: P, produto: P },
       onde: { haste_raiz: T, murcha: T, folha_cor: C, folha_mancha: R, folha_comida: N, vagem: R },
       mancha: { nenhuma: C, pardas: R, alvo: N, po_branco: N, pustula: N, angular: N },
       bicho: { nenhum: C, lagarta: R, percevejo: R, mosca_branca: R },
@@ -252,6 +275,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Arranque a planta e lave a raiz: as galhas não saem ao esfregar, ao contrário dos nódulos.', 'Peça análise nematológica do solo e da raiz.'],
     proximosPassos: [FOTO, 'Marque a reboleira no mapa e fotografe a raiz.', 'Peça ao agrônomo a coleta de amostra para análise nematológica.'],
     perfil: {
+      recente: { chuva_forte: R, umido: P, seco: C, produto: P },
       onde: { haste_raiz: C, murcha: C, folha_cor: C, folha_mancha: R, folha_comida: N, vagem: R },
       mancha: { nenhuma: T, pardas: R, alvo: N, po_branco: N, pustula: N, angular: N },
       altura: { toda: C, baixo: P, meio: P, topo: P },
@@ -267,7 +291,9 @@ export const CANDIDATOS: Candidato[] = [
     confundeCom: ['Outros percevejos', 'Estresse hídrico (vagens chochas)'],
     comoConfirmar: ['Use o pano de batida de 1 m e conte adultos e ninfas maiores.', 'Abra as vagens e veja se os grãos têm picadas ou manchas.'],
     proximosPassos: [FOTO, 'Faça o pano de batida e registre na Coleta: o app compara com o nível de ação.', 'Se o nível for atingido, a decisão é do agrônomo.'],
+    janela: ['R3', 'R7'],
     perfil: {
+      recente: { chuva_forte: P, umido: P, seco: P, produto: P },
       onde: { vagem: T, folha_mancha: R, folha_cor: R, folha_comida: N, haste_raiz: N, murcha: R },
       mancha: { nenhuma: T, pardas: R, alvo: N, po_branco: N, pustula: N, angular: N },
       bicho: { percevejo: T, nenhum: R, lagarta: P, mosca_branca: R },
@@ -283,7 +309,9 @@ export const CANDIDATOS: Candidato[] = [
     confundeCom: ['Outras lagartas desfolhadoras', 'Danos de granizo'],
     comoConfirmar: ['Faça o pano de batida e conte lagartas maiores que 1,5 cm por metro.', 'Estime a porcentagem de folhas comidas.'],
     proximosPassos: [FOTO, 'Conte as lagartas em 1 metro de fileira, em vários pontos, e registre na Coleta.', 'Se o nível for atingido, a decisão é do agrônomo.'],
+    janela: ['V2', 'R6'],
     perfil: {
+      recente: { chuva_forte: P, umido: P, seco: P, produto: P },
       onde: { folha_comida: T, folha_mancha: R, folha_cor: P, vagem: P, haste_raiz: N, murcha: N },
       mancha: { nenhuma: T, pardas: R, alvo: N, po_branco: N, pustula: N, angular: N },
       altura: { meio: C, baixo: C, topo: P, toda: P },
@@ -300,7 +328,9 @@ export const CANDIDATOS: Candidato[] = [
     confundeCom: ['Lagarta-falsa-medideira', 'Percevejos (vagens chochas)'],
     comoConfirmar: ['Abra as vagens furadas: a lagarta ou as fezes aparecem por dentro.', 'Faça o pano de batida para contar as lagartas.'],
     proximosPassos: [FOTO, 'Fotografe a lagarta e a vagem furada de perto.', 'Conte as lagartas em vários pontos e leve ao agrônomo.'],
+    janela: ['R2', 'R7'],
     perfil: {
+      recente: { chuva_forte: P, umido: P, seco: P, produto: P },
       onde: { vagem: C, folha_comida: P, folha_mancha: R, folha_cor: R, haste_raiz: N, murcha: N },
       mancha: { nenhuma: T, pardas: R, alvo: N, po_branco: N, pustula: N, angular: N },
       bicho: { lagarta: T, nenhum: R, percevejo: P, mosca_branca: R },
@@ -317,6 +347,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Vire a folha: ninfas e adultos ficam na face de baixo.', 'Balance a planta e veja se saem mosquinhas brancas.'],
     proximosPassos: [FOTO, 'Fotografe a face de baixo da folha de perto.', AGRONOMO],
     perfil: {
+      recente: { chuva_forte: R, umido: R, seco: C, produto: P },
       onde: { folha_cor: T, folha_mancha: R, folha_comida: N, vagem: N, haste_raiz: N, murcha: R },
       mancha: { nenhuma: C, pardas: R, alvo: N, po_branco: N, pustula: N, angular: N },
       altura: { topo: C, meio: C, baixo: P, toda: P },
@@ -333,6 +364,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Compare com uma planta sadia da mesma área.', 'Peça análise de solo e de folha para saber qual nutriente falta.'],
     proximosPassos: [FOTO, 'Confira se as raízes têm nódulos (bolinhas), que fornecem nitrogênio à soja.', 'Peça ao agrônomo análise de solo e de folha.'],
     perfil: {
+      recente: { chuva_forte: P, umido: P, seco: P, produto: P },
       onde: { folha_cor: T, folha_mancha: P, folha_comida: N, vagem: R, haste_raiz: R, murcha: R },
       mancha: { nenhuma: T, pardas: P, alvo: N, po_branco: N, pustula: N, angular: R },
       altura: { baixo: C, topo: C, toda: C, meio: P },
@@ -349,6 +381,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Veja no caderno de operações o que foi aplicado ali e quando.', 'Meça a largura da faixa e compare com a barra do pulverizador.', 'Plantas novas, que nasceram depois, estão sadias?'],
     proximosPassos: [FOTO, 'Documente o local e a data, como a Embrapa recomenda.', 'Fale com o agrônomo antes de aplicar qualquer produto: não é doença.'],
     perfil: {
+      recente: { chuva_forte: P, umido: R, seco: P, produto: T },
       onde: { folha_cor: T, folha_mancha: C, folha_comida: R, vagem: R, haste_raiz: N, murcha: P },
       mancha: { nenhuma: C, pardas: P, angular: R, alvo: N, po_branco: N, pustula: N },
       altura: { topo: C, toda: C, meio: P, baixo: P },
@@ -365,6 +398,7 @@ export const CANDIDATOS: Candidato[] = [
     comoConfirmar: ['Veja se a planta se recupera no fim da tarde ou depois da chuva.', 'Cave um pouco e confira se o solo está muito duro ou seco.'],
     proximosPassos: [FOTO, 'Lembre o que aconteceu nos últimos dias: seca, calor, chuva forte.', AGRONOMO],
     perfil: {
+      recente: { chuva_forte: R, umido: R, seco: T, produto: P },
       onde: { murcha: T, folha_cor: C, folha_mancha: P, vagem: P, folha_comida: N, haste_raiz: R },
       mancha: { nenhuma: T, pardas: R, alvo: N, po_branco: N, pustula: N, angular: N },
       altura: { toda: T, topo: C, meio: P, baixo: P },

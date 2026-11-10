@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { anexarFoto, carregarDemo } from './ajuda'
 
-/** Responde o funil como quem vê ferrugem: pústulas por baixo das folhas de baixo, sem bicho nem mofo. */
+/** Responde o questionário como quem vê ferrugem: pústulas por baixo das folhas de baixo, sem bicho nem mofo. */
 async function responderFunilFerrugem(page: Page) {
   const RESP: [RegExp, RegExp][] = [
     [/Onde está o problema/, /Manchas ou pontos nas folhas/],
@@ -12,12 +12,15 @@ async function responderFunilFerrugem(page: Page) {
     [/vagens e os grãos/, /Parecem normais/],
     [/raiz e a haste/, /Parecem normais/],
     [/aparece no terreno/, /manchas redondas/],
+    [/últimos dias/, /Muita chuva ou dias nublados/],
   ]
-  for (let i = 0; i < 10; i++) {
-    if (await page.getByText('Resultado', { exact: true }).isVisible()) return
-    const titulo = (await page.getByRole('heading', { level: 2, name: /\?$/ }).first().textContent()) ?? ''
+  const salvar = page.getByRole('button', { name: /^Salvar (em um|no) ponto/ })
+  for (let i = 0; i < 12; i++) {
+    if (await salvar.first().isVisible()) return
+    const titulo = (await page.getByRole('heading', { level: 2 }).first().textContent()) ?? ''
     const par = RESP.find(([q]) => q.test(titulo))
-    await (par ? page.getByRole('button', { name: par[1] }) : page.getByRole('button', { name: 'Não sei responder' })).click()
+    await (par ? page.getByRole('button', { name: par[1] }) : page.getByRole('button', { name: 'Não consigo ver isso' })).click()
+    await page.waitForTimeout(150)
   }
 }
 
@@ -99,15 +102,25 @@ test.describe('fluxos de negócio', () => {
     await expect(evitadas).toHaveCount(antes + 1)
   })
 
-  test('funil de diagnóstico: chega a um resultado com compatibilidade, passos e ressalva', async ({ page }) => {
+  test('questionário: uma pergunta por vez, sem porcentagem, e um resultado em linguagem simples', async ({ page }) => {
     await page.goto('/#/diagnostico')
+    await page.getByRole('button', { name: 'Começar' }).click()
+    await expect(page.getByRole('heading', { level: 2, name: 'Onde está o problema?' })).toBeVisible()
+    await expect(page.getByRole('progressbar', { name: 'Andamento do diagnóstico' })).toBeVisible()
+    await page.getByRole('button', { name: /Manchas ou pontos nas folhas/ }).click()
+    await expect(page.getByText('Pergunta 2')).toBeVisible()
+    await expect(page.getByText(/\d+%/)).toHaveCount(0) // nada de porcentagem no meio das perguntas
     await responderFunilFerrugem(page)
-    await expect(page.getByRole('heading', { name: /Ferrugem-asiática é o mais compatível/ })).toBeVisible()
-    await expect(page.getByText(/Compatibilidade (alta|média|baixa)/)).toBeVisible()
-    await expect(page.getByText(/Não é uma probabilidade medida nem um laudo/)).toBeVisible()
+    await expect(page.getByRole('heading', { level: 2, name: 'Ferrugem-asiática' })).toBeVisible()
+    await expect(page.getByText(/^(Bem provável|Provável|Ainda incerto)$/)).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'O que fazer agora' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Por que o app pensa isso' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Como ter certeza' })).toBeVisible()
+    await expect(page.getByText(/\d+%/)).toHaveCount(0) // nem no resultado
     await expect(page.getByText('Quem decide se aplica algum produto é o agrônomo.')).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'O que fazer agora' }).first()).toBeVisible()
-    await page.getByRole('button', { name: 'Voltar' }).first().click()
+    await page.getByText('Como o app chegou a esse resultado').click()
+    await expect(page.getByText(/Não é uma probabilidade medida nem um laudo|não uma probabilidade medida nem um laudo/)).toBeVisible()
+    await page.getByRole('button', { name: 'Voltar', exact: true }).click()
     await expect(page.getByText(/Pergunta \d+/)).toBeVisible()
   })
 
@@ -124,24 +137,77 @@ test.describe('fluxos de negócio', () => {
     await page.getByRole('button', { name: 'Ponto 1, Aguardando diagnóstico' }).click()
     await page.getByRole('link', { name: 'Diagnosticar agora' }).click()
     await expect(page).toHaveURL(/#\/diagnostico/)
-    await expect(page.getByRole('heading', { name: /Achados aguardando diagnóstico/ })).toBeVisible()
+    // Vindo da Coleta, o questionário abre direto, já sabendo o talhão, a fase e o ponto.
+    await expect(page.getByRole('heading', { level: 2, name: 'Onde está o problema?' })).toBeVisible()
+    await expect(page.getByText(/T-04 Cabeceira · fase V5 · ponto 1/)).toBeVisible()
     await responderFunilFerrugem(page)
-    await page.getByRole('button', { name: 'Anexar ao ponto 1' }).click()
+    await page.getByRole('button', { name: 'Salvar no ponto 1' }).click()
+    const folha = page.getByRole('dialog')
+    await expect(folha.getByText(/o achado que você guardou na Coleta/)).toBeVisible()
+    await folha.getByRole('button', { name: 'Salvar no ponto 1' }).click()
     await expect(page).toHaveURL(/#\/coleta/)
     await expect(page.getByRole('button', { name: 'Ponto 1, Diagnosticado' })).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText(/Ferrugem-asiática · \d+%/)).toBeVisible()
+    await expect(page.getByText(/Ferrugem-asiática · (bem provável|provável|ainda incerto)/)).toBeVisible()
   })
 
-  test('diagnóstico direto: anexa o resultado a um ponto escolhido, sem achado guardado', async ({ page }) => {
+  test('diagnóstico direto: salva o resultado num ponto escolhido, sem achado guardado', async ({ page }) => {
     await carregarDemo(page)
     await page.goto('/#/diagnostico')
+    await page.getByRole('button', { name: 'Começar' }).click()
     await responderFunilFerrugem(page)
-    await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
-    await page.getByLabel('Ponto onde encontrou').selectOption({ label: 'Ponto 3' })
-    const nome = page.getByPlaceholder('Nome e sobrenome')
+    await page.getByRole('button', { name: 'Salvar em um ponto' }).click()
+    const folha = page.getByRole('dialog')
+    await folha.getByLabel('Talhão').selectOption({ label: 'T-04 Cabeceira' })
+    await folha.getByLabel('Ponto onde encontrou').selectOption({ label: 'Ponto 3' })
+    const nome = folha.getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) await nome.fill('Aluno Teste')
-    await page.getByRole('button', { name: 'Anexar ao ponto 3' }).click()
+    await folha.getByRole('button', { name: 'Salvar no ponto 3' }).click()
     await expect(page.getByRole('button', { name: 'Ponto 3, Diagnosticado' })).toBeVisible({ timeout: 15_000 })
+  })
+
+  test('achados guardados aparecem no início do diagnóstico e abrem o questionário com o ponto certo', async ({ page }) => {
+    await carregarDemo(page)
+    await page.goto('/#/coleta')
+    await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
+    await page.getByRole('button', { name: 'Não sei o que é' }).click()
+    const dialogo = page.getByRole('dialog')
+    const nome = dialogo.getByPlaceholder('Nome e sobrenome')
+    if (await nome.isVisible()) await nome.fill('Aluno Teste')
+    await dialogo.getByRole('button', { name: 'Guardar para diagnóstico' }).click()
+    await expect(dialogo).toBeHidden()
+    await page.goto('/#/diagnostico')
+    await expect(page.getByRole('heading', { name: /Achados aguardando diagnóstico \(1\)/ })).toBeVisible()
+    await page.getByRole('button', { name: 'Diagnosticar o ponto 1 de T-04 Cabeceira' }).click()
+    await expect(page.getByRole('heading', { level: 2, name: 'Onde está o problema?' })).toBeVisible()
+    await expect(page.getByText(/T-04 Cabeceira · fase V5 · ponto 1/)).toBeVisible()
+  })
+
+  test('enviar ao agrônomo: monta a mensagem com a hipótese, o que foi visto e a ressalva', async ({ page }) => {
+    await page.addInitScript(() => {
+      ;(navigator as unknown as { share: (d: { text: string }) => Promise<void> }).share = async (d) => { (window as unknown as { __enviado: string }).__enviado = d.text }
+    })
+    await carregarDemo(page)
+    await page.goto('/#/diagnostico')
+    await page.getByRole('button', { name: 'Começar' }).click()
+    await responderFunilFerrugem(page)
+    await page.getByRole('button', { name: 'Enviar ao agrônomo' }).click()
+    const texto = await page.evaluate(() => (window as unknown as { __enviado?: string }).__enviado ?? '')
+    expect(texto).toContain('Hipótese mais compatível: Ferrugem-asiática')
+    expect(texto).toContain('Fazenda Santa Aurora')
+    expect(texto).toContain('O que foi observado:')
+    expect(texto).toMatch(/não um laudo/)
+  })
+
+  test('material do técnico fica numa página própria, fora do caminho de quem só quer diagnosticar', async ({ page }) => {
+    await page.goto('/#/diagnostico')
+    await expect(page.getByText('Árvores de decisão detalhadas')).toHaveCount(0)
+    await page.getByRole('link', { name: /Material do técnico/ }).click()
+    await expect(page).toHaveURL(/#\/diagnostico\/tecnico/)
+    await expect(page.getByRole('heading', { name: 'Material do técnico' })).toBeVisible()
+    await page.getByRole('radio', { name: 'Regras SE … ENTÃO' }).click()
+    await expect(page.getByText('ENTÃO').first()).toBeVisible()
+    await page.getByRole('link', { name: 'Voltar para Diagnóstico' }).click()
+    await expect(page.getByRole('heading', { name: 'Diagnóstico', level: 1 })).toBeVisible()
   })
 
   test('salva um talhão com o nome sugerido, sem precisar digitar nada', async ({ page }) => {

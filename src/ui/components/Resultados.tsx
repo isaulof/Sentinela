@@ -5,6 +5,7 @@ import { useFotoUrl } from '@/data/fotos'
 import { avaliarRegistro, serieTemporal } from '@/domain/analise'
 import type { Nivel } from '@/domain/decision'
 import type { PlanoSalvo, Talhao } from '@/domain/entidades'
+import { rotuloDiagnostico } from '@/domain/funil'
 import { estadosDosPontos, ROTULO_ESTADO, type EstadoPonto } from '@/domain/ponto'
 import { amostrasNaData, ateODia, celulasCalor, LIMITE_ACAO, niveisNaData, resumirResultado, setorDoFoco, UNIDADE_ALVO, valorDoRegistro, visitas } from '@/domain/resultados'
 import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
@@ -225,7 +226,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
             </div>
             {pendPonto.map((p) => (
               <div key={p.id} className="rounded-xl bg-surface-2 p-3">
-                <p className="font-semibold">{p.resolvida ? `Diagnóstico: ${p.resolvida.titulo}${p.resolvida.compatibilidadePct !== undefined ? ` · ${p.resolvida.compatibilidadePct}% compatível` : ''}` : 'Aguardando diagnóstico'}</p>
+                <p className="font-semibold">{p.resolvida ? `Diagnóstico: ${rotuloDiagnostico(p.resolvida)}` : 'Aguardando diagnóstico'}</p>
                 {p.nota && <p className="text-sm text-text-2">{p.nota}</p>}
               </div>
             ))}

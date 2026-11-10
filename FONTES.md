@@ -54,3 +54,10 @@ Status: **V** = confirmado em trecho de fonte Embrapa · **C** = conferir na edi
 - O **perfil de sintomas** de cada causa (`src/knowledge/diagnostico.ts`) é decisão de projeto: níveis típico/comum/possível/raro/incompatível por resposta. Nomes, locais de ataque e níveis de ação das cinco causas monitoradas seguem as fontes Embrapa citadas; **os perfis das demais (oídio, antracnose, bacterioses, DFC, podridões, nematoides, percevejo/lagartas adicionais, mosca-branca, nutrição, estresse) ainda precisam ser conferidos** contra as circulares. **C**
 - A porcentagem exibida é **compatibilidade** com prior uniforme, não probabilidade calibrada.
 - Pendência 4: conferir cada perfil e ajustar os níveis; ler CT 203 e 205 para separar mancha-alvo de DFC.
+
+## Diagnóstico com contexto (2026-11-09)
+Duas informações novas entram no cálculo do funil. **Ambas são decisão de projeto**, ainda a conferir contra as circulares da Embrapa:
+- **Janela de fases da lavoura** (`janela` em cada causa): fora do período em que a causa costuma aparecer, a compatibilidade cai (1 fase de distância: ×0,7; até 3: ×0,4; mais longe: ×0,15), sem nunca zerar. Janelas adotadas: ferrugem-asiática V6–R6, mofo-branco R1–R5, doenças de final de ciclo R3–R7, percevejo-marrom R3–R7, lagarta-falsa-medideira V2–R6, lagartas das vagens R2–R7. As demais causas não têm janela. A fase vem do talhão escolhido.
+- **Pergunta "o que aconteceu nos últimos dias?"** (chuva forte/granizo, umidade, seca e calor, produto aplicado): separa, por exemplo, bacteriose (chuva com vento e granizo), efeito de produto e estresse hídrico. Quem não tem relação conhecida com a resposta recebe nível "possível" para não ficar em desvantagem.
+- **Linguagem**: o app não mostra porcentagem ao usuário. Usa "Bem provável / Provável / Ainda incerto", calculado da compatibilidade do primeiro colocado e da folga para o segundo.
+- **Pendência 5**: conferir as janelas de fase e os níveis da pergunta "últimos dias" com as circulares (CT 188 para ferrugem, CT 152 para mofo-branco, CT 205 para DFC, caderneta para percevejo e lagartas).

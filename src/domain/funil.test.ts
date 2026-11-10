@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CANDIDATOS, PERGUNTAS } from '@/knowledge/diagnostico'
-import { classificar, confianca, ganhoDaPergunta, podeEncerrar, proximaPergunta, validarBase, type Candidato, type PerguntaFunil } from './funil'
+import { classificar, confianca, explicar, fatorFenologico, ganhoDaPergunta, podeEncerrar, possibilidadesRestantes, progresso, proximaPergunta, ROTULO_CONFIANCA, validarBase, type Candidato, type PerguntaFunil } from './funil'
 
 describe('base de conhecimento do guia', () => {
   it('é íntegra: perfis citam só perguntas e opções que existem', () => {
@@ -96,5 +96,103 @@ describe('confiança', () => {
   })
   it('não encerra sem nenhuma resposta', () => {
     expect(podeEncerrar(classificar(CANDIDATOS, {}), 0, false)).toBe(false)
+  })
+})
+
+const porId = (id: string) => CANDIDATOS.find((c) => c.id === id)!
+const compatDe = (id: string, r: Record<string, string>, estadio?: string) => classificar(CANDIDATOS, r, { estadio }).find((x) => x.candidato.id === id)!.compat
+
+describe('fase da lavoura (estádio) como contexto', () => {
+  it('sem janela, sem estádio ou com estádio inválido, não interfere', () => {
+    expect(fatorFenologico(porId('oidio'), 'R3')).toBe(1)
+    expect(fatorFenologico(porId('percevejo'), undefined)).toBe(1)
+    expect(fatorFenologico(porId('percevejo'), 'XX')).toBe(1)
+  })
+  it('dentro da janela vale 1; fora, cai com a distância, sem zerar', () => {
+    expect(fatorFenologico(porId('percevejo'), 'R5')).toBe(1) // janela R3–R7
+    expect(fatorFenologico(porId('percevejo'), 'R2')).toBe(0.7) // uma fase antes
+    expect(fatorFenologico(porId('percevejo'), 'R1')).toBe(0.4)
+    expect(fatorFenologico(porId('percevejo'), 'V4')).toBe(0.15)
+    expect(fatorFenologico(porId('percevejo'), 'R8')).toBe(0.7)
+  })
+  it('V13 em diante conta como fim do vegetativo, sem quebrar', () => {
+    expect(fatorFenologico(porId('ferrugem'), 'V15')).toBe(1) // janela V6–R6 inclui o fim do vegetativo
+  })
+  it('percevejo em lavoura ainda sem vagens perde compatibilidade; em R5 não', () => {
+    const r = { onde: 'vagem', bicho: 'percevejo' }
+    expect(compatDe('percevejo', r, 'V4')).toBeLessThan(compatDe('percevejo', r, 'R5'))
+  })
+  it('sem estádio, o resultado é o mesmo de antes', () => {
+    const r = { onde: 'folha_mancha', mancha: 'pustula', altura: 'baixo' }
+    expect(classificar(CANDIDATOS, r).map((x) => x.compat)).toEqual(classificar(CANDIDATOS, r, {}).map((x) => x.compat))
+  })
+  it('as compatibilidades continuam somando 1 com o contexto', () => {
+    expect(classificar(CANDIDATOS, { onde: 'folha_mancha' }, { estadio: 'R2' }).reduce((a, x) => a + x.compat, 0)).toBeCloseTo(1, 9)
+  })
+})
+
+describe('o que aconteceu nos últimos dias', () => {
+  it('produto aplicado + amarelo + faixas retas → efeito de produto', () => {
+    expect(classificar(CANDIDATOS, { onde: 'folha_cor', mancha: 'nenhuma', bicho: 'nenhum', recente: 'produto' })[0]!.candidato.id).toBe('fitotoxidez')
+  })
+  it('chuva com granizo + manchas de cantos retos → bacteriose', () => {
+    expect(classificar(CANDIDATOS, { onde: 'folha_mancha', mancha: 'angular', recente: 'chuva_forte' })[0]!.candidato.id).toBe('bacteriose')
+  })
+  it('tempo seco e quente + planta murcha com raiz normal → estresse', () => {
+    expect(classificar(CANDIDATOS, { onde: 'murcha', raiz: 'normal', recente: 'seco' })[0]!.candidato.id).toBe('estresse')
+  })
+  it('"nada de diferente" não favorece nenhuma causa', () => {
+    const a = classificar(CANDIDATOS, { onde: 'folha_mancha' })
+    const b = classificar(CANDIDATOS, { onde: 'folha_mancha', recente: 'nada' })
+    expect(b.map((x) => x.candidato.id)).toEqual(a.map((x) => x.candidato.id))
+    b.forEach((x, i) => expect(x.compat).toBeCloseTo(a[i]!.compat, 9))
+  })
+})
+
+describe('explicar o resultado', () => {
+  const resp = { onde: 'folha_mancha', mancha: 'pustula', altura: 'baixo', bicho: 'percevejo', recente: 'nada' }
+  it('separa o que combina do que não combina, na ordem de relevância', () => {
+    const e = explicar(porId('ferrugem'), PERGUNTAS, resp)
+    expect(e.combina.map((l) => l.resposta)).toContain('Pontinhos ou pústulas por baixo')
+    expect(e.combina[0]!.frequencia).toBe('tipico')
+    expect(e.naoCombina.map((l) => l.resposta)).toContain('Percevejos')
+  })
+  it('respostas neutras e puladas ficam de fora', () => {
+    const e = explicar(porId('ferrugem'), PERGUNTAS, resp)
+    const todas = [...e.combina, ...e.naoCombina].map((l) => l.resposta)
+    expect(todas).not.toContain('Nada de diferente')
+    expect(explicar(porId('ferrugem'), PERGUNTAS, {}).combina).toEqual([])
+  })
+})
+
+describe('progresso e confiança em palavras', () => {
+  it('começa em 0, cresce a cada resposta útil e nunca passa de 1', () => {
+    const p0 = progresso(CANDIDATOS, {})
+    const p1 = progresso(CANDIDATOS, { onde: 'folha_mancha' })
+    const p2 = progresso(CANDIDATOS, { onde: 'folha_mancha', mancha: 'pustula' })
+    expect(p0).toBe(0)
+    expect(p1).toBeGreaterThan(p0)
+    expect(p2).toBeGreaterThan(p1)
+    expect(p2).toBeLessThanOrEqual(1)
+  })
+  it('as possibilidades restantes diminuem conforme se responde', () => {
+    const n0 = possibilidadesRestantes(classificar(CANDIDATOS, {}))
+    const n2 = possibilidadesRestantes(classificar(CANDIDATOS, { onde: 'folha_mancha', mancha: 'pustula' }))
+    expect(n0).toBe(CANDIDATOS.length)
+    expect(n2).toBeLessThan(n0)
+    expect(n2).toBeGreaterThanOrEqual(1)
+  })
+  it('a confiança tem rótulo sem porcentagem', () => {
+    expect(ROTULO_CONFIANCA).toEqual({ alta: 'Bem provável', media: 'Provável', baixa: 'Ainda incerto' })
+  })
+})
+
+describe('janelas de estádio na base', () => {
+  it('são válidas e só existem onde faz sentido agronômico declarado', () => {
+    expect(validarBase(PERGUNTAS, CANDIDATOS)).toEqual([])
+    expect(CANDIDATOS.filter((c) => c.janela).map((c) => c.id).sort()).toEqual(['dfc', 'ferrugem', 'lagarta', 'lagarta_vagem', 'mofo', 'percevejo'])
+  })
+  it('janela invertida é detectada', () => {
+    expect(validarBase(PERGUNTAS, [{ ...CANDIDATOS[0]!, janela: ['R5', 'R1'] }]).join('|')).toMatch(/janela de estádios inválida/)
   })
 })

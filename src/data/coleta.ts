@@ -44,6 +44,7 @@ export interface ParamsAnexarDiagnostico {
   titulo: string
   alvoId?: string
   compatibilidadePct: number
+  confianca?: 'alta' | 'media' | 'baixa'
   estadio: string
   amostrador: string
   agora?: Date
@@ -52,7 +53,7 @@ export interface ParamsAnexarDiagnostico {
 /** Anexa o resultado do diagnóstico ao ponto: resolve a pendência aberta ou cria uma já resolvida. */
 export async function anexarDiagnostico(p: ParamsAnexarDiagnostico, repo: Repo = repoPadrao): Promise<Pendencia> {
   const agora = (p.agora ?? new Date()).toISOString()
-  const resolvida = { titulo: p.titulo, ...(p.alvoId ? { alvoId: p.alvoId } : {}), compatibilidadePct: p.compatibilidadePct, em: agora }
+  const resolvida = { titulo: p.titulo, ...(p.alvoId ? { alvoId: p.alvoId } : {}), compatibilidadePct: p.compatibilidadePct, ...(p.confianca ? { confianca: p.confianca } : {}), em: agora }
   const existentes = await repo.listarPendencias(p.talhaoId)
   const alvo = p.pendenciaId ? existentes.find((x) => x.id === p.pendenciaId) : undefined
   if (p.pendenciaId && !alvo) throw new Error('O achado pendente não foi encontrado. Ele pode ter sido apagado.')

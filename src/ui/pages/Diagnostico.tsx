@@ -1,171 +1,209 @@
-import { useState } from 'react'
-import { percorrer, type Arvore, type Categoria } from '@/domain/diagnosis'
-import { ARVORES } from '@/knowledge/arvores'
-import { FONTES } from '@/knowledge/fontes'
-import { REGRAS } from '@/knowledge/regras'
-import { SINTOMA_SINAL } from '@/knowledge/sintomaSinal'
-import { FunilDiagnostico, PendentesParaDiagnosticar } from '../components/FunilDiagnostico'
+import { Link } from '@tanstack/react-router'
+import { useEffect, useMemo, useState } from 'react'
+import { useFotoUrl } from '@/data/fotos'
+import { usePlano, usePlanos, useTalhoes, useTodasPendencias } from '@/data/hooks'
+import { classificar, confianca as confiancaDe, podeEncerrar, possibilidadesRestantes, progresso as progressoDe, proximaPergunta, type Respostas } from '@/domain/funil'
+import { mensagemParaAgronomo } from '@/domain/relatorio'
+import { CANDIDATOS, PERGUNTAS } from '@/knowledge/diagnostico'
 import { Icon } from '../components/Icon'
-import { Badge, Button, Card, Segmentado, Titulo, type Tom } from '../components/kit'
+import { Perguntas } from '../components/Perguntas'
+import { ResultadoDiagnostico } from '../components/ResultadoDiagnostico'
+import { SalvarDiagnostico } from '../components/SalvarDiagnostico'
+import { Button, Campo, Card, Select, Titulo } from '../components/kit'
+import { useSessao } from '../state/store'
+import { useToast } from '../state/toast'
 
-const CAT: Record<Categoria, { tom: Tom; texto: string }> = {
-  abiotico: { tom: 'info', texto: 'Causa abiótica' },
-  biotico: { tom: 'danger', texto: 'Causa biótica' },
-  inconclusivo: { tom: 'warn', texto: 'Inconclusivo' },
-  investigar: { tom: 'warn', texto: 'Investigar' },
+interface Passo { perguntaId: string; opcaoId: string | null }
+interface Achado { talhaoId: string; pontoId: string; pendenciaId: string }
+
+function Miniatura({ id, className = 'size-14' }: { id: string; className?: string }) {
+  const url = useFotoUrl(id)
+  return <div className={`${className} shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-line`}>{url && <img src={url} alt="Foto do achado" className="size-full object-cover" />}</div>
 }
 
-const Origem = ({ o }: { o: Arvore['origem'] }) =>
-  o === 'fonte' ? <Badge tom="ok" icon="check">Baseada em fonte Embrapa</Badge> : <Badge tom="neutral" icon="info">Raciocínio de projeto</Badge>
-
-function Fontes({ ids }: { ids: Arvore['fontes'] }) {
-  return (
-    <p className="text-sm text-text-2">
-      Fontes: {ids.map((id, i) => {
-        const f = FONTES[id]
-        return <span key={id}>{i > 0 && ' · '}{'url' in f ? <a className="underline" href={f.url} target="_blank" rel="noreferrer">{f.rotulo}</a> : f.rotulo}</span>
-      })}
-    </p>
-  )
-}
-
-function Arvores() {
-  const [id, setId] = useState(ARVORES[0]!.id)
-  const [resp, setResp] = useState<number[]>([])
-  const arvore = ARVORES.find((a) => a.id === id)!
-  const passo = percorrer(arvore, resp)
-  const no = passo.no
-
-  return (
-    <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
-      <nav aria-label="Árvores de decisão" className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
-        {ARVORES.map((a) => (
-          <button key={a.id} type="button" onClick={() => { setId(a.id); setResp([]) }} aria-current={a.id === id} className={`min-h-12 shrink-0 rounded-2xl border px-4 py-2 text-left text-sm font-semibold transition ${a.id === id ? 'border-brand bg-brand-soft text-brand' : 'border-line bg-surface hover:bg-surface-2'}`}>
-            {a.titulo}
-          </button>
-        ))}
-      </nav>
-
-      <div className="space-y-4">
-        <Card className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2"><h2 className="text-lg">{arvore.titulo}</h2><Origem o={arvore.origem} /></div>
-          <p className="text-text-2">{arvore.descricao}</p>
-        </Card>
-
-        {passo.trilha.length > 0 && (
-          <ol className="space-y-1.5 text-sm" aria-label="Respostas dadas">
-            {passo.trilha.map((t, i) => (
-              <li key={i} className="rounded-xl bg-surface-2 px-3 py-2"><span className="text-text-2">{t.pergunta}</span><br /><b>{t.resposta}</b></li>
-            ))}
-          </ol>
-        )}
-
-        {no.tipo === 'pergunta' ? (
-          <Card className="space-y-4">
-            <h3 className="text-xl">{no.texto}</h3>
-            {no.dica && <p className="flex gap-2 rounded-xl bg-info-soft p-3 text-sm text-info"><Icon name="info" size={18} className="mt-0.5 shrink-0" />{no.dica}</p>}
-            <div className="grid gap-2">
-              {no.opcoes.map((o, i) => (
-                <button key={o.rotulo} type="button" onClick={() => setResp([...resp, i])} className="min-h-14 rounded-2xl border border-line bg-surface-2 px-4 py-3 text-left font-semibold transition hover:border-brand active:scale-[0.99]">{o.rotulo}</button>
-              ))}
-            </div>
-          </Card>
-        ) : (
-          <Card className="space-y-4" aria-live="polite">
-            <Badge tom={CAT[no.categoria].tom}>{CAT[no.categoria].texto}</Badge>
-            <h3 className="text-xl">{no.titulo}</h3>
-            <p>{no.explicacao}</p>
-            <div>
-              <h4 className="mb-1.5 font-semibold">Antes de qualquer aplicação</h4>
-              <ul className="space-y-1.5">
-                {no.proximosPassos.map((p) => <li key={p} className="flex gap-2"><Icon name="check" size={18} className="mt-1 shrink-0 text-brand" />{p}</li>)}
-              </ul>
-            </div>
-            <Fontes ids={arvore.fontes} />
-            <p className="text-sm text-text-2">Esta é uma hipótese de apoio ao técnico. A decisão de aplicar é sempre do agrônomo.</p>
-          </Card>
-        )}
-
-        <div className="flex gap-3">
-          <Button variant="secondary" onClick={() => setResp(resp.slice(0, -1))} disabled={resp.length === 0}>Voltar</Button>
-          <Button variant="ghost" onClick={() => setResp([])} disabled={resp.length === 0}>Recomeçar</Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Quadro() {
-  return (
-    <div className="space-y-4">
-      <p className="text-text-2"><b className="text-text">Sintoma</b> é o que a planta mostra e o produtor vê. <b className="text-text">Sinal</b> é a estrutura do próprio agente (pústula, micélio, escleródio) e é o que confirma a doença.</p>
-      <div className="hidden overflow-hidden rounded-card border border-line md:block">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-surface-2 text-text-2"><tr><th className="p-3">Doença</th><th className="p-3">Sintoma que o produtor vê</th><th className="p-3">Sinal que confirma</th><th className="p-3">Onde procurar</th></tr></thead>
-          <tbody>
-            {SINTOMA_SINAL.map((l) => (
-              <tr key={l.doenca} className="border-t border-line align-top">
-                <td className="p-3 font-semibold">{l.doenca}<br /><span className="font-normal text-text-2">{l.cultura}</span></td>
-                <td className="p-3">{l.sintoma}</td>
-                <td className="p-3">{l.sinal}</td>
-                <td className="p-3">{l.onde}{l.aConfirmar && <p className="mt-2 text-warn">A confirmar: {l.aConfirmar}</p>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="space-y-3 md:hidden">
-        {SINTOMA_SINAL.map((l) => (
-          <Card key={l.doenca} className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2"><h3 className="text-lg">{l.doenca}</h3><Badge tom={l.cultura === 'soja' ? 'ok' : 'neutral'}>{l.cultura}</Badge></div>
-            <p><b>Sintoma: </b>{l.sintoma}</p>
-            <p><b>Sinal: </b>{l.sinal}</p>
-            <p><b>Onde procurar: </b>{l.onde}</p>
-            {l.aConfirmar && <p className="text-sm text-warn">A confirmar: {l.aConfirmar}</p>}
-          </Card>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function Regras() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {REGRAS.map((r) => (
-        <Card key={r.id} className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2"><h3 className="text-lg">{r.titulo}</h3><Origem o={r.origem} /></div>
-          <p className="font-mono text-sm leading-relaxed">
-            {r.se.map((c, i) => <span key={c} className="block"><b className="text-brand">{i === 0 ? 'SE' : 'E'}</b> {c}</span>)}
-            <span className="block"><b className="text-brand">ENTÃO</b> {r.entao}</span>
-            {r.senao && <span className="mt-2 block text-text-2"><b>SENÃO </b>{r.senao}</span>}
-          </p>
-          <Fontes ids={r.fontes} />
-        </Card>
-      ))}
-    </div>
-  )
-}
+const COMO_FUNCIONA = [
+  { icone: 'lupa', titulo: 'Responda', texto: 'Perguntas simples sobre o que você está vendo.' },
+  { icone: 'diag', titulo: 'Veja a pista', texto: 'O app aponta as causas mais prováveis e como confirmar.' },
+  { icone: 'campo', titulo: 'Salve no ponto', texto: 'O resultado fica ligado ao ponto de coleta.' },
+] as const
 
 export function Diagnostico() {
-  const [aba, setAba] = useState<'arvores' | 'quadro' | 'regras'>('arvores')
+  const talhoes = useTalhoes()
+  const planos = usePlanos()
+  const pendencias = useTodasPendencias()
+  const mostrar = useToast((s) => s.mostrar)
+  const { talhaoId } = useSessao()
+
+  // Vindo da Coleta ("Diagnosticar agora"), o achado já define talhão e ponto e o questionário abre direto.
+  const [achado, setAchado] = useState<Achado | null>(() => {
+    const d = useSessao.getState().diagnosticoPara
+    return d ? { talhaoId: d.talhaoId, pontoId: d.pontoId, pendenciaId: d.pendenciaId ?? '' } : null
+  })
+  const [iniciado, setIniciado] = useState(() => !!useSessao.getState().diagnosticoPara)
+  const [historico, setHistorico] = useState<Passo[]>([])
+  const [forcado, setForcado] = useState(false)
+  const [escolhaTalhao, setEscolhaTalhao] = useState<string | undefined>(undefined) // undefined = padrão; 'nenhum' = não informar
+  const [salvarAberto, setSalvarAberto] = useState(false)
+  // O achado em foco vale só enquanto esta tela está aberta.
+  useEffect(() => () => useSessao.getState().setDiagnosticoPara(null), [])
+
+  const tid = achado?.talhaoId ?? (escolhaTalhao === 'nenhum' ? null : escolhaTalhao ?? talhaoId ?? talhoes?.[0]?.id ?? null)
+  const talhao = talhoes?.find((t) => t.id === tid)
+  const plano = usePlano(tid)
+  const estadio = talhao?.estadio
+  const contexto = useMemo(() => ({ estadio }), [estadio])
+  const pendencia = achado ? pendencias?.find((p) => p.id === achado.pendenciaId) : undefined
+  const ordemPonto = achado ? plano?.pontos.find((p) => p.id === achado.pontoId)?.order : undefined
+
+  const respostas = useMemo<Respostas>(() => Object.fromEntries(historico.filter((h) => h.opcaoId).map((h) => [h.perguntaId, h.opcaoId!])), [historico])
+  const puladas = useMemo(() => new Set(historico.filter((h) => !h.opcaoId).map((h) => h.perguntaId)), [historico])
+  const ranking = useMemo(() => classificar(CANDIDATOS, respostas, contexto), [respostas, contexto])
+  const proxima = useMemo(() => proximaPergunta(PERGUNTAS, CANDIDATOS, respostas, puladas, 'onde', contexto), [respostas, puladas, contexto])
+  const progresso = useMemo(() => progressoDe(CANDIDATOS, respostas, contexto), [respostas, contexto])
+  const nResp = Object.keys(respostas).length
+  const encerrado = iniciado && nResp > 0 && (forcado || podeEncerrar(ranking, nResp, !!proxima))
+  const conf = confiancaDe(ranking)
+
+  const recomecar = () => { setForcado(false); setHistorico([]); setIniciado(false); setAchado(null) }
+  const voltar = () => {
+    setForcado(false)
+    if (historico.length === 0) { setIniciado(false); return }
+    setHistorico((h) => h.slice(0, -1))
+  }
+  const responder = (perguntaId: string, opcaoId: string | null) => setHistorico((h) => [...h, { perguntaId, opcaoId }])
+
+  async function enviar() {
+    const resp = historico.filter((h) => h.opcaoId).map((h) => { const p = PERGUNTAS.find((x) => x.id === h.perguntaId)!; return { pergunta: p.texto, resposta: p.opcoes.find((o) => o.id === h.opcaoId)?.rotulo ?? '' } })
+    const texto = mensagemParaAgronomo({
+      fazenda: 'Fazenda Santa Aurora', ...(talhao ? { talhao: talhao.nome } : {}), ...(ordemPonto !== undefined ? { ponto: ordemPonto } : {}), ...(estadio ? { estadio } : {}),
+      principal: { nome: ranking[0]!.candidato.nome, ...(ranking[0]!.candidato.cientifico ? { cientifico: ranking[0]!.candidato.cientifico } : {}), confianca: conf },
+      outras: ranking.slice(1, 3).filter((r) => r.compat >= 0.05).map((r) => r.candidato.nome),
+      respostas: resp, passos: ranking[0]!.candidato.proximosPassos, quando: new Date(),
+    })
+    if (typeof navigator.share === 'function') {
+      try { await navigator.share({ title: 'Pré-diagnóstico · Sentinela', text: texto }); return } catch (e) { if (e instanceof DOMException && e.name === 'AbortError') return }
+    }
+    try { await navigator.clipboard.writeText(texto); mostrar('Texto copiado. Cole no WhatsApp ou no e-mail.') } catch { mostrar('Não foi possível copiar o texto.', 'erro') }
+  }
+
+  if (talhoes === undefined || pendencias === undefined) return null
+
+  /** Contexto do achado: lavoura, fase e fotos que o usuário guardou na Coleta. */
+  const contextoDoAchado = (talhao || pendencia) && (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-surface px-3 py-2.5 text-sm ring-1 ring-line">
+      <Icon name="mapa" size={16} className="shrink-0 text-brand" />
+      <span className="font-medium">{talhao?.nome}{estadio ? ` · fase ${estadio}` : ''}{ordemPonto !== undefined ? ` · ponto ${ordemPonto}` : ''}</span>
+      {pendencia && pendencia.fotoIds.length > 0 && <span className="flex gap-1.5">{pendencia.fotoIds.slice(0, 3).map((f) => <Miniatura key={f} id={f} className="size-10" />)}</span>}
+    </div>
+  )
+
+  if (encerrado) {
+    return (
+      <>
+        <div className="mx-auto mb-3 max-w-2xl">{contextoDoAchado}</div>
+        <ResultadoDiagnostico
+          ranking={ranking} confianca={conf} respostas={respostas}
+          rotuloSalvar={ordemPonto !== undefined ? `Salvar no ponto ${ordemPonto}` : 'Salvar em um ponto'}
+          onSalvar={() => setSalvarAberto(true)} onEnviar={() => void enviar()} onVoltar={voltar} onRecomecar={recomecar}
+        />
+        <SalvarDiagnostico aberta={salvarAberto} onFechar={() => setSalvarAberto(false)} ranking={ranking} confianca={conf} talhaoId={tid} achado={achado && achado.pendenciaId ? { pontoId: achado.pontoId, pendenciaId: achado.pendenciaId } : null} />
+      </>
+    )
+  }
+
+  if (iniciado) {
+    if (!proxima) {
+      return (
+        <div className="mx-auto max-w-2xl space-y-4">
+          <h1 className="sr-only">Diagnóstico</h1>
+          <Card className="space-y-3 text-center">
+            <h2 className="text-lg">Não há mais perguntas que ajudem</h2>
+            <p className="text-text-2">Responda pelo menos uma pergunta para ver uma pista. Você pode recomeçar e tentar de novo.</p>
+            <Button variant="secondary" onClick={recomecar}>Recomeçar</Button>
+          </Card>
+        </div>
+      )
+    }
+    return (
+      <>
+        <h1 className="sr-only">Diagnóstico</h1>
+        <Perguntas
+          pergunta={proxima} numero={historico.length + 1} progresso={progresso} restantes={possibilidadesRestantes(ranking)} respondidas={nResp}
+          contexto={contextoDoAchado || undefined}
+          onResponder={(o) => responder(proxima.id, o)} onPular={() => responder(proxima.id, null)} onVoltar={voltar} onVerResultado={() => setForcado(true)}
+        />
+      </>
+    )
+  }
+
+  // Início
+  const abertas = pendencias.filter((p) => !p.resolvida)
   return (
     <>
-      <Titulo sub="Responda o que você está vendo e descubra o próximo passo.">Diagnóstico</Titulo>
-      <div className="mx-auto max-w-2xl space-y-4">
-        <PendentesParaDiagnosticar />
-        <FunilDiagnostico />
+      <Titulo sub="Descubra o que está acontecendo na lavoura em poucas perguntas.">Diagnóstico</Titulo>
+      <div className="mx-auto max-w-2xl space-y-6">
+        <Card className="space-y-4 bg-brand-soft! ring-brand/20!">
+          <div className="flex items-start gap-3.5">
+            <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-full bg-brand text-on-brand"><Icon name="diag" size={24} /></span>
+            <div>
+              <h2 className="text-lg">Descobrir o que é</h2>
+              <p className="mt-0.5 text-text-2">Responda o que você está vendo na planta. Leva cerca de 1 minuto e não precisa de cadastro.</p>
+            </div>
+          </div>
+          {talhoes.length > 0 && (
+            <Campo rotulo="Em qual talhão você está?" ajuda="A fase da lavoura ajuda o app a acertar mais.">
+              <Select value={escolhaTalhao ?? tid ?? 'nenhum'} onChange={(e) => setEscolhaTalhao(e.target.value)}>
+                {talhoes.map((t) => <option key={t.id} value={t.id}>{t.nome} · fase {t.estadio}</option>)}
+                <option value="nenhum">Outro lugar / não quero informar</option>
+              </Select>
+            </Campo>
+          )}
+          <Button block onClick={() => setIniciado(true)}>Começar</Button>
+        </Card>
+
+        {abertas.length > 0 && (
+          <section aria-labelledby="aguardando" className="space-y-3">
+            <h2 id="aguardando" className="text-lg">Achados aguardando diagnóstico ({abertas.length})</h2>
+            <ul className="space-y-2.5">
+              {abertas.map((p) => {
+                const t = talhoes.find((x) => x.id === p.talhaoId)
+                const ordem = planos?.find((x) => x.talhaoId === p.talhaoId)?.pontos.find((x) => x.id === p.pontoId)?.order
+                return (
+                  <li key={p.id}>
+                    <button type="button" onClick={() => { setAchado({ talhaoId: p.talhaoId, pontoId: p.pontoId, pendenciaId: p.id }); setIniciado(true) }} aria-label={`Diagnosticar o ponto ${ordem ?? ''} de ${t?.nome ?? 'talhão'}`} className="flex w-full items-center gap-3 rounded-card bg-surface p-3 text-left ring-1 ring-line transition active:bg-surface-2">
+                      <span className="flex gap-1.5">{p.fotoIds.slice(0, 2).map((f) => <Miniatura key={f} id={f} />)}{p.fotoIds.length === 0 && <span aria-hidden className="grid size-14 place-items-center rounded-xl bg-surface-2 text-text-2"><Icon name="camera" size={22} /></span>}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold">Ponto {ordem ?? '?'} · {t?.nome ?? p.talhaoId}</span>
+                        <span className="block truncate text-sm text-text-2">{p.nota || 'Sem descrição'}</span>
+                      </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand">Diagnosticar<Icon name="seta" size={16} /></span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        )}
+
+        <section aria-labelledby="como" className="space-y-3">
+          <h2 id="como" className="text-lg">Como funciona</h2>
+          <ol className="grid gap-2.5 sm:grid-cols-3">
+            {COMO_FUNCIONA.map((c, i) => (
+              <li key={c.titulo} className="flex gap-3 rounded-card bg-surface p-3.5 ring-1 ring-line sm:flex-col">
+                <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand"><Icon name={c.icone} size={18} /></span>
+                <span><span className="block font-semibold">{i + 1}. {c.titulo}</span><span className="block text-sm text-text-2">{c.texto}</span></span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <p className="text-sm text-text-2">O app aponta uma pista, não dá laudo. Quem decide se aplica algum produto é o agrônomo.</p>
+
+        <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface ring-1 ring-line">
+          <li><Link to="/biblioteca" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="livro" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Guia de pragas e doenças</span><span className="block text-sm text-text-2">Já sabe o nome? Leia na Biblioteca.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>
+          <li><Link to="/diagnostico/tecnico" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="lista" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Material do técnico</span><span className="block text-sm text-text-2">Árvores de decisão, sintoma × sinal e regras.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>
+        </ul>
       </div>
-      <details className="mt-10 rounded-card border border-line bg-surface p-4">
-        <summary className="cursor-pointer text-lg font-semibold">Material do técnico</summary>
-        <p className="mt-2 text-text-2">Árvores de decisão detalhadas, quadro sintoma × sinal e regras SE … ENTÃO, para o agrônomo e para a banca.</p>
-        <div className="my-4">
-          <Segmentado rotulo="Seção" valor={aba} onChange={setAba} opcoes={[{ id: 'arvores', nome: 'Árvores de decisão' }, { id: 'quadro', nome: 'Sintoma × sinal' }, { id: 'regras', nome: 'Regras SE … ENTÃO' }]} />
-        </div>
-        {aba === 'arvores' && <Arvores />}
-        {aba === 'quadro' && <Quadro />}
-        {aba === 'regras' && <Regras />}
-      </details>
     </>
   )
 }

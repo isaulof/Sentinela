@@ -16,6 +16,7 @@ const arvore = raiz.addChildren([
   createRoute({ getParentRoute: () => raiz, path: '/coleta', component: lazyRouteComponent(() => import('./ui/pages/Campo'), 'Campo') }),
   createRoute({ getParentRoute: () => raiz, path: '/alertas', component: lazyRouteComponent(() => import('./ui/pages/Alertas'), 'Alertas') }),
   createRoute({ getParentRoute: () => raiz, path: '/diagnostico', component: lazyRouteComponent(() => import('./ui/pages/Diagnostico'), 'Diagnostico') }),
+  createRoute({ getParentRoute: () => raiz, path: '/diagnostico/tecnico', component: lazyRouteComponent(() => import('./ui/pages/DiagnosticoTecnico'), 'DiagnosticoTecnico') }),
   createRoute({ getParentRoute: () => raiz, path: '/biblioteca', component: lazyRouteComponent(() => import('./ui/pages/Biblioteca'), 'Biblioteca') }),
   createRoute({ getParentRoute: () => raiz, path: '/biblioteca/$slug', component: lazyRouteComponent(() => import('./ui/pages/Biblioteca'), 'Artigo') }),
   createRoute({ getParentRoute: () => raiz, path: '/perfil', component: lazyRouteComponent(() => import('./ui/pages/Perfil'), 'Perfil') }),
