@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { repo, novoId } from '@/data/repo'
 import { usePlano, usePlanos, useTalhoes } from '@/data/hooks'
 import type { Talhao } from '@/domain/entidades'
@@ -12,6 +12,7 @@ import { Icon } from '../components/Icon'
 import { Mapa } from '../components/Mapa'
 import { MiniTalhao } from '../components/MiniTalhao'
 import { Resultados } from '../components/Resultados'
+import { useGps } from '../hooks/useGps'
 import { useSessao } from '../state/store'
 import { useToast } from '../state/toast'
 
@@ -77,17 +78,23 @@ export function NovoTalhao() {
   const [contorno, setContorno] = useState<LngLat[] | null>(null) // concluído, aguardando os dados
   const [ir, setIr] = useState<{ ponto: LngLat; n: number } | null>(null)
   const existentes = useMemo(() => (talhoes ?? []).flatMap((t) => t.anel), [talhoes])
+  // A posição aparece como ponto azul na hora. Na primeira fazenda (sem talhões ainda) o mapa já abre onde a pessoa está.
+  const gps = useGps(true)
+  const centrou = useRef(false)
+  const primeiroTalhao = talhoes !== undefined && talhoes.length === 0
+  useEffect(() => {
+    if (gps.estado !== 'ok' || centrou.current || !primeiroTalhao) return
+    centrou.current = true
+    setIr((x) => ({ ponto: gps.fix.posicao, n: (x?.n ?? 0) + 1 }))
+  }, [gps, primeiroTalhao])
   if (talhoes === undefined) return null
 
   const sair = () => void navegar({ to: talhoes.length ? '/talhoes' : '/' })
 
   function minhaPosicao() {
-    if (!('geolocation' in navigator)) { mostrar('Este aparelho não informa a localização.', 'erro'); return }
-    navigator.geolocation.getCurrentPosition(
-      (p) => setIr((x) => ({ ponto: [p.coords.longitude, p.coords.latitude], n: (x?.n ?? 0) + 1 })),
-      () => mostrar('Não consegui sua localização. Verifique a permissão do navegador.', 'erro'),
-      { enableHighAccuracy: true, timeout: 10_000 },
-    )
+    if (gps.estado === 'ok') setIr((x) => ({ ponto: gps.fix.posicao, n: (x?.n ?? 0) + 1 }))
+    else if (gps.estado === 'erro') mostrar(gps.motivo, 'erro')
+    else mostrar('Procurando sua posição…')
   }
 
   return (
@@ -105,6 +112,7 @@ export function NovoTalhao() {
           className="h-[calc(100dvh-11rem)] min-h-80 w-full overflow-hidden rounded-card ring-1 ring-line lg:h-[calc(100dvh-10rem)]"
           talhoes={talhoes} selecionadoId={null} onSelecionar={() => {}}
           desenho={vertices} onVertice={(p) => setVertices((d) => [...d, p])} enquadrar={existentes.length ? existentes : null} irPara={ir}
+          eu={gps.estado === 'ok' ? { posicao: gps.fix.posicao, precisaoM: gps.fix.precisaoM, rumo: gps.fix.rumo } : null}
         />
         <button type="button" onClick={minhaPosicao} className="absolute left-2.5 top-2.5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface/95 px-3 text-sm font-semibold shadow-card ring-1 ring-line active:bg-surface-2"><Icon name="local" size={18} />Minha posição</button>
         <div className="absolute inset-x-2.5 bottom-9 flex items-center gap-2 rounded-2xl bg-surface/95 p-2 shadow-lift ring-1 ring-line backdrop-blur">

@@ -8,12 +8,13 @@ import { haversineM } from '@/domain/geo'
 import { estadosDosPontos, ROTULO_ESTADO, type EstadoPonto } from '@/domain/ponto'
 import { ALVOS } from '@/knowledge/alvos'
 import { FormPendencia } from '../components/FormPendencia'
+import { FaixaGuia } from '../components/FaixaGuia'
 import { FormRegistro } from '../components/FormRegistro'
 import { Icon } from '../components/Icon'
 import { Badge, Button, Campo as CampoForm, Card, Folha, Input, Select, Titulo, Vazio, type Tom } from '../components/kit'
 import { Mapa } from '../components/Mapa'
 import { COR_ESTADO, type MarcadorPonto } from '../components/estadoPonto'
-import { useGps } from '../hooks/useGps'
+import { useGps, useTelaAcesa } from '../hooks/useGps'
 import { useSessao } from '../state/store'
 import { useToast } from '../state/toast'
 
@@ -31,7 +32,9 @@ export function Campo() {
   const plano = usePlano(talhao?.id)
   const registros = useRegistros(talhao?.id)
   const pendencias = usePendencias(talhao?.id)
-  const gps = useGps(gpsReal)
+  const [navegando, setNavegando] = useState(false)
+  const gps = useGps(gpsReal || navegando)
+  useTelaAcesa(navegando)
   const [ponto, setPonto] = useState<string | null>(pontoFoco)
   useEffect(() => { if (pontoFoco) setPontoFoco(null) }, [pontoFoco, setPontoFoco])
   const [painel, setPainel] = useState<Painel>(null)
@@ -67,6 +70,7 @@ export function Campo() {
   const pt = idx >= 0 ? pontos[idx] : undefined
   const estadoPt = alvoPonto ? estados.get(alvoPonto) ?? 'a_coletar' : 'a_coletar'
   const dist = gps.estado === 'ok' && pt ? Math.round(haversineM(gps.fix.posicao, pt.position)) : null
+  const linhaGuia = navegando && gps.estado === 'ok' && pt ? { de: gps.fix.posicao, ate: pt.position } : null
   const regsPonto = rodada.filter((r) => r.pontoId === alvoPonto)
   const pendPonto = (pendencias ?? []).filter((p) => p.pontoId === alvoPonto)
   const concluida = feitos === pontos.length
@@ -101,12 +105,18 @@ export function Campo() {
           <div className="h-2.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={Math.round((feitos / pontos.length) * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da coleta">
             <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(feitos / pontos.length) * 100}%` }} />
           </div>
-          <Mapa
-            className="h-[calc(100dvh-31rem)] min-h-72 w-full overflow-hidden rounded-card ring-1 ring-line lg:h-[66dvh]"
-            talhoes={[talhao]} selecionadoId={talhao.id} onSelecionar={() => {}}
-            marcadores={marcadores} pontoSelecionado={alvoPonto} pontoProximo={proximo} onPonto={setPonto}
-            caminho={plano.caminho} enquadrar={enquadrar}
-          />
+          {navegando && !gpsReal && <p className="px-1 text-sm text-text-2">Sala de aula: registros usam a posição planejada. <Link to="/perfil" className="font-semibold text-brand underline">Ativar GPS real</Link></p>}
+          <div className="relative">
+            <Mapa
+              className="h-[calc(100dvh-31rem)] min-h-72 w-full overflow-hidden rounded-card ring-1 ring-line lg:h-[66dvh]"
+              talhoes={[talhao]} selecionadoId={talhao.id} onSelecionar={() => {}}
+              marcadores={marcadores} pontoSelecionado={alvoPonto} pontoProximo={proximo} onPonto={setPonto}
+              caminho={plano.caminho} enquadrar={enquadrar}
+              eu={gps.estado === 'ok' ? { posicao: gps.fix.posicao, precisaoM: gps.fix.precisaoM, rumo: gps.fix.rumo } : null}
+              guia={linhaGuia} seguir={navegando}
+            />
+            {navegando && pt && <FaixaGuia gps={gps} alvo={{ id: pt.id, ordem: pt.order, posicao: pt.position }} onParar={() => setNavegando(false)} />}
+          </div>
           <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-2" aria-label="Legenda do mapa">
             {LEGENDA.map((e) => (
               <li key={e} className="flex items-center gap-1.5"><span className="size-3.5 rounded-full border border-white/70" style={{ background: COR_ESTADO[e].fundo }} />{ROTULO_ESTADO[e]}</li>
@@ -126,6 +136,7 @@ export function Campo() {
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 lg:gap-2">
               <Badge tom={TOM_ESTADO[estadoPt]}>{ROTULO_ESTADO[estadoPt]}</Badge>
+              {!navegando && <button type="button" disabled={!alvoPonto} onClick={() => setNavegando(true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-soft px-3.5 text-sm font-semibold text-brand transition active:scale-95 disabled:opacity-40"><Icon name="local" size={16} />Ir até o ponto</button>}
               {gpsReal ? (
                 <span className="hidden text-sm text-text-2 lg:inline">{gps.estado === 'ok' ? `${dist} m de você (GPS ±${Math.round(gps.fix.precisaoM)} m)` : gps.estado === 'erro' ? gps.motivo : 'Procurando GPS…'}</span>
               ) : (

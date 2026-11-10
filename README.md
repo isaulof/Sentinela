@@ -13,7 +13,7 @@ Aplicativo web instalável (PWA) que funciona **offline**, em celular e computad
 |---|---|---|
 | 1 | Caminhamento e amostragem | **Talhões**: desenhe o contorno no mapa; o app gera o plano (zigzag ou diagonais), com bordadura e nº de pontos por área |
 | 2 | Diagnóstico diferencial | **Diagnóstico**: árvores de decisão, quadro sintoma × sinal, regras SE…ENTÃO com fonte |
-| 3 | Dados e decisão | **Campo** (registro com validação V01–V12 e foto), **Painel** (mapa de calor, série temporal, nível de ação) |
+| 3 | Dados e decisão | **Coleta** (registro com validação V01–V12 e foto; **Ir até o ponto** guia pelo GPS com distância, direção e linha no mapa), **Painel** (mapa de calor, série temporal, nível de ação) |
 | 4 | Sensores, drone e agrônomo | **Alertas**: risco climático (Open-Meteo), voo de drone simulado, ordens de checagem com prazo e KPIs |
 | 5 | Gestão | **Painel** e **Mais** (exportação CSV/GeoJSON, backup) |
 

@@ -6,6 +6,7 @@ import type { Talhao } from '@/domain/entidades'
 import type { LngLat } from '@/domain/geo'
 import type { PlanPoint } from '@/domain/sampling'
 import type { CelulaCalor } from '@/domain/resultados'
+import { circuloGeo } from '@/domain/navegacao'
 import { COR_ESTADO, type MarcadorPonto } from './estadoPonto'
 import { Icon } from './Icon'
 
@@ -78,31 +79,41 @@ interface Props {
   travar?: boolean
   /** Leva a câmera até o ponto (use `n` diferente a cada pedido). */
   irPara?: { ponto: LngLat; n: number } | null
+  /** Sua posição: ponto azul, círculo de imprecisão do GPS e, andando, a direção. */
+  eu?: { posicao: LngLat; precisaoM: number; rumo: number | null } | null
+  /** Linha do guia, da sua posição até o ponto de destino. */
+  guia?: { de: LngLat; ate: LngLat } | null
+  /** Com o guia ligado, a câmera acompanha você e o destino até você mexer no mapa. */
+  seguir?: boolean
   className?: string
 }
 
 /** Base única de mapa (MapLibre) com o talhão sempre ao fundo. */
-export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcadores, pontoSelecionado = null, pontoProximo = null, onPonto, calor = null, caminho = [], desenho = null, onVertice, enquadrar, travar, irPara = null, className }: Props) {
+export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcadores, pontoSelecionado = null, pontoProximo = null, onPonto, calor = null, caminho = [], desenho = null, onVertice, enquadrar, travar, irPara = null, eu = null, guia = null, seguir = false, className }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const mapa = useRef<MLMap | null>(null)
   const [pronto, setPronto] = useState(false)
   const [base, setBase] = useState<Base>('satelite')
+  const [soltou, setSoltou] = useState(false) // a pessoa mexeu no mapa durante o guia: para de seguir
   const [limiteZoom, setLimiteZoom] = useState<{ max: boolean; min: boolean }>({ max: false, min: false })
   const fixo = travar ?? false
   // Os handlers do mapa são registrados uma vez; os valores atuais vêm por ref.
-  const vivo = useRef<{ desenho: typeof desenho; onVertice: typeof onVertice; onSelecionar: typeof onSelecionar; onPonto: typeof onPonto; enquadre: maplibregl.LngLatBounds | null; mexeu: boolean }>({ desenho, onVertice, onSelecionar, onPonto, enquadre: null, mexeu: false })
-  useEffect(() => { Object.assign(vivo.current, { desenho, onVertice, onSelecionar, onPonto }) })
+  const vivo = useRef<{ desenho: typeof desenho; onVertice: typeof onVertice; onSelecionar: typeof onSelecionar; onPonto: typeof onPonto; enquadre: maplibregl.LngLatBounds | null; mexeu: boolean; seguir: boolean }>({ desenho, onVertice, onSelecionar, onPonto, enquadre: null, mexeu: false, seguir: false })
+  useEffect(() => { Object.assign(vivo.current, { desenho, onVertice, onSelecionar, onPonto, seguir }) })
 
   useEffect(() => {
     if (!el.current) return
     const m = new maplibregl.Map({ container: el.current, style: ESTILO, center: [-55.805, -13.255], zoom: 14, maxZoom: MAX_ZOOM, minZoom: MIN_ZOOM, attributionControl: { compact: true }, cooperativeGestures: true, locale: TEXTOS })
     mapa.current = m
     m.on('load', () => {
-      for (const id of ['talhoes', 'calor', 'caminho', 'desenho-linha', 'desenho-vertices']) m.addSource(id, { type: 'geojson', data: vazio() })
+      for (const id of ['talhoes', 'calor', 'caminho', 'eu-precisao', 'guia', 'desenho-linha', 'desenho-vertices']) m.addSource(id, { type: 'geojson', data: vazio() })
       m.addLayer({ id: 'talhoes-fill', type: 'fill', source: 'talhoes', paint: { 'fill-color': ['case', ['get', 'sel'], '#5ee19a', '#7cc7ff'], 'fill-opacity': ['case', ['get', 'sel'], 0.18, 0.08] } })
       m.addLayer({ id: 'calor', type: 'fill', source: 'calor', paint: { 'fill-antialias': false, 'fill-opacity': 0.62, 'fill-color': ['interpolate', ['linear'], ['get', 't'], 0, '#fff3b0', 0.5, '#f59f3a', 1, '#c0391f'] } })
       m.addLayer({ id: 'talhoes-line', type: 'line', source: 'talhoes', paint: { 'line-color': ['case', ['get', 'sel'], '#5ee19a', '#7cc7ff'], 'line-width': ['case', ['get', 'sel'], 3, 2] } })
       m.addLayer({ id: 'caminho', type: 'line', source: 'caminho', paint: { 'line-color': '#ffd666', 'line-width': 2, 'line-dasharray': [3, 3] } })
+      m.addLayer({ id: 'eu-precisao', type: 'fill', source: 'eu-precisao', paint: { 'fill-color': '#2b7de9', 'fill-opacity': 0.16 } })
+      m.addLayer({ id: 'guia-borda', type: 'line', source: 'guia', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 8 } })
+      m.addLayer({ id: 'guia', type: 'line', source: 'guia', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2b7de9', 'line-width': 5 } })
       m.addLayer({ id: 'desenho-linha', type: 'line', source: 'desenho-linha', paint: { 'line-color': '#ffd666', 'line-width': 3 } })
       m.addLayer({ id: 'desenho-vertices', type: 'circle', source: 'desenho-vertices', paint: { 'circle-radius': 6, 'circle-color': '#ffd666', 'circle-stroke-color': '#0b1410', 'circle-stroke-width': 2 } })
       setPronto(true)
@@ -122,9 +133,9 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     const ro = new ResizeObserver(() => {
       m.resize()
       const b = vivo.current.enquadre
-      if (b && !vivo.current.mexeu) m.fitBounds(b, { padding: MARGEM, maxZoom: MAX_ZOOM, duration: 0 })
+      if (b && !vivo.current.mexeu && !vivo.current.seguir) m.fitBounds(b, { padding: MARGEM, maxZoom: MAX_ZOOM, duration: 0 })
     })
-    for (const ev of ['dragstart', 'zoomstart'] as const) m.on(ev, (e) => { if ('originalEvent' in e && e.originalEvent) vivo.current.mexeu = true })
+    for (const ev of ['dragstart', 'zoomstart'] as const) m.on(ev, (e) => { if ('originalEvent' in e && e.originalEvent) { vivo.current.mexeu = true; if (vivo.current.seguir) setSoltou(true) } })
     ro.observe(el.current)
     return () => { ro.disconnect(); m.remove(); mapa.current = null }
   }, [])
@@ -187,6 +198,51 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     mapa.current?.fitBounds(b, { padding: MARGEM, maxZoom: MAX_ZOOM, duration: 400 })
   }, [pronto, enquadrar])
 
+  // Sua posição: círculo de imprecisão (camada) + ponto azul (marcador HTML, que gira com o rumo quando você anda).
+  const euMarca = useRef<maplibregl.Marker | null>(null)
+  useEffect(() => {
+    const m = mapa.current
+    if (!pronto || !m) return
+    set('eu-precisao', { type: 'FeatureCollection', features: eu ? [feat({ type: 'Polygon', coordinates: [[...circuloGeo(eu.posicao, Math.max(eu.precisaoM, 3)).map(pos), pos(circuloGeo(eu.posicao, Math.max(eu.precisaoM, 3))[0]!)]] })] : [] })
+    if (!eu) { euMarca.current?.remove(); euMarca.current = null; return }
+    if (!euMarca.current) {
+      const n = document.createElement('div')
+      n.setAttribute('role', 'img')
+      n.setAttribute('aria-label', 'Sua posição')
+      n.style.cssText = 'width:22px;height:22px;border-radius:9999px;background:#2b7de9;border:3px solid #fff;box-shadow:0 0 0 2px #2b7de966,0 2px 6px #0007;pointer-events:none'
+      const seta = document.createElement('span')
+      seta.dataset['seta'] = '1'
+      seta.style.cssText = 'position:absolute;left:50%;top:-14px;margin-left:-6px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid #2b7de9;display:none'
+      n.appendChild(seta)
+      euMarca.current = new maplibregl.Marker({ element: n, rotationAlignment: 'map', pitchAlignment: 'map' }).setLngLat(pos(eu.posicao)).addTo(m)
+    }
+    euMarca.current.setLngLat(pos(eu.posicao)).setRotation(eu.rumo ?? 0)
+    const seta = euMarca.current.getElement().querySelector<HTMLElement>('[data-seta]')
+    if (seta) seta.style.display = eu.rumo === null ? 'none' : 'block'
+  }, [pronto, eu])
+  useEffect(() => () => { euMarca.current?.remove(); euMarca.current = null }, [])
+
+  useEffect(() => {
+    if (!pronto) return
+    set('guia', { type: 'FeatureCollection', features: guia ? [feat({ type: 'LineString', coordinates: [pos(guia.de), pos(guia.ate)] })] : [] })
+  }, [pronto, guia])
+
+  // Seguir: enquadra você e o destino a cada leitura do GPS; um novo destino volta a seguir.
+  const chaveDestino = guia ? `${guia.ate[0]},${guia.ate[1]}` : ''
+  useEffect(() => { vivo.current.mexeu = false; setSoltou(false) }, [chaveDestino, seguir])
+  const enquadrarGuia = (duracao: number) => {
+    const m = mapa.current
+    if (!m || !eu || !guia) return
+    const b = new maplibregl.LngLatBounds(pos(eu.posicao), pos(eu.posicao))
+    b.extend(pos(guia.ate))
+    m.fitBounds(b, { padding: { top: 104, left: 40, right: 64, bottom: 48 }, maxZoom: MAX_ZOOM, duration: duracao })
+  }
+  useEffect(() => {
+    if (!pronto || !seguir || soltou || !eu || !guia) return
+    enquadrarGuia(600)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reenquadra a cada leitura nova do GPS e a cada destino novo
+  }, [pronto, seguir, soltou, eu, chaveDestino])
+
   useEffect(() => {
     if (!pronto || !irPara) return
     mapa.current?.flyTo({ center: pos(irPara.ponto), zoom: 17, duration: 800 })
@@ -213,11 +269,14 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
   return (
     <div className={`relative ${className ?? ''}`} style={{ minHeight: 280 }}>
       <div ref={el} style={{ position: 'absolute', inset: 0 }} />
+      {seguir && soltou && (
+        <button type="button" onClick={() => { vivo.current.mexeu = false; setSoltou(false); enquadrarGuia(500) }} className="absolute bottom-9 left-2.5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface/95 px-3 text-sm font-semibold shadow-card ring-1 ring-line active:bg-surface-2"><Icon name="local" size={18} />Seguir meu caminho</button>
+      )}
       {!fixo && (
         <div className="absolute right-2.5 top-2.5 flex flex-col gap-2">
           <div className="overflow-hidden rounded-xl bg-surface/95 shadow-card ring-1 ring-line">
-            <button type="button" aria-label="Aproximar" disabled={limiteZoom.max} onClick={() => mapa.current?.zoomIn()} className="grid size-10 place-items-center text-text hover:bg-surface-2 disabled:opacity-35"><Icon name="mais1" size={20} /></button>
-            <button type="button" aria-label="Afastar" disabled={limiteZoom.min} onClick={() => mapa.current?.zoomOut()} className="grid size-10 place-items-center border-t border-line text-text hover:bg-surface-2 disabled:opacity-35"><Icon name="menos" size={20} /></button>
+            <button type="button" aria-label="Aproximar" disabled={limiteZoom.max} onClick={() => { vivo.current.mexeu = true; if (seguir) setSoltou(true); mapa.current?.zoomIn() }} className="grid size-10 place-items-center text-text hover:bg-surface-2 disabled:opacity-35"><Icon name="mais1" size={20} /></button>
+            <button type="button" aria-label="Afastar" disabled={limiteZoom.min} onClick={() => { vivo.current.mexeu = true; if (seguir) setSoltou(true); mapa.current?.zoomOut() }} className="grid size-10 place-items-center border-t border-line text-text hover:bg-surface-2 disabled:opacity-35"><Icon name="menos" size={20} /></button>
           </div>
           <button type="button" aria-label={base === 'satelite' ? 'Trocar para mapa de ruas' : 'Trocar para imagem de satélite'} aria-pressed={base === 'ruas'} onClick={() => setBase(base === 'satelite' ? 'ruas' : 'satelite')} className="grid size-10 place-items-center rounded-xl bg-surface/95 text-text shadow-card ring-1 ring-line hover:bg-surface-2"><Icon name="camadas" size={20} /></button>
         </div>
