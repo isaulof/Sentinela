@@ -7,23 +7,31 @@ import type { Nivel } from '@/domain/decision'
 import type { PlanoSalvo, Talhao } from '@/domain/entidades'
 import { rotuloDiagnostico } from '@/domain/funil'
 import { estadosDosPontos, ROTULO_ESTADO, type EstadoPonto } from '@/domain/ponto'
-import { amostrasNaData, ateODia, celulasCalor, LIMITE_ACAO, niveisNaData, resumirResultado, setorDoFoco, UNIDADE_ALVO, valorDoRegistro, visitas } from '@/domain/resultados'
+import { calorHonesto, diferencaEntreVisitas, escalaDoAlvo, rotuloValor, type DiferencaPonto } from '@/domain/mapa'
+import { amostrasNaData, ateODia, LIMITE_ACAO, niveisNaData, resumirResultado, setorDoFoco, UNIDADE_ALVO, valorDoRegistro, visitas } from '@/domain/resultados'
 import { dataBr, dataHoraBr, diaLocal } from '@/domain/tempo'
 import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
 import { useSessao } from '../state/store'
+import { LegendaCalor, LegendaMudanca, PainelAnalise, PainelQualidade } from './AnaliseMapa'
 import { ExportarTalhao } from './ExportarTalhao'
 import { FichaPonto } from './FichaPonto'
 import { FormPendencia } from './FormPendencia'
 import { SerieTemporal } from './Graficos'
 import { Icon } from './Icon'
-import { Badge, Button, Card, Folha, Vazio, type Tom } from './kit'
+import { Badge, Button, Card, Folha, Segmentado, Vazio, type Tom } from './kit'
 import { Mapa } from './Mapa'
-import { COR_ESTADO, type MarcadorPonto } from './estadoPonto'
+import { COR_ESTADO, COR_MUDANCA, type MarcadorPonto } from './estadoPonto'
 
 const TOM: Record<string, Tom> = { ausente: 'ok', abaixo: 'ok', proximo: 'warn', atingido: 'danger', deteccao: 'info', nao_aplicavel: 'neutral' }
 const TOM_ESTADO: Record<EstadoPonto, Tom> = { a_coletar: 'neutral', sem_ocorrencia: 'ok', leve: 'warn', acao: 'danger', doenca: 'info', diagnostico: 'info', diagnosticado: 'ok' }
 const LEGENDA: EstadoPonto[] = ['sem_ocorrencia', 'leve', 'acao', 'doenca', 'diagnostico', 'diagnosticado']
 const EM_ATENCAO: Nivel[] = ['proximo', 'atingido', 'deteccao']
+
+function descreverMudanca(d: DiferencaPonto): string {
+  const r = COR_MUDANCA[d.mudanca].rotulo
+  if (d.mudanca === 'piorou' || d.mudanca === 'melhorou' || d.mudanca === 'igual') return `${r} (de ${rotuloValor(d.antes!)} para ${rotuloValor(d.agora)})`
+  return `${r} (${rotuloValor(d.agora)})`
+}
 
 const lista = (ns: number[]) => (ns.length <= 1 ? ns.join('') : `${ns.slice(0, -1).join(', ')} e ${ns[ns.length - 1]}`)
 
@@ -41,7 +49,8 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
   const { setTalhao, setPontoFoco } = useSessao()
   const [escolha, setEscolha] = useState<AlvoId | null | undefined>(undefined) // undefined = ainda não escolheu: vale o alvo dominante
   const [diaSel, setDiaSel] = useState<number | null>(null) // índice na lista de visitas; null = a mais recente
-  const [calorLigado, setCalorLigado] = useState(true)
+  const [camada, setCamada] = useState<'calor' | 'estado' | 'mudanca'>('calor')
+  const [valores, setValores] = useState(false)
   const [pontoSel, setPontoSel] = useState<string | null>(null)
   const [vista, setVista] = useState<Vista>({ tipo: 'detalhe' })
   const [tocando, setTocando] = useState(false)
@@ -84,11 +93,25 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
 
   const amostras = useMemo(() => (dia ? amostrasNaData(regs, dia, alvoCalor) : []), [regs, dia, alvoCalor])
   const limite = LIMITE_ACAO[alvoCalor]
-  const calor = useMemo(() => {
-    if (!calorLigado || !alvo || amostras.length === 0) return null
-    const { celulas, max } = celulasCalor(talhao.anel, amostras)
-    return { celulas, teto: Math.max(max, limite ?? 0, 1) }
-  }, [calorLigado, alvo, amostras, talhao.anel, limite])
+  // Calor honesto: só com pelo menos 3 pontos, só dentro do raio de influência, na mesma escala em todas as visitas.
+  const escala = useMemo(() => escalaDoAlvo(regs, alvoCalor), [regs, alvoCalor])
+  const calorH = useMemo(() => (alvo ? calorHonesto(talhao.anel, amostras) : null), [alvo, talhao.anel, amostras])
+  const calor = useMemo(() => (camada === 'calor' && calorH && calorH.celulas.length > 0 ? { celulas: calorH.celulas, teto: escala.teto, semDado: calorH.semDado } : null), [camada, calorH, escala.teto])
+  const diaAnterior = i > 0 ? (dias[i - 1] ?? null) : null
+  const diffs = useMemo(() => (alvo && dia && diaAnterior ? diferencaEntreVisitas(regs, dia, diaAnterior, alvo) : []), [regs, alvo, dia, diaAnterior])
+  const valorPorPonto = useMemo(() => new Map(amostras.map((a) => [a.id, a.valor])), [amostras])
+  const diffPorPonto = useMemo(() => new Map(diffs.map((d) => [d.pontoId, d])), [diffs])
+  const marcadoresVista = useMemo<MarcadorPonto[]>(() => marcadores.map((m) => {
+    if (!alvo) return m
+    if (camada === 'mudanca' && diaAnterior) {
+      const d = diffPorPonto.get(m.id)
+      if (!d) return m
+      const c = COR_MUDANCA[d.mudanca]
+      return { ...m, cor: { fundo: c.fundo, texto: c.texto }, texto: c.simbolo, rotuloEstado: descreverMudanca(d) }
+    }
+    const v = valores ? valorPorPonto.get(m.id) : undefined
+    return v === undefined ? m : { ...m, texto: rotuloValor(v) }
+  }), [marcadores, alvo, camada, diaAnterior, diffPorPonto, valores, valorPorPonto])
 
   const serie = useMemo(() => serieTemporal(ateODia(regs, dia ?? '').filter((r) => r.alvo === alvoCalor).map((r) => ({ ...r, quantidade: valorDoRegistro(r) }))), [regs, dia, alvoCalor])
 
@@ -123,26 +146,29 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_23rem]">
       <div className="min-w-0 space-y-3">
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" role="group" aria-label="Camada do mapa">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" role="group" aria-label="Alvo do mapa">
           {[{ id: null, nome: 'Só pontos' }, ...LISTA_ALVOS].map((a) => (
             <button key={a.id ?? 'todos'} type="button" aria-pressed={alvo === a.id} onClick={() => setEscolha(a.id)} className={`min-h-10 shrink-0 rounded-full px-4 text-apoio font-semibold transition active:scale-95 ${alvo === a.id ? 'bg-brand text-on-brand' : 'bg-surface text-text-2 ring-1 ring-line'}`}>{a.nome}</button>
           ))}
         </div>
 
+        {alvo && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Segmentado rotulo="Camada do mapa" valor={camada} onChange={setCamada} opcoes={[{ id: 'calor', nome: 'Calor' }, { id: 'estado', nome: 'Estado' }, { id: 'mudanca', nome: 'Mudança', desabilitado: !diaAnterior }]} />
+            <button type="button" aria-pressed={valores} onClick={() => setValores((v) => !v)} className={`min-h-11 rounded-xl border px-4 text-apoio font-semibold transition ${valores ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface-2 text-text hover:bg-line'}`}>Valores nos pontos</button>
+          </div>
+        )}
+
         <div className="relative">
           <Mapa
             className="h-[50dvh] w-full overflow-hidden rounded-card ring-1 ring-line lg:h-[62dvh]"
             talhoes={[talhao]} selecionadoId={talhao.id} onSelecionar={() => {}}
-            marcadores={marcadores} pontoSelecionado={pontoSel} onPonto={(id) => abrirPonto(id)} calor={calor} caminho={[]} enquadrar={talhao.anel}
+            marcadores={marcadoresVista} pontoSelecionado={pontoSel} onPonto={(id) => abrirPonto(id)} calor={calor} caminho={[]} enquadrar={talhao.anel}
           />
-          {alvo && amostras.length > 0 && (
-            <button type="button" aria-pressed={calorLigado} title={`Mapa de calor de ${ALVOS[alvo].nome}`} onClick={() => setCalorLigado((v) => !v)} className={`absolute left-2.5 top-2.5 w-44 rounded-xl bg-surface/95 p-2.5 text-left shadow-card ring-1 ring-line transition ${calorLigado ? '' : 'opacity-70'}`}>
-              <span className="flex items-center justify-between text-rotulo font-semibold"><span>Calor · {UNIDADE_ALVO[alvo]}</span><span className="text-text-2">{calorLigado ? 'ligado' : 'desligado'}</span></span>
-              <span aria-hidden className="mt-1.5 block h-2 rounded-full" style={{ background: 'linear-gradient(90deg,#fff3b0,#f59f3a,#c0391f)' }} />
-              <span className="mt-1 flex justify-between text-[0.6875rem] text-text-2"><span>menos</span><span>mais</span></span>
-            </button>
-          )}
         </div>
+
+        {alvo && camada === 'calor' && calorH && <LegendaCalor escala={escala} unidade={UNIDADE_ALVO[alvo]} calor={calorH} />}
+        {alvo && camada === 'mudanca' && <LegendaMudanca diffs={diffs} anterior={diaAnterior} />}
 
         <div className="flex items-center gap-2 rounded-card bg-surface p-2 pr-4 ring-1 ring-line">
           <button type="button" aria-label={tocando ? 'Pausar' : 'Reproduzir evolução'} disabled={dias.length < 2} onClick={() => { if (!tocando && ehUltima) setDiaSel(0); setTocando((v) => !v) }} className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-soft text-brand transition active:scale-95 disabled:opacity-40"><Icon name={tocando ? 'pausar' : 'tocar'} size={20} /></button>
@@ -184,6 +210,9 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
           )}
           {alvo && amostras.length > 0 && <p className="text-rotulo text-text-2">O calor é uma estimativa entre os pontos coletados (interpolação), não uma medição em cada metro.{limite !== undefined && <> Nível de ação: {limite} {UNIDADE_ALVO[alvo]}.</>} Quem decide aplicar algum produto é o agrônomo.</p>}
         </Card>
+
+        {alvo && dia && calorH && amostras.length > 0 && <PainelAnalise plano={plano} regs={regs} dia={dia} dias={dias} alvo={alvo} niveis={niveis} limite={limite ?? null} calor={calorH} />}
+        {dia && <PainelQualidade plano={plano} regs={regs} dia={dia} />}
 
         {alvo && serie.length > 0 && (
           <Card className="space-y-2">

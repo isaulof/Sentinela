@@ -55,6 +55,23 @@ function selo(): HTMLElement {
   return b
 }
 
+/** Hachura cinza em diagonal: marca no mapa as áreas onde não há dado (fora do alcance de qualquer ponto). */
+function hachura(): ImageData {
+  const t = 8
+  const c = document.createElement('canvas')
+  c.width = t
+  c.height = t
+  const g = c.getContext('2d')!
+  g.strokeStyle = 'rgba(255,255,255,0.55)'
+  g.lineWidth = 1.6
+  g.beginPath()
+  g.moveTo(-1, t + 1); g.lineTo(t + 1, -1)
+  g.moveTo(-1, 1); g.lineTo(1, -1)
+  g.moveTo(t - 1, t + 1); g.lineTo(t + 1, t - 1)
+  g.stroke()
+  return g.getImageData(0, 0, t, t)
+}
+
 const vazio = (): FeatureCollection => ({ type: 'FeatureCollection', features: [] })
 const feat = (geometry: Geometry, properties: GeoJsonProperties = {}): Feature => ({ type: 'Feature', geometry, properties })
 
@@ -69,7 +86,7 @@ interface Props {
   pontoProximo?: string | null
   onPonto?: (id: string) => void
   /** Mapa de calor georreferenciado (grade IDW); `teto` é o valor que vira a cor mais forte. */
-  calor?: { celulas: readonly CelulaCalor[]; teto: number } | null
+  calor?: { celulas: readonly CelulaCalor[]; teto: number; /** Áreas fora do alcance de qualquer ponto: hachuradas, sem valor. */ semDado?: readonly CelulaCalor[] } | null
   caminho?: readonly (readonly LngLat[])[]
   /** Vértices do talhão em desenho. */
   desenho?: readonly LngLat[] | null
@@ -108,9 +125,11 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     const m = new maplibregl.Map({ container: el.current, style: ESTILO, center: [-55.805, -13.255], zoom: 14, maxZoom: MAX_ZOOM, minZoom: MIN_ZOOM, attributionControl: { compact: true }, cooperativeGestures: true, locale: TEXTOS })
     mapa.current = m
     m.on('load', () => {
-      for (const id of ['talhoes', 'calor', 'caminho', 'eu-precisao', 'guia', 'desenho-linha', 'desenho-vertices']) m.addSource(id, { type: 'geojson', data: vazio() })
+      for (const id of ['talhoes', 'calor', 'sem-dado', 'caminho', 'eu-precisao', 'guia', 'desenho-linha', 'desenho-vertices']) m.addSource(id, { type: 'geojson', data: vazio() })
       m.addLayer({ id: 'talhoes-fill', type: 'fill', source: 'talhoes', paint: { 'fill-color': ['case', ['get', 'sel'], '#5ee19a', '#7cc7ff'], 'fill-opacity': ['case', ['get', 'sel'], 0.18, 0.08] } })
       m.addLayer({ id: 'calor', type: 'fill', source: 'calor', paint: { 'fill-antialias': false, 'fill-opacity': 0.62, 'fill-color': ['interpolate', ['linear'], ['get', 't'], 0, '#fff3b0', 0.5, '#f59f3a', 1, '#c0391f'] } })
+      m.addImage('hachura', hachura())
+      m.addLayer({ id: 'sem-dado', type: 'fill', source: 'sem-dado', paint: { 'fill-pattern': 'hachura', 'fill-opacity': 0.85 } })
       m.addLayer({ id: 'talhoes-line', type: 'line', source: 'talhoes', paint: { 'line-color': ['case', ['get', 'sel'], '#5ee19a', '#7cc7ff'], 'line-width': ['case', ['get', 'sel'], 3, 2] } })
       m.addLayer({ id: 'caminho', type: 'line', source: 'caminho', paint: { 'line-color': '#ffd666', 'line-width': 2, 'line-dasharray': [3, 3] } })
       m.addLayer({ id: 'eu-precisao', type: 'fill', source: 'eu-precisao', paint: { 'fill-color': '#2b7de9', 'fill-opacity': 0.16 } })
@@ -151,6 +170,7 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
 
   useEffect(() => {
     if (!pronto) return
+    set('sem-dado', { type: 'FeatureCollection', features: (calor?.semDado ?? []).map((c) => feat({ type: 'Polygon', coordinates: [[...c.anel.map(pos), pos(c.anel[0]!)]] })) })
     set('calor', { type: 'FeatureCollection', features: calor ? calor.celulas.map((c) => feat({ type: 'Polygon', coordinates: [[...c.anel.map(pos), pos(c.anel[0]!)]] }, { t: calor.teto > 0 ? Math.min(1, c.valor / calor.teto) : 0 })) : [] })
   }, [pronto, calor])
 
@@ -165,17 +185,18 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     if (!pronto || !m) return
     const lista: MarcadorPonto[] = marcadores ? [...marcadores] : pontos.map((p) => ({ id: p.id, ordem: p.order, posicao: p.position, estado: 'a_coletar' as const, rotuloEstado: '' }))
     const marcas = lista.map((p) => {
-      const cor = COR_ESTADO[p.estado]
+      const cor = p.cor ?? COR_ESTADO[p.estado]
       const sel = p.id === pontoSelecionado
       const n = document.createElement('button')
       n.type = 'button'
-      n.textContent = p.estado === 'diagnostico' ? '?' : String(p.ordem)
+      n.textContent = p.texto ?? (p.estado === 'diagnostico' ? '?' : String(p.ordem))
       if (p.temFoto) n.appendChild(selo())
       n.title = p.rotuloEstado ? `Ponto ${p.ordem} · ${p.rotuloEstado}` : p.id
       n.setAttribute('aria-label', p.rotuloEstado ? `Ponto ${p.ordem}, ${p.rotuloEstado}` : `Ponto ${p.ordem}`)
       n.setAttribute('aria-pressed', String(sel))
       const tam = sel ? 38 : 30
-      n.style.cssText = `width:${tam}px;height:${tam}px;border-radius:9999px;display:grid;place-items:center;font:700 ${sel ? 15 : 13}px system-ui;background:${cor.fundo};color:${cor.texto};border:${sel ? 4 : 2}px solid ${sel ? '#ffd666' : p.id === pontoProximo ? '#7cf0b0' : '#fff'};box-shadow:0 1px 5px #0008;cursor:${onPonto ? 'pointer' : 'default'};padding:0`
+      const largo = (p.texto?.length ?? 0) > 2 // valores como "12,5" alargam o marcador em vez de estourar o círculo
+      n.style.cssText = `${largo ? `min-width:${tam}px;padding:0 6px!important;` : `width:${tam}px;`}height:${tam}px;border-radius:9999px;display:grid;place-items:center;font:700 ${sel ? 15 : 13}px system-ui;background:${cor.fundo};color:${cor.texto};border:${sel ? 4 : 2}px solid ${sel ? '#ffd666' : p.id === pontoProximo ? '#7cf0b0' : '#fff'};box-shadow:0 1px 5px #0008;cursor:${onPonto ? 'pointer' : 'default'};padding:0`
       n.addEventListener('click', (e) => { e.stopPropagation(); vivo.current.onPonto?.(p.id) })
       return new maplibregl.Marker({ element: n }).setLngLat(pos(p.posicao)).addTo(m)
     })
