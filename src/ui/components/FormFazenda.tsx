@@ -19,6 +19,7 @@ export function FormFazenda() {
   // Preenche o formulário uma única vez com o que já está salvo (não sobrescreve o que a pessoa digita).
   useEffect(() => {
     if (carregou || fazenda === undefined) return
+    if (fazenda === null) { setCarregou(true); return }
     setNome(fazenda.nome); setMunicipio(fazenda.municipio); setUf(fazenda.uf); setSafra(fazenda.safra)
     setProprietario(fazenda.proprietario ?? ''); setResponsavel(fazenda.responsavelTecnico ?? '')
     setCarregou(true)

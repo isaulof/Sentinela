@@ -5,7 +5,7 @@ import { carregarDemonstracao } from '@/data/seed'
 import { daRodada, nivelPorPonto } from '@/domain/analise'
 import { NOME_FAZENDA_PADRAO, type Talhao } from '@/domain/entidades'
 import { panorama, type Panorama } from '@/domain/panorama'
-import { dataBr } from '@/domain/tempo'
+import { dataBr, dataPorExtenso, diaLocal, saudacao } from '@/domain/tempo'
 import { proximaAcao, type ProximaAcao } from '@/domain/proximaAcao'
 import { ALVOS } from '@/knowledge/alvos'
 import { Icon, type IconName } from '../components/Icon'
@@ -16,6 +16,9 @@ import { useSessao } from '../state/store'
 interface Cartao { tom: 'ok' | 'warn'; icone: IconName; titulo: string; texto: string; botao: string; ir: () => void }
 
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
+
+/** Dados de demonstração antigos trazem "(demo)" no nome da cultivar; não é parte do dado real. */
+const cultivarLimpa = (c: string) => c.replace(/\s*\(demo\)\s*$/i, '')
 
 function situacao(p: Panorama): { tom: Tom; texto: string } {
   if (p.total === 0) return { tom: 'neutral', texto: 'Sem plano' }
@@ -39,10 +42,10 @@ function CartaoTalhao({ talhao, p, plano }: { talhao: Talhao; p: Panorama; plano
           <MiniTalhao anel={talhao.anel} pontos={plano} estados={p.estados} className="size-24 shrink-0 rounded-xl bg-surface-2" />
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="truncate text-corpo">{talhao.nome}</h3>
+              <h3 className="line-clamp-2 text-corpo">{talhao.nome}</h3>
               <Icon name="seta" size={18} className="mt-0.5 shrink-0 text-text-2" />
             </div>
-            <p className="text-apoio text-text-2">{p.areaHa.toFixed(0)} ha · {talhao.estadio} · {talhao.cultivar}</p>
+            <p className="flex flex-wrap gap-x-3 text-apoio text-text-2"><span className="whitespace-nowrap">{p.areaHa.toFixed(0)} ha · {talhao.estadio}</span><span>{cultivarLimpa(talhao.cultivar)}</span></p>
             <div className="mt-auto pt-2"><Badge tom={tom}>{texto}</Badge></div>
           </div>
         </div>
@@ -55,6 +58,17 @@ function CartaoTalhao({ talhao, p, plano }: { talhao: Talhao; p: Panorama; plano
         </div>
       </Link>
     </li>
+  )
+}
+
+/** Primeiro uso: convida a cadastrar a fazenda, sem bloquear o resto do app. */
+function AvisoFazenda() {
+  return (
+    <Link to="/perfil" className="mb-4 flex items-center gap-3 rounded-card bg-info-soft p-3.5 text-apoio ring-1 ring-info/20 transition active:opacity-80">
+      <Icon name="perfil" size={20} className="shrink-0 text-info" />
+      <span className="min-w-0 flex-1"><b className="font-semibold">Cadastre sua fazenda.</b> <span className="text-text-2">Nome, município e safra aparecem aqui e nos relatórios.</span></span>
+      <Icon name="seta" size={16} className="shrink-0 text-text-2" />
+    </Link>
   )
 }
 
@@ -90,21 +104,34 @@ export function Painel() {
   const ordensAbertas = (ordens ?? []).filter((o) => o.status === 'aberta').length
   const novoTalhao = () => void navegar({ to: '/talhoes/novo' })
 
+  const primeiroNome = amostrador.trim().split(/\s+/)[0] ?? ''
+  const hoje = diaLocal(agora, fazenda?.fuso)
+  const areaTotal = (planos ?? []).reduce((a, p) => a + p.areaHa, 0)
+  const contexto = [
+    fazenda?.municipio ? (fazenda.uf ? `${fazenda.municipio} · ${fazenda.uf}` : fazenda.municipio) : null,
+    fazenda?.safra ? `Safra ${fazenda.safra}` : null,
+    talhoes.length > 0 ? plural(talhoes.length, 'talhão', 'talhões') : null,
+    areaTotal > 0 ? `${Math.round(areaTotal)} ha` : null,
+  ].filter((x): x is string => x !== null)
+
   const cabecalho = (
-    <header className="mb-5 flex items-center justify-between gap-3">
-      <div className="min-w-0">
-        <p className="text-apoio text-text-2">{amostrador.trim() ? `Olá, ${amostrador.trim().split(' ')[0]}` : 'Olá'}</p>
-        <h1 className="truncate text-titulo">{fazenda?.nome ?? NOME_FAZENDA_PADRAO}</h1>
+    <header className="mb-5">
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 pt-2.5 text-apoio text-text-2">{saudacao(agora, fazenda?.fuso)}{primeiroNome ? `, ${primeiroNome}` : ''}</p>
+        <div className="-mt-1 flex shrink-0 items-center gap-1">
+          <Link to="/alertas" aria-label={ordensAbertas ? `Alertas, ${ordensAbertas} para checar` : 'Alertas'} className="relative grid size-11 place-items-center rounded-full text-text-2 transition hover:bg-surface-2 active:bg-surface-2">
+            <Icon name="alerta" size={22} />
+            {ordensAbertas > 0 && <span aria-hidden className="absolute right-2 top-2 size-2.5 rounded-full bg-danger ring-2 ring-bg" />}
+          </Link>
+          <Link to="/perfil" aria-label="Perfil e configurações" className="grid size-11 place-items-center rounded-full text-text-2 transition hover:bg-surface-2 active:bg-surface-2">
+            <span className="grid size-8 place-items-center rounded-full bg-brand-soft text-apoio font-bold text-brand">{amostrador.trim() ? amostrador.trim()[0]!.toUpperCase() : <Icon name="perfil" size={17} />}</span>
+          </Link>
+        </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <Link to="/alertas" aria-label={ordensAbertas ? `Alertas, ${ordensAbertas} para checar` : 'Alertas'} className="relative grid size-11 place-items-center rounded-full text-text-2 transition hover:bg-surface-2 active:bg-surface-2">
-          <Icon name="alerta" size={22} />
-          {ordensAbertas > 0 && <span aria-hidden className="absolute right-2 top-2 size-2.5 rounded-full bg-danger ring-2 ring-bg" />}
-        </Link>
-        <Link to="/perfil" aria-label="Perfil e configurações" className="grid size-11 place-items-center rounded-full text-text-2 transition hover:bg-surface-2 active:bg-surface-2">
-          <span className="grid size-8 place-items-center rounded-full bg-brand-soft text-apoio font-bold text-brand">{amostrador.trim() ? amostrador.trim()[0]!.toUpperCase() : <Icon name="perfil" size={17} />}</span>
-        </Link>
-      </div>
+      <p className="text-apoio text-text-2 first-letter:uppercase">{dataPorExtenso(hoje)}</p>
+      {/* O nome ocupa a largura toda e pode quebrar em até 2 linhas; abaixo de 400 px o tamanho cai um degrau para caber 60 caracteres. */}
+      <h1 className="mt-1 line-clamp-2 break-words text-[1.25rem] leading-tight min-[400px]:text-titulo">{fazenda?.nome ?? NOME_FAZENDA_PADRAO}</h1>
+      {contexto.length > 0 && <p className="mt-1.5 flex flex-wrap gap-x-3.5 gap-y-0.5 text-apoio text-text-2" data-testid="contexto-fazenda">{contexto.map((c) => <span key={c} className="whitespace-nowrap">{c}</span>)}</p>}
     </header>
   )
 
@@ -112,6 +139,7 @@ export function Painel() {
     return (
       <>
         {cabecalho}
+        {fazenda === null && <AvisoFazenda />}
         <Vazio icone="mapa" titulo="Comece pela fazenda" texto="Desenhe o contorno do primeiro talhão no mapa, ou carregue a demonstração para ver o app funcionando." acao={<div className="flex flex-wrap justify-center gap-3"><Button icon="lapis" onClick={novoTalhao}>Desenhar talhão</Button><Button variant="secondary" onClick={() => void carregarDemonstracao()}>Carregar demonstração</Button></div>} />
       </>
     )
@@ -141,13 +169,17 @@ export function Painel() {
     <>
       {cabecalho}
 
-      <section aria-label="Próxima ação" className={`flex items-center gap-3.5 rounded-card p-4 ring-1 ${aviso ? 'bg-warn-soft ring-warn/25' : 'bg-brand-soft ring-brand/20'}`}>
-        <span aria-hidden className={`grid size-11 shrink-0 place-items-center rounded-full ${aviso ? 'bg-warn text-warn-soft' : 'bg-brand text-on-brand'}`}><Icon name={cartao.icone} size={22} /></span>
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold leading-snug">{cartao.titulo}</p>
-          <p className="mt-0.5 text-apoio text-text-2">{cartao.texto}</p>
+      {fazenda === null && <AvisoFazenda />}
+
+      <section aria-label="Próxima ação" className={`grid gap-3.5 rounded-card p-4 ring-1 min-[380px]:grid-cols-[1fr_auto] min-[380px]:items-center ${aviso ? 'bg-warn-soft ring-warn/25' : 'bg-brand-soft ring-brand/20'}`}>
+        <div className="flex min-w-0 items-center gap-3.5">
+          <span aria-hidden className={`grid size-11 shrink-0 place-items-center rounded-full ${aviso ? 'bg-warn text-warn-soft' : 'bg-brand text-on-brand'}`}><Icon name={cartao.icone} size={22} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold leading-snug">{cartao.titulo}</p>
+            <p className="mt-0.5 text-apoio text-text-2">{cartao.texto}</p>
+          </div>
         </div>
-        <button type="button" onClick={cartao.ir} className={`inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full px-4 text-apoio font-semibold transition active:scale-95 ${aviso ? 'bg-warn text-warn-soft' : 'bg-brand text-on-brand'}`}>{cartao.botao}</button>
+        <button type="button" onClick={cartao.ir} className={`inline-flex min-h-11 items-center justify-center gap-1 rounded-full px-5 text-apoio font-semibold transition active:scale-95 max-[379px]:w-full ${aviso ? 'bg-warn text-warn-soft' : 'bg-brand text-on-brand'}`}>{cartao.botao}</button>
       </section>
 
       <section className="mt-7" aria-labelledby="talhoes">

@@ -17,13 +17,13 @@ const m2ll = (pts: [number, number][]): LngLat[] => pts.map(([x, y]) => [ORIGEM[
 interface Def { id: string; nome: string; cultivar: string; plantio: string; estadio: string; metodo: SamplingMethod; anel: LngLat[] }
 
 const DEFS: Def[] = [
-  { id: 'T-01', nome: 'T-01 Mirante', cultivar: 'Cultivar precoce (demo)', plantio: '2026-09-08', estadio: 'R3', metodo: 'zigzag',
+  { id: 'T-01', nome: 'T-01 Mirante', cultivar: 'Cultivar precoce', plantio: '2026-09-08', estadio: 'R3', metodo: 'zigzag',
     anel: m2ll([[0, 40], [860, 0], [900, 980], [40, 1000]]) },
-  { id: 'T-02', nome: 'T-02 Baixada', cultivar: 'Cultivar média (demo)', plantio: '2026-09-12', estadio: 'R2', metodo: 'zigzag',
+  { id: 'T-02', nome: 'T-02 Baixada', cultivar: 'Cultivar média', plantio: '2026-09-12', estadio: 'R2', metodo: 'zigzag',
     anel: m2ll([[1000, 0], [1650, 60], [1700, 780], [1250, 850], [1020, 600]]) },
-  { id: 'T-03', nome: 'T-03 Estrada', cultivar: 'Cultivar média (demo)', plantio: '2026-09-25', estadio: 'V8', metodo: 'zigzag',
+  { id: 'T-03', nome: 'T-03 Estrada', cultivar: 'Cultivar média', plantio: '2026-09-25', estadio: 'V8', metodo: 'zigzag',
     anel: m2ll([[0, 1100], [900, 1100], [900, 1500], [500, 1500], [500, 1900], [0, 1900]]) },
-  { id: 'T-04', nome: 'T-04 Cabeceira', cultivar: 'Cultivar tardia (demo)', plantio: '2026-10-05', estadio: 'V5', metodo: 'diagonais',
+  { id: 'T-04', nome: 'T-04 Cabeceira', cultivar: 'Cultivar tardia', plantio: '2026-10-05', estadio: 'V5', metodo: 'diagonais',
     anel: m2ll([[1000, 1000], [1500, 1000], [1500, 1700], [1000, 1650]]) },
 ]
 
