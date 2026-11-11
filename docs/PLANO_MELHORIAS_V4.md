@@ -1,5 +1,48 @@
 # Plano de melhorias v4: tela inicial, registro e mapa inteligente, guia por GPS
 
+> ## STATUS (atualizado em 11/11/2026) — LEIA PRIMEIRO
+>
+> **Onde paramos:** as fases **F0, F1, F2, F3, F4 e F5 estão implementadas, testadas e commitadas** (6 commits locais). Faltam **F6** (passe final de bugs) e **F7** (revisão com o professor). **Nada disso foi enviado ao GitHub ainda**: `git status -sb` mostra `ahead 6`.
+>
+> ### Para retomar em outra conversa
+> 1. `cd ~/Documentos/Projetos/app_monitoramento/sentinela && git log --oneline | head -8` (confirme os commits abaixo).
+> 2. Publicar: `git push origin main` (pede usuário e token do GitHub; o workflow `.github/workflows/deploy.yml` roda tipos, lint, testes, build e e2e e publica no Pages). Settings → Pages → Source = **GitHub Actions**.
+> 3. Verificação local: `npm run check` (tipos, lint, unitários, build) e `npx playwright test` (e2e, ~5 min).
+> 4. O token do GitHub fica em `tokengithub.odt` (ignorado pelo git; **nunca versionar**). O Claude não deve abri-lo sem pedido explícito.
+>
+> ### O que foi feito (commit por fase)
+> | Fase | Commit | Entrega |
+> |---|---|---|
+> | F0 | `93bfcf2` | `domain/tempo.ts` (dia local da fazenda, fuso `America/Cuiaba`, data/hora em pt-BR); corrige R1 (registro das 21:30 virava outro dia) em visitas, rodada e série; **Registro v2** (método, protocolo, fuso, posição planejada, distância, início/fim, responsável) com migração Dexie v3 que só marca `schema: 1`; entidade **Fazenda** (cadastro em Perfil); tokens tipográficos (`rotulo, apoio, corpo, subtitulo, secao, titulo`) |
+> | F1 | `265dccf` | Início: saudação por hora, data por extenso, nome da fazenda em até 2 linhas, faixa de contexto, cartão de próxima ação com botão em largura total abaixo de 380 px, metadados do talhão sem quebra e sem "(demo)", aviso "Cadastre sua fazenda" |
+> | F5 | `d79b341` | Guia por GPS em **tela cheia** (`ModoNavegacao`), faixa compacta (`FaixaGuia`), barra única "Cheguei · Registrar" com gaveta de ações; o guia sempre usa GPS real; "sala de aula" virou "demonstração"; corrige `Folha` (nome acessível e troca de gaveta) |
+> | F2 | `342c8bc` | **Trilha de auditoria** (corrigir = nova versão que mantém a data/hora da medição; desfazer = anular; nada é apagado; análises usam só registros ativos); formulário v2 (repetições, condições do dia); cartão de confirmação com resumo, **Desfazer 30 s**, Ver ficha, Outro achado aqui; a Coleta não pula mais de ponto sozinha (R4); **Ficha do ponto** (método, amostra, condições, coletor, responsável, posição, fotos, versões, rastro); `domain/ficha.ts` |
+> | F3 | `08fcc0c` | Exportação **CSV** (Excel pt-BR: BOM, `;`, vírgula decimal) e **GeoJSON** com todos os campos e todas as versões; **Relatório do talhão** em `/talhoes/:id/relatorio`, para imprimir ou salvar em PDF; `domain/estatistica.ts` |
+> | F4 | `302bde0` | Mapa v2: **calor honesto** (só com 3+ pontos, só dentro do raio de 1,5× a distância média entre vizinhos, resto hachurado como "sem dado"), escala fixa entre visitas, legenda com números, camadas Calor/Estado/Mudança, valores nos pontos, painel de análise (média, mediana, máximo, desvio, índice de Moran, tendência, pontos por nível, tabela ponto × visita, contas explicadas), qualidade dos dados; `domain/mapa.ts` |
+>
+> ### Verificação no último ponto
+> - Unitários: **364 passam** (21 arquivos). Build ok. Lint limpo.
+> - E2E: 180 passavam ao fim da F3; na F4 os **18 testes novos (`e2e/mapa.spec.ts`) passam**, mas a **suíte e2e completa da F4 não chegou a ser confirmada** quando esta nota foi escrita. **Primeira coisa ao retomar: rodar `npx playwright test` inteiro.**
+> - Testes novos de e2e: `inicio`, `registro`, `exportar`, `mapa`; `guia` e `fluxos` foram ajustados ao novo comportamento.
+>
+> ### Decisões tomadas (as recomendações da seção 6 foram seguidas)
+> Fuso fixo `America/Cuiaba`; modo "Demonstração" explícito; uma fazenda por aparelho; exportação em PDF + CSV + GeoJSON.
+>
+> ### Desvios do plano original (para saber)
+> - **PDF**: é gerado pelo diálogo de impressão do navegador ("Salvar como PDF"), com CSS de impressão. Não há biblioteca de PDF.
+> - **Guia (F5)**: não há "gaveta de detalhes". Tempo a pé e direção ficam na faixa; sinal fraco e rota de carro (acima de 400 m) aparecem só quando relevantes.
+> - **Registro v2**: `parteDaPlanta`, método, protocolo, fuso, posição planejada, distância e início/fim são preenchidos automaticamente; repetições e condições vêm do formulário. **Fotos com data e coordenada por foto não foram feitas.** `revisadoPor` existe no modelo, mas **ainda não há tela para o agrônomo revisar/confirmar**.
+> - **Vários achados de uma vez**: resolvido com "Outro achado aqui" (mantém o ponto), não com uma lista de alvos num só formulário.
+> - **I2/I7** estão feitos; **I5** feito (sem "(demo)"). A seed antiga com "(demo)" é limpa só na exibição.
+> - **Moran I**: vizinhança binária com raio de 1,5× a distância média; em grade de 100 m os vizinhos diagonais entram (documentado em teste).
+> - Alguns testes de e2e usam `test.slow()` (mapa renderiza por software e a gravação demora sob carga paralela). Já houve falha intermitente de axe em `/talhoes/T-01` por animação; foi resolvida não renderizando o cartão de exportar até carregar.
+>
+> ### O que falta
+> - **F6 — passe final** (ver lista da seção 2.2 C): ensaios de borda ainda não cobertos por teste: app fechado no meio do registro (rascunho), falha ao gravar com o aparelho cheio, talhão muito alongado, amostra em cima do vértice, rotação de tela, teclado aberto sobre o formulário, modo offline nas telas novas. Capturas automáticas das telas-chave em 360×640, 390×844, 412×915, 768 e 1280 (hoje só Início e Guia têm medição por tamanho). Revisar dados de demonstração para ficarem coerentes com o Registro v2.
+> - **F7 — revisão com o professor agrônomo** (precisa do usuário): confirmar os campos do registro, ver se há ficha/protocolo próprio, e decidir se quer tela de **revisão pelo agrônomo** (`revisadoPor`) e **fotos com coordenada**.
+> - **Pendências menores**: `FormPendencia`/"Não sei o que é" ainda avança sozinho de ponto (só o registro e o "sem ocorrência" ganharam confirmação); o relatório não traz ainda foco/tendência/qualidade do mapa v2; o Perfil mostra o toggle "Usar GPS real" com o texto novo, mas o padrão continua `false`.
+>
+
 Escopo pedido: (1) tela inicial; (2) registro dos achados e mapa inteligente, para um professor agrônomo avaliar; (3) o caminho até o ponto com GPS.
 
 ## 0. Como investiguei
