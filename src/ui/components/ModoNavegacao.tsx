@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { PlanoSalvo, Talhao } from '@/domain/entidades'
 import { guiarAte } from '@/domain/navegacao'
 import type { EstadoGps } from '../hooks/useGps'
@@ -18,6 +19,8 @@ interface Props {
   onProximo: () => void
   onParar: () => void
   onRegistrar: () => void
+  /** Confirmação do último registro, sobre o mapa, logo acima da barra de ação. */
+  rodape?: ReactNode
 }
 
 /**
@@ -25,7 +28,7 @@ interface Props {
  * O mapa ocupa tudo; em cima, a faixa do guia; embaixo, uma única ação ("Cheguei · Registrar") entre os botões de ponto.
  * Os três botões de registro ficam numa gaveta, aberta por essa ação.
  */
-export function ModoNavegacao({ talhao, plano, marcadores, ponto, proximo, gps, onPonto, onAnterior, onProximo, onParar, onRegistrar }: Props) {
+export function ModoNavegacao({ talhao, plano, marcadores, ponto, proximo, gps, onPonto, onAnterior, onProximo, onParar, onRegistrar, rodape }: Props) {
   const fix = gps.estado === 'ok' ? gps.fix : null
   const chegou = fix ? guiarAte(fix.posicao, fix.precisaoM, ponto.position, fix.rumo).chegou : false
   const linha = fix ? { de: fix.posicao, ate: ponto.position } : null
@@ -42,6 +45,7 @@ export function ModoNavegacao({ talhao, plano, marcadores, ponto, proximo, gps, 
           eu={fix ? { posicao: fix.posicao, precisaoM: fix.precisaoM, rumo: fix.rumo } : null}
           guia={linha} seguir recuoControles
         />
+        {rodape && <div className="absolute inset-x-2.5 bottom-3 z-10">{rodape}</div>}
         <FaixaGuia gps={gps} alvo={{ id: ponto.id, ordem: ponto.order, posicao: ponto.position }} onParar={onParar} />
       </div>
 

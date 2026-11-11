@@ -58,7 +58,7 @@ describe('coleta guiada', () => {
     const { registrarSemOcorrencia } = await import('./coleta')
     const { LISTA_ALVOS } = await import('@/knowledge/alvos')
     const gravados = await registrarSemOcorrencia({ talhao: talhao, plano: plano as never, pontoId: 'P01', amostrador: 'Amostrador Teste', agora: new Date('2026-11-07T15:00:00Z') }, repo)
-    expect(gravados).toBe(LISTA_ALVOS.length)
+    expect(gravados).toHaveLength(LISTA_ALVOS.length)
     const regs = await repo.listarRegistros('T-02')
     expect(regs.every((r) => r.zero && r.quantidade === 0 && r.posicaoSimulada)).toBe(true)
   })
@@ -146,5 +146,73 @@ describe('fazenda', () => {
     await repo.salvarFazenda({ nome: 'X', municipio: 'Y', uf: 'MT', safra: '25/26', fuso: 'America/Cuiaba' })
     await repo.apagarTudo()
     expect(await repo.obterFazenda()).toBeUndefined()
+  })
+})
+
+describe('trilha de auditoria', () => {
+  const agora = new Date('2026-11-11T17:30:00Z')
+  const base = () => reg({ id: 'orig', quantidade: 3, zero: false, fotoIds: ['f1'] })
+
+  it('corrigir grava nova versão, guarda a antiga e mantém a data/hora da medição', async () => {
+    await repo.salvarTalhao(talhao)
+    await repo.salvarPlano({ talhaoId: 'T-02', params: { method: 'zigzag', bufferM: 10, targetPoints: 2 }, pontos: [{ id: 'P01', order: 1, position: [-55.915, -13.052] }, { id: 'P02', order: 2, position: [-55.914, -13.053] }], caminho: [], areaHa: 5, geradoEm: '2026-11-01T00:00:00Z' })
+    await repo.salvarRegistro(base(), ctx)
+    const r = await repo.corrigirRegistro('orig', { quantidade: 1, observacao: 'contagem refeita' }, { autor: 'Prof. Ana', motivo: 'Contei de novo no pano', agora })
+    expect(r.gravado).toBe(true)
+    const todas = await repo.listarVersoesDoPonto('T-02', 'P01')
+    expect(todas).toHaveLength(2)
+    const [v1, v2] = todas
+    expect(v1).toMatchObject({ id: 'orig', quantidade: 3, substituidoPorId: r.novoId })
+    expect(v2).toMatchObject({ id: r.novoId, quantidade: 1, versao: 2, corrigeId: 'orig', corrigidoPor: 'Prof. Ana', motivoCorrecao: 'Contei de novo no pano', criadoEm: '2026-11-07T14:00:00Z' })
+    expect(v2!.corrigidoEm).toBe(agora.toISOString())
+  })
+
+  it('só a versão ativa entra nas listas de análise', async () => {
+    await repo.salvarTalhao(talhao)
+    await repo.salvarRegistro(base(), ctx)
+    await repo.corrigirRegistro('orig', { quantidade: 1 }, { autor: 'Prof. Ana', motivo: 'Recontagem', agora })
+    const ativos = await repo.listarRegistros('T-02')
+    expect(ativos).toHaveLength(1)
+    expect(ativos[0]!.quantidade).toBe(1)
+    expect(await repo.listarTodosRegistros()).toHaveLength(1)
+    expect(await repo.historicoDoAlvo('T-02', 'percevejo')).toHaveLength(1)
+  })
+
+  it('exige autor e motivo e não corrige versão antiga', async () => {
+    await repo.salvarRegistro(base(), ctx)
+    expect((await repo.corrigirRegistro('orig', { quantidade: 1 }, { autor: '', motivo: 'x y z' })).gravado).toBe(false)
+    expect((await repo.corrigirRegistro('orig', { quantidade: 1 }, { autor: 'Ana', motivo: '' })).gravado).toBe(false)
+    expect((await repo.corrigirRegistro('orig', { quantidade: 1 }, { autor: 'Ana', motivo: 'Recontagem', agora })).gravado).toBe(true)
+    const de_novo = await repo.corrigirRegistro('orig', { quantidade: 2 }, { autor: 'Ana', motivo: 'Outra vez', agora })
+    expect(de_novo.gravado).toBe(false)
+    expect(de_novo.problemas[0]!.mensagem).toMatch(/já foi corrigido/)
+  })
+
+  it('uma correção inválida não grava nada e deixa a original ativa', async () => {
+    await repo.salvarRegistro(base(), ctx)
+    const r = await repo.corrigirRegistro('orig', { quantidade: -5 }, { autor: 'Ana', motivo: 'Teste de erro', agora })
+    expect(r.gravado).toBe(false)
+    expect(await repo.listarVersoesDoPonto('T-02', 'P01')).toHaveLength(1)
+    expect((await repo.listarRegistros('T-02'))[0]!.id).toBe('orig')
+  })
+
+  it('anular marca o registro, guarda quem e quando, e tira das análises sem apagar', async () => {
+    await repo.salvarRegistro(base(), ctx)
+    expect(await repo.anularRegistros(['orig'], { autor: 'Ana', agora })).toBe(1)
+    expect(await repo.listarRegistros('T-02')).toHaveLength(0)
+    const [r] = await repo.listarVersoesDoPonto('T-02', 'P01')
+    expect(r).toMatchObject({ id: 'orig', anuladoPor: 'Ana', anuladoEm: agora.toISOString() })
+    // anular de novo não faz nada
+    expect(await repo.anularRegistros(['orig'], { autor: 'Ana', agora })).toBe(0)
+  })
+
+  it('cadeiaDeVersoes devolve da original à mais recente a partir de qualquer id', async () => {
+    const { cadeiaDeVersoes } = await import('@/domain/registro')
+    await repo.salvarRegistro(base(), ctx)
+    const a = await repo.corrigirRegistro('orig', { quantidade: 2 }, { autor: 'Ana', motivo: 'Primeira', agora })
+    const b = await repo.corrigirRegistro(a.novoId!, { quantidade: 1 }, { autor: 'Ana', motivo: 'Segunda', agora })
+    const todas = await repo.listarVersoesDoPonto('T-02', 'P01')
+    expect(cadeiaDeVersoes(todas, b.novoId!).map((r) => r.versao ?? 1)).toEqual([1, 2, 3])
+    expect(cadeiaDeVersoes(todas, 'orig').map((r) => r.id)).toEqual(['orig', a.novoId, b.novoId])
   })
 })

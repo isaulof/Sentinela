@@ -4,10 +4,14 @@ import { registrarSemOcorrencia } from '@/data/coleta'
 import { useFazenda, usePendencias, usePlano, useRegistros, useTalhoes } from '@/data/hooks'
 import { carregarDemonstracao } from '@/data/seed'
 import { avaliarRegistro, daRodada, nivelPorPonto } from '@/domain/analise'
+import { resumoDoRegistro } from '@/domain/ficha'
 import { rotuloDiagnostico } from '@/domain/funil'
 import { haversineM } from '@/domain/geo'
 import { estadosDosPontos, ROTULO_ESTADO, type EstadoPonto } from '@/domain/ponto'
+import { dataHoraBr } from '@/domain/tempo'
 import { ALVOS } from '@/knowledge/alvos'
+import { ConfirmacaoRegistro, type DadosConfirmacao } from '../components/ConfirmacaoRegistro'
+import { FichaPonto } from '../components/FichaPonto'
 import { FormPendencia } from '../components/FormPendencia'
 import { ModoNavegacao } from '../components/ModoNavegacao'
 import { FormRegistro } from '../components/FormRegistro'
@@ -23,7 +27,7 @@ const TOM: Record<string, Tom> = { ausente: 'ok', abaixo: 'ok', proximo: 'warn',
 const TOM_ESTADO: Record<EstadoPonto, Tom> = { a_coletar: 'neutral', sem_ocorrencia: 'ok', leve: 'warn', acao: 'danger', doenca: 'info', diagnostico: 'info', diagnosticado: 'ok' }
 const LEGENDA: EstadoPonto[] = ['a_coletar', 'sem_ocorrencia', 'leve', 'acao', 'doenca', 'diagnostico', 'diagnosticado']
 
-type Painel = null | 'acoes' | 'achado' | 'pendencia' | 'nome'
+type Painel = null | 'acoes' | 'achado' | 'pendencia' | 'nome' | 'ficha'
 
 export function Campo() {
   const talhoes = useTalhoes()
@@ -42,6 +46,8 @@ export function Campo() {
   const [painel, setPainel] = useState<Painel>(null)
   const [nomeDigitado, setNomeDigitado] = useState('')
   const [salvando, setSalvando] = useState(false)
+  const [confirmacao, setConfirmacao] = useState<DadosConfirmacao | null>(null)
+  const [fichaDe, setFichaDe] = useState<string | null>(null)
   const [agora] = useState(() => new Date())
 
   const rodada = useMemo(() => daRodada(registros ?? [], agora), [registros, agora])
@@ -82,10 +88,11 @@ export function Campo() {
     if (!alvoPonto || !pt || !plano || !talhao) return
     setSalvando(true)
     try {
-      const n = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, gps: gps.estado === 'ok' && (gpsReal || navegando) ? gps.fix : null, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) })
-      if (n === 0) { mostrar('Não foi possível registrar. Tente de novo.', 'erro'); return }
+      const gravados = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, gps: gps.estado === 'ok' && (gpsReal || navegando) ? gps.fix : null, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) })
+      if (gravados.length === 0) { mostrar('Não foi possível registrar. Tente de novo.', 'erro'); return }
       mostrar(`Ponto ${pt.order}: sem ocorrência`)
-      setPonto(null)
+      setConfirmacao({ ids: gravados.map((g) => g.id), pontoId: alvoPonto, ordem: pt.order, titulo: `Ponto ${pt.order}: sem ocorrência`, linhas: [`${gravados.length} alvos com zero: ${gravados.map((g) => ALVOS[g.alvo].nome).join(', ')}`, dataHoraBr(gravados[0]!.criadoEm, gravados[0]!.fusoHorario)] })
+      setPonto(navegando ? null : alvoPonto)
     } catch (e) {
       mostrar(e instanceof Error ? e.message : 'Não foi possível registrar.', 'erro')
     } finally {
@@ -98,8 +105,24 @@ export function Campo() {
     void semOcorrencia(amostrador.trim())
   }
 
+  const abrirFicha = (id: string) => { setFichaDe(id); setPainel('ficha') }
+  const fichaPt = pontos.find((p) => p.id === fichaDe)
+  const noMesmoPonto = !navegando && !!confirmacao && alvoPonto === confirmacao.pontoId
+  const confirmacaoEl = confirmacao && (
+    <ConfirmacaoRegistro
+      key={confirmacao.ids.join('+')} dados={confirmacao} autor={amostrador}
+      onFicha={() => abrirFicha(confirmacao.pontoId)}
+      {...(noMesmoPonto ? { onOutro: () => setPainel('achado'), onSeguir: () => { setConfirmacao(null); setPonto(null) } } : {})}
+      onFechar={() => setConfirmacao(null)}
+      className={navegando ? '' : 'fixed inset-x-3 top-3 z-30 mx-auto max-w-xl lg:static lg:mx-0 lg:max-w-none'}
+    />
+  )
+
   const folhas = (
     <>
+      <Folha aberta={painel === 'ficha'} onFechar={() => setPainel(null)} titulo={`Ficha do ponto ${fichaPt?.order ?? ''}`}>
+        {painel === 'ficha' && fichaPt && <FichaPonto talhao={talhao} pontoId={fichaPt.id} ordem={fichaPt.order} />}
+      </Folha>
       <Folha aberta={painel === 'acoes'} onFechar={() => setPainel(null)} titulo={`Ponto ${pt?.order ?? ''}: o que você encontrou?`}>
         <div className="grid gap-2.5">
           <Button block icon="check" disabled={!alvoPonto || salvando} onClick={pedirSemOcorrencia}>{salvando ? 'Registrando…' : 'Sem ocorrência'}</Button>
@@ -108,7 +131,7 @@ export function Campo() {
         </div>
       </Folha>
       <Folha aberta={painel === 'achado'} onFechar={() => setPainel(null)} titulo="Registrar achado">
-        {alvoPonto && <FormRegistro talhao={talhao} plano={plano} pontoId={alvoPonto} registrosTalhao={registros ?? []} gps={gps.estado === 'ok' ? gps.fix : null} forcarGps={navegando} onSalvo={() => { setPainel(null); setPonto(null) }} />}
+        {alvoPonto && <FormRegistro talhao={talhao} plano={plano} pontoId={alvoPonto} registrosTalhao={registros ?? []} gps={gps.estado === 'ok' ? gps.fix : null} forcarGps={navegando} onSalvo={(r) => { setPainel(null); setConfirmacao({ ids: [r.id], pontoId: r.pontoId, ordem: pt?.order ?? 0, titulo: `Ponto ${pt?.order ?? ''}: registro salvo`, linhas: [resumoDoRegistro(r)] }); setPonto(navegando ? null : r.pontoId) }} />}
       </Folha>
       <Folha aberta={painel === 'pendencia'} onFechar={() => setPainel(null)} titulo="Guardar para diagnóstico">
         {alvoPonto && pt && <FormPendencia talhao={talhao} pontoId={alvoPonto} ordem={pt.order} onSalvo={() => { setPainel(null); setPonto(null) }} />}
@@ -128,7 +151,7 @@ export function Campo() {
       <>
         <ModoNavegacao
           talhao={talhao} plano={plano} marcadores={marcadores} ponto={pt} proximo={proximo} gps={gps}
-          onPonto={setPonto} onAnterior={() => irPara(idx - 1)} onProximo={() => irPara(idx + 1)} onParar={() => setNavegando(false)} onRegistrar={() => setPainel('acoes')}
+          onPonto={setPonto} onAnterior={() => irPara(idx - 1)} onProximo={() => irPara(idx + 1)} onParar={() => setNavegando(false)} onRegistrar={() => setPainel('acoes')} rodape={confirmacaoEl}
         />
         {folhas}
       </>
@@ -141,7 +164,7 @@ export function Campo() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="space-y-3">
-          <Select aria-label="Talhão" value={talhao.id} onChange={(e) => { setTalhao(e.target.value); setPonto(null) }}>{talhoes.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}</Select>
+          <Select aria-label="Talhão" value={talhao.id} onChange={(e) => { setTalhao(e.target.value); setPonto(null); setConfirmacao(null) }}>{talhoes.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}</Select>
           <div className="h-2.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={Math.round((feitos / pontos.length) * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da coleta">
             <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(feitos / pontos.length) * 100}%` }} />
           </div>
@@ -163,6 +186,7 @@ export function Campo() {
         </div>
 
         <div className="space-y-4">
+          {confirmacaoEl}
           <Card className="fixed inset-x-3 bottom-[5.6rem] z-10 mx-auto max-w-xl space-y-3 shadow-lift lg:static lg:inset-auto lg:mx-0 lg:max-w-none lg:space-y-4">
             <div className="flex items-center justify-between gap-2">
               <button type="button" aria-label="Ponto anterior" onClick={() => irPara(idx - 1)} className="grid size-11 place-items-center rounded-xl border border-line hover:bg-surface-2"><Icon name="seta" className="rotate-180" /></button>
@@ -211,7 +235,7 @@ export function Campo() {
 
           {regsPonto.length > 0 && (
             <Card className="space-y-2">
-              <h2 className="text-subtitulo">Registros neste ponto</h2>
+              <div className="flex items-center justify-between gap-2"><h2 className="text-subtitulo">Registros neste ponto</h2><button type="button" onClick={() => alvoPonto && abrirFicha(alvoPonto)} className="inline-flex min-h-11 items-center font-semibold text-brand underline">Ver ficha completa</button></div>
               <ul className="divide-y divide-line">
                 {regsPonto.slice().reverse().map((r) => {
                   const a = avaliarRegistro(r)

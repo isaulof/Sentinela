@@ -1,5 +1,6 @@
 import type { Fazenda, OrdemChecagem, Pendencia, PlanoSalvo, Talhao } from '@/domain/entidades'
-import type { Registro } from '@/domain/registro'
+import { ativos, estaAtivo, novaVersao, type Correcao, type Registro } from '@/domain/registro'
+import { avaliar } from '@/domain/decision'
 import { mediaHistorica, validarRegistro, type ContextoValidacao, type ResultadoValidacao } from '@/domain/validation'
 import type { AlvoId } from '@/knowledge/alvos'
 import { db as dbPadrao, type SentinelaDB } from './db'
@@ -31,20 +32,60 @@ export function criarRepo(db: SentinelaDB = dbPadrao) {
     obterPlano: (talhaoId: string) => db.planos.get(talhaoId),
 
     // Registros
-    listarRegistros: (talhaoId: string) => db.registros.where('talhaoId').equals(talhaoId).sortBy('criadoEm'),
-    listarTodosRegistros: () => db.registros.orderBy('criadoEm').toArray(),
+    // Só os registros ativos (não substituídos por correção nem anulados) entram nas listas de análise.
+    async listarRegistros(talhaoId: string) { return ativos(await db.registros.where('talhaoId').equals(talhaoId).sortBy('criadoEm')) },
+    async listarTodosRegistros() { return ativos(await db.registros.orderBy('criadoEm').toArray()) },
+    /** Todas as versões de um ponto, inclusive as substituídas e as anuladas (ficha e auditoria). */
+    async listarVersoesDoPonto(talhaoId: string, pontoId: string) {
+      return (await db.registros.where('[talhaoId+pontoId]').equals([talhaoId, pontoId]).toArray()).sort((a, b) => a.criadoEm.localeCompare(b.criadoEm) || (a.versao ?? 1) - (b.versao ?? 1))
+    },
     async historicoDoAlvo(talhaoId: string, alvo: AlvoId) {
-      return db.registros.where('[talhaoId+alvo]').equals([talhaoId, alvo]).toArray()
+      return ativos(await db.registros.where('[talhaoId+alvo]').equals([talhaoId, alvo]).toArray())
     },
     /** Valida e só então grava. Retorna o resultado; `gravado` indica se foi persistido. */
     async salvarRegistro(r: Registro, ctx: Omit<ContextoValidacao, 'mediaHistorica'>): Promise<ResultadoValidacao & { gravado: boolean }> {
-      const hist = await db.registros.where('[talhaoId+alvo]').equals([r.talhaoId, r.alvo]).toArray()
+      const hist = ativos(await db.registros.where('[talhaoId+alvo]').equals([r.talhaoId, r.alvo]).toArray())
       const v = validarRegistro(r, { ...ctx, mediaHistorica: mediaHistorica(hist.map((h) => h.quantidade)) })
       if (!v.ok) return { ...v, gravado: false }
       await db.registros.put(r)
       return { ...v, gravado: true }
     },
-    apagarRegistro: (id: string) => db.registros.delete(id),
+    /**
+     * Corrige um registro: valida, grava uma NOVA versão e marca a antiga como substituída. Nada é apagado.
+     * Exige autor e motivo (a trilha de auditoria precisa dos dois).
+     */
+    async corrigirRegistro(id: string, mudancas: Correcao, c: { autor: string; motivo: string; agora?: Date }): Promise<(ResultadoValidacao & { gravado: boolean; novoId?: string })> {
+      const agora = c.agora ?? new Date()
+      const falha = (mensagem: string): ResultadoValidacao & { gravado: boolean } => ({ ok: false, gravado: false, problemas: [{ regra: 'AUD', campo: 'motivoCorrecao', gravidade: 'erro', mensagem }], avaliacao: avaliar({ alvo: 'percevejo', estadio: 'R3', quantidade: 0 }) })
+      if (c.autor.trim().length < 2) return falha('Informe quem está corrigindo.')
+      if (c.motivo.trim().length < 3) return falha('Explique o motivo da correção.')
+      const orig = await db.registros.get(id)
+      if (!orig) return falha('Registro não encontrado.')
+      if (!estaAtivo(orig)) return falha('Este registro já foi corrigido ou anulado. Corrija a versão mais recente.')
+      const novo = novaVersao(orig, mudancas, { id: novoId('REG'), autor: c.autor.trim(), motivo: c.motivo.trim(), agora })
+      const [talhao, plano, hist] = await Promise.all([db.talhoes.get(orig.talhaoId), db.planos.get(orig.talhaoId), db.registros.where('[talhaoId+alvo]').equals([orig.talhaoId, orig.alvo]).toArray()])
+      const v = validarRegistro(novo, { agora, ...(talhao ? { anelTalhao: talhao.anel } : {}), ...(plano ? { pontosDoPlano: plano.pontos.map((p) => p.id) } : {}), mediaHistorica: mediaHistorica(ativos(hist).filter((h) => h.id !== id).map((h) => h.quantidade)) })
+      if (!v.ok) return { ...v, gravado: false }
+      await db.transaction('rw', db.registros, async () => {
+        await db.registros.put(novo)
+        await db.registros.update(id, { substituidoPorId: novo.id })
+      })
+      return { ...v, gravado: true, novoId: novo.id }
+    },
+    /** Desfaz registros (ex.: "Desfazer" logo após salvar): marca como anulados, sem apagar. */
+    async anularRegistros(ids: readonly string[], c: { autor: string; motivo?: string; agora?: Date }): Promise<number> {
+      const em = (c.agora ?? new Date()).toISOString()
+      let n = 0
+      await db.transaction('rw', db.registros, async () => {
+        for (const id of ids) {
+          const r = await db.registros.get(id)
+          if (!r || !estaAtivo(r)) continue
+          await db.registros.update(id, { anuladoEm: em, anuladoPor: c.autor.trim() || 'Sem nome', motivoAnulacao: c.motivo?.trim() || 'Desfeito logo após salvar' })
+          n++
+        }
+      })
+      return n
+    },
 
     // Ordens de checagem
     salvarOrdem: (o: OrdemChecagem) => db.ordens.put(o),

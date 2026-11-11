@@ -68,6 +68,53 @@ export interface Registro {
   /** Responsável técnico da fazenda e quem revisou o registro (quando o agrônomo confirma). */
   responsavel?: string
   revisadoPor?: string
+
+  // ── Trilha de auditoria: nada é apagado; corrigir cria uma nova versão e anular só marca ──
+  /** Número da versão (1 = original). Ausente conta como 1. */
+  versao?: number
+  /** Esta versão corrige o registro de id `corrigeId`. */
+  corrigeId?: string
+  /** Preenchido na versão antiga quando uma correção a substitui. */
+  substituidoPorId?: string
+  corrigidoEm?: string
+  corrigidoPor?: string
+  motivoCorrecao?: string
+  /** Registro desfeito/anulado: continua guardado, mas não entra em nenhuma análise. */
+  anuladoEm?: string
+  anuladoPor?: string
+  motivoAnulacao?: string
+}
+
+/** Vale para análise e mapa: não foi substituído por uma correção nem anulado. */
+export const estaAtivo = (r: Pick<Registro, 'substituidoPorId' | 'anuladoEm'>): boolean => !r.substituidoPorId && !r.anuladoEm
+export const ativos = <T extends Pick<Registro, 'substituidoPorId' | 'anuladoEm'>>(regs: readonly T[]): T[] => regs.filter(estaAtivo)
+
+/** Campos que uma correção pode mudar: a medida e a evidência. Quem, quando e onde nunca mudam. */
+export type Correcao = Partial<Pick<Registro, 'quantidade' | 'zero' | 'presente' | 'severidadePct' | 'desfolhaPct' | 'observacao' | 'fase' | 'fotoIds' | 'repeticoes' | 'areaAmostrada' | 'condicoes'>>
+
+/**
+ * Nova versão de um registro. Mantém `criadoEm` (o instante da medição, que define o dia da visita) e acrescenta
+ * quem corrigiu, quando e por quê. A versão antiga é marcada como substituída por quem chama (repo).
+ */
+export function novaVersao(original: Registro, mudancas: Correcao, c: { id: string; autor: string; motivo: string; agora: Date }): Registro {
+  const { substituidoPorId: _s, anuladoEm: _a, anuladoPor: _ap, motivoAnulacao: _m, ...base } = original
+  return { ...base, ...mudancas, id: c.id, versao: (original.versao ?? 1) + 1, corrigeId: original.id, corrigidoEm: c.agora.toISOString(), corrigidoPor: c.autor, motivoCorrecao: c.motivo }
+}
+
+/** Cadeia de versões de um registro (da original à mais recente), a partir de qualquer id dela. */
+export function cadeiaDeVersoes(todos: readonly Registro[], id: string): Registro[] {
+  const porId = new Map(todos.map((r) => [r.id, r]))
+  let raiz = porId.get(id)
+  while (raiz?.corrigeId && porId.has(raiz.corrigeId)) raiz = porId.get(raiz.corrigeId)
+  const cadeia: Registro[] = []
+  for (let r = raiz; r; r = r.substituidoPorId ? porId.get(r.substituidoPorId) : undefined) cadeia.push(r)
+  return cadeia
+}
+
+/** "5 batidas de 1 m" / "10 folhas": o que foi amostrado, a partir das repetições e do tipo do alvo. */
+export function descreverAmostra(tipo: 'praga' | 'doenca', repeticoes: number): string {
+  const n = Math.max(1, Math.floor(repeticoes))
+  return tipo === 'praga' ? `${n} ${n === 1 ? 'batida' : 'batidas'} de 1 m` : `${n} ${n === 1 ? 'folha' : 'folhas'} inspecionada${n === 1 ? '' : 's'}`
 }
 
 export const METODO_NAO_INFORMADO = 'Método não informado (registro anterior à versão 2)'

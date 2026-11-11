@@ -314,7 +314,7 @@ test.describe('fluxos de negócio', () => {
     await expect(page.getByText(/Talhão 1 salvo com \d+ pontos/)).toBeVisible()
   })
 
-  test('coleta guiada: "sem ocorrência" em um toque avança para o próximo ponto', async ({ page }) => {
+  test('coleta guiada: "sem ocorrência" confirma o que gravou, fica no ponto e só avança quando a pessoa pede', async ({ page }) => {
     await carregarDemo(page)
     await page.goto('/#/coleta')
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
@@ -323,7 +323,11 @@ test.describe('fluxos de negócio', () => {
     await page.getByRole('button', { name: 'Sem ocorrência' }).click()
     const nome = page.getByRole('dialog').getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) { await nome.fill('Aluno Teste'); await page.getByRole('button', { name: 'Continuar' }).click() }
+    const conf = page.getByRole('region', { name: 'Registro salvo' })
+    await expect(conf).toContainText('Ponto 1: sem ocorrência')
     await expect(page.getByText('1 de 10 pontos coletados')).toBeVisible()
+    await expect(page.getByText('Ponto 1 de 10')).toBeVisible() // não pulou sozinho
+    await conf.getByRole('button', { name: 'Próximo ponto' }).click()
     await expect(page.getByText('Ponto 2 de 10')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Ponto 1, Sem ocorrência' })).toBeVisible()
   })

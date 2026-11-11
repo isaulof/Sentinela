@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { carregarDemo } from './ajuda'
 
-const NOME_LONGO = 'Fazenda Santa Aurora do Vale dos Ipês Roxos Ltda' // 47
 const NOME_60 = 'Agropecuária Santa Aurora do Vale dos Ipês Roxos e Amarelos' // ~60
 
 async function cadastrar(page: Page, nome: string) {

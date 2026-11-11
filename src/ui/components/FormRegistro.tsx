@@ -5,7 +5,7 @@ import { novoId, repo } from '@/data/repo'
 import type { Talhao, PlanoSalvo } from '@/domain/entidades'
 import { resolverOrdem } from '@/domain/hibrido'
 import { ESTADIOS } from '@/domain/phenology'
-import { camposV2, type Registro } from '@/domain/registro'
+import { camposV2, descreverAmostra, type CondicoesDia, type Registro } from '@/domain/registro'
 import { mediaHistorica, validarRegistro } from '@/domain/validation'
 import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
 import { FONTES } from '@/knowledge/fontes'
@@ -35,7 +35,8 @@ interface Props {
   gps: Fix | null
   /** Guia ligado: a posição do registro é a do GPS mesmo que a preferência de demonstração esteja ativa. */
   forcarGps?: boolean
-  onSalvo: () => void
+  /** Chamado depois de gravar, com o registro salvo (a tela mostra a confirmação e permite desfazer). */
+  onSalvo: (registro: Registro) => void
 }
 
 export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGps = false, onSalvo }: Props) {
@@ -56,6 +57,8 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
   const [desfolha, setDesfolha] = useState<number | undefined>(undefined)
   const [fotos, setFotos] = useState<string[]>([])
   const [obs, setObs] = useState('')
+  const [repeticoes, setRepeticoes] = useState(1)
+  const [condicoes, setCondicoes] = useState<CondicoesDia>({})
   const [nome, setNome] = useState(amostrador)
   const [resultado, setResultado] = useState<'confirmada' | 'falso_positivo' | null>(null)
   const [causa, setCausa] = useState('')
@@ -73,9 +76,10 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
       alvo: alvoId, fase, quantidade, zero, ...(presente !== undefined ? { presente } : {}),
       ...(severidade !== undefined ? { severidadePct: severidade } : {}), ...(desfolha !== undefined ? { desfolhaPct: desfolha } : {}),
       fotoIds: fotos, observacao: obs,
+      repeticoes, areaAmostrada: descreverAmostra(alvo.tipo, repeticoes), ...(Object.keys(condicoes).length ? { condicoes } : {}),
       ...camposV2({ posicao: usaGps ? gps.posicao : ponto.position }, { metodo: alvo.coleta.metodo, parteDaPlanta: alvo.coleta.parte, planejada: ponto.position, inicio: t0, fim: t0, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) }),
     }),
-    [t0, fazenda, alvo, talhao, nome, estadio, pontoId, usaGps, gps, ponto, alvoId, fase, quantidade, zero, presente, severidade, desfolha, fotos, obs],
+    [t0, fazenda, alvo, repeticoes, condicoes, talhao, nome, estadio, pontoId, usaGps, gps, ponto, alvoId, fase, quantidade, zero, presente, severidade, desfolha, fotos, obs],
   )
   const hist = useMemo(() => mediaHistorica(registrosTalhao.filter((r) => r.alvo === alvoId).map((r) => r.quantidade)), [registrosTalhao, alvoId])
   const v = useMemo(
@@ -113,7 +117,7 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
         await repo.salvarOrdem(resolverOrdem(ordem, res, new Date(), reg.id))
       }
       mostrar(`Registro salvo em ${pontoId}`)
-      onSalvo()
+      onSalvo(reg)
     } finally {
       setSalvando(false)
     }
@@ -144,7 +148,7 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
       </Campo>
 
       <Campo grupo rotulo="Alvo">
-        <Segmentado rotulo="Alvo" valor={alvoId} onChange={(id) => { setAlvoId(id); setFase(''); setQuantidade(0); setZero(false); setPresente(undefined); setSeveridade(undefined); setDesfolha(undefined) }} opcoes={LISTA_ALVOS.map((a) => ({ id: a.id, nome: a.nome }))} />
+        <Segmentado rotulo="Alvo" valor={alvoId} onChange={(id) => { setAlvoId(id); setFase(''); setRepeticoes(1); setQuantidade(0); setZero(false); setPresente(undefined); setSeveridade(undefined); setDesfolha(undefined) }} opcoes={LISTA_ALVOS.map((a) => ({ id: a.id, nome: a.nome }))} />
       </Campo>
 
       <div className="rounded-2xl bg-surface-2 p-4 text-apoio text-text-2">
@@ -188,6 +192,19 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
           {fotos.map((id) => <Miniatura key={id} id={id} onRemover={() => setFotos((x) => x.filter((y) => y !== id))} />)}
         </div>
       </Campo>
+
+      <Campo rotulo={ehDoenca ? 'Folhas inspecionadas' : 'Batidas / repetições'} ajuda={`Anotado como: ${descreverAmostra(alvo.tipo, repeticoes)}`}>
+        <Input type="number" inputMode="numeric" min={1} max={100} value={repeticoes} onChange={(e) => setRepeticoes(Math.min(100, Math.max(1, Math.floor(Number(e.target.value) || 1))))} />
+      </Campo>
+
+      <details className="rounded-2xl border border-line p-4">
+        <summary className="cursor-pointer font-semibold">Condições do dia (opcional)</summary>
+        <div className="mt-3 space-y-4">
+          <Campo grupo rotulo="Tempo"><Segmentado rotulo="Tempo" valor={condicoes.tempo ?? ''} onChange={(x) => setCondicoes((c) => ({ ...c, tempo: x as NonNullable<CondicoesDia['tempo']> }))} opcoes={[{ id: 'ensolarado', nome: 'Ensolarado' }, { id: 'nublado', nome: 'Nublado' }, { id: 'chuvoso', nome: 'Chuvoso' }]} /></Campo>
+          <Campo grupo rotulo="Vento"><Segmentado rotulo="Vento" valor={condicoes.vento ?? ''} onChange={(x) => setCondicoes((c) => ({ ...c, vento: x as NonNullable<CondicoesDia['vento']> }))} opcoes={[{ id: 'calmo', nome: 'Calmo' }, { id: 'moderado', nome: 'Moderado' }, { id: 'forte', nome: 'Forte' }]} /></Campo>
+          <Campo grupo rotulo="Folha"><Segmentado rotulo="Folha" valor={condicoes.folhaMolhada === undefined ? '' : condicoes.folhaMolhada ? 'molhada' : 'seca'} onChange={(x) => setCondicoes((c) => ({ ...c, folhaMolhada: x === 'molhada' }))} opcoes={[{ id: 'seca', nome: 'Seca' }, { id: 'molhada', nome: 'Molhada' }]} /></Campo>
+        </div>
+      </details>
 
       <Campo rotulo="Observação técnica (opcional)">
         <textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} className="w-full rounded-2xl border border-line bg-surface-2 p-3 text-corpo" />

@@ -1,36 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useFazenda } from '@/data/hooks'
 import { repo } from '@/data/repo'
+import type { Fazenda } from '@/domain/entidades'
 import { FUSO_PADRAO, safraAtual } from '@/domain/tempo'
 import { useToast } from '../state/toast'
 import { Button, Campo, Card, Input } from './kit'
 
 export function FormFazenda() {
-  const fazenda = useFazenda()
-  const mostrar = useToast((s) => s.mostrar)
-  const [nome, setNome] = useState('')
-  const [municipio, setMunicipio] = useState('')
-  const [uf, setUf] = useState('MT')
-  const [safra, setSafra] = useState(() => safraAtual(new Date()))
-  const [proprietario, setProprietario] = useState('')
-  const [responsavel, setResponsavel] = useState('')
-  const [carregou, setCarregou] = useState(false)
+  const fazenda = useFazenda() // undefined = carregando; null = ainda não cadastrada
+  if (fazenda === undefined) return null
+  return <CamposFazenda key={fazenda?.atualizadaEm ?? 'nova'} inicial={fazenda} />
+}
 
-  // Preenche o formulário uma única vez com o que já está salvo (não sobrescreve o que a pessoa digita).
-  useEffect(() => {
-    if (carregou || fazenda === undefined) return
-    if (fazenda === null) { setCarregou(true); return }
-    setNome(fazenda.nome); setMunicipio(fazenda.municipio); setUf(fazenda.uf); setSafra(fazenda.safra)
-    setProprietario(fazenda.proprietario ?? ''); setResponsavel(fazenda.responsavelTecnico ?? '')
-    setCarregou(true)
-  }, [fazenda, carregou])
+function CamposFazenda({ inicial }: { inicial: Fazenda | null }) {
+  const mostrar = useToast((s) => s.mostrar)
+  const [nome, setNome] = useState(inicial?.nome ?? '')
+  const [municipio, setMunicipio] = useState(inicial?.municipio ?? '')
+  const [uf, setUf] = useState(inicial?.uf ?? 'MT')
+  const [safra, setSafra] = useState(() => inicial?.safra ?? safraAtual(new Date()))
+  const [proprietario, setProprietario] = useState(inicial?.proprietario ?? '')
+  const [responsavel, setResponsavel] = useState(inicial?.responsavelTecnico ?? '')
 
   const valida = nome.trim().length >= 2 && municipio.trim().length >= 2 && /^[A-Za-z]{2}$/.test(uf.trim()) && /^\d{2}\/\d{2}$/.test(safra.trim())
 
   async function salvar() {
     if (!valida) return
     await repo.salvarFazenda({
-      nome: nome.trim(), municipio: municipio.trim(), uf: uf.trim().toUpperCase(), safra: safra.trim(), fuso: fazenda?.fuso ?? FUSO_PADRAO,
+      nome: nome.trim(), municipio: municipio.trim(), uf: uf.trim().toUpperCase(), safra: safra.trim(), fuso: inicial?.fuso ?? FUSO_PADRAO,
       ...(proprietario.trim() ? { proprietario: proprietario.trim() } : {}),
       ...(responsavel.trim() ? { responsavelTecnico: responsavel.trim() } : {}),
     })

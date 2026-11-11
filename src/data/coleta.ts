@@ -18,14 +18,14 @@ export interface ParamsSemOcorrencia {
 
 /**
  * "Sem ocorrência" em um toque: grava o zero explícito de cada alvo monitorado no ponto.
- * Cada zero passa pela mesma validação dos demais registros. Retorna quantos foram gravados.
+ * Cada zero passa pela mesma validação dos demais registros. Devolve os registros gravados (a tela mostra o que foi feito e permite desfazer).
  */
-export async function registrarSemOcorrencia(p: ParamsSemOcorrencia, repo: Repo = repoPadrao): Promise<number> {
+export async function registrarSemOcorrencia(p: ParamsSemOcorrencia, repo: Repo = repoPadrao): Promise<Registro[]> {
   const ponto = p.plano.pontos.find((x) => x.id === p.pontoId)
   if (!ponto) throw new Error(`O ponto ${p.pontoId} não pertence ao plano deste talhão.`)
   const agora = p.agora ?? new Date()
   const posicao = p.gps ? ([p.gps.posicao[0], p.gps.posicao[1]] as const) : ponto.position
-  let gravados = 0
+  const gravados: Registro[] = []
   for (const alvo of LISTA_ALVOS) {
     const reg: Registro = {
       id: novoId('REG'), talhaoId: p.talhao.id, amostrador: p.amostrador, criadoEm: agora.toISOString(), estadio: p.talhao.estadio, finalidade: p.talhao.finalidade,
@@ -35,7 +35,7 @@ export async function registrarSemOcorrencia(p: ParamsSemOcorrencia, repo: Repo 
       ...camposV2({ posicao }, { metodo: alvo.coleta.metodo, parteDaPlanta: alvo.coleta.parte, planejada: ponto.position, inicio: agora, fim: agora, ...(p.responsavel ? { responsavel: p.responsavel } : {}), ...(p.fuso ? { fuso: p.fuso } : {}) }),
     }
     const r = await repo.salvarRegistro(reg, { agora, anelTalhao: p.talhao.anel, pontosDoPlano: p.plano.pontos.map((x) => x.id) })
-    if (r.gravado) gravados++
+    if (r.gravado) gravados.push(reg)
   }
   return gravados
 }

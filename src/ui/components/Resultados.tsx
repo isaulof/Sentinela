@@ -11,6 +11,7 @@ import { amostrasNaData, ateODia, celulasCalor, LIMITE_ACAO, niveisNaData, resum
 import { dataBr, dataHoraBr, diaLocal } from '@/domain/tempo'
 import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
 import { useSessao } from '../state/store'
+import { FichaPonto } from './FichaPonto'
 import { FormPendencia } from './FormPendencia'
 import { SerieTemporal } from './Graficos'
 import { Icon } from './Icon'
@@ -30,7 +31,7 @@ function Foto({ id, className }: { id: string; className?: string }) {
   return <div className={`overflow-hidden bg-surface-2 ${className ?? ''}`}>{url && <img src={url} alt="Foto do ponto" className="size-full object-cover" />}</div>
 }
 
-type Vista = { tipo: 'detalhe' } | { tipo: 'achado' } | { tipo: 'foto'; id: string }
+type Vista = { tipo: 'detalhe' } | { tipo: 'achado' } | { tipo: 'foto'; id: string } | { tipo: 'ficha' }
 
 /** Mapa inteligente do talhão: estado de cada ponto, mapa de calor por alvo, leitura em texto e linha do tempo entre as visitas. */
 export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalvo }) {
@@ -205,11 +206,17 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
         </Card>
       </div>
 
-      <Folha aberta={!!ponto} onFechar={fecharPonto} titulo={vista.tipo === 'achado' ? `Foto no ponto ${ponto?.order ?? ''}` : `Ponto ${ponto?.order ?? ''}`}>
+      <Folha aberta={!!ponto} onFechar={fecharPonto} titulo={vista.tipo === 'achado' ? `Foto no ponto ${ponto?.order ?? ''}` : vista.tipo === 'ficha' ? `Ficha do ponto ${ponto?.order ?? ''}` : `Ponto ${ponto?.order ?? ''}`}>
         {ponto && vista.tipo === 'achado' && (
           <div className="space-y-4">
             <button type="button" onClick={() => setVista({ tipo: 'detalhe' })} className="inline-flex min-h-10 items-center gap-1 font-semibold text-brand"><Icon name="voltar" size={18} />Voltar ao ponto</button>
             <FormPendencia talhao={talhao} pontoId={ponto.id} ordem={ponto.order} onSalvo={() => setVista({ tipo: 'detalhe' })} />
+          </div>
+        )}
+        {ponto && vista.tipo === 'ficha' && (
+          <div className="space-y-4">
+            <button type="button" onClick={() => setVista({ tipo: 'detalhe' })} className="inline-flex min-h-10 items-center gap-1 font-semibold text-brand"><Icon name="voltar" size={18} />Voltar ao ponto</button>
+            <FichaPonto talhao={talhao} pontoId={ponto.id} ordem={ponto.order} />
           </div>
         )}
         {ponto && vista.tipo === 'foto' && (
@@ -252,6 +259,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
                 </ul>
               )}
             </div>
+            <Button block variant="secondary" icon="lupa" onClick={() => setVista({ tipo: 'ficha' })}>Ficha completa do ponto</Button>
             <div className="grid grid-cols-2 gap-2.5 pt-1">
               <Button variant="secondary" icon="camera" onClick={() => setVista({ tipo: 'achado' })}>Adicionar foto</Button>
               <Link to="/coleta" onClick={() => { setTalhao(talhao.id); setPontoFoco(ponto.id) }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand px-5 font-semibold text-on-brand transition active:scale-[0.97]"><Icon name="campo" size={20} />Coletar aqui</Link>
