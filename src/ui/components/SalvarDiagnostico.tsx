@@ -2,12 +2,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { anexarDiagnostico } from '@/data/coleta'
 import { usePlano, useTalhoes } from '@/data/hooks'
-import type { Classificado, Confianca } from '@/domain/funil'
+import { percentual, type Classificado, type Confianca } from '@/domain/funil'
 import { useSessao } from '../state/store'
 import { useToast } from '../state/toast'
 import { Button, Campo, Folha, Input, Select } from './kit'
 
-const pct = (x: number) => Math.round(x * 100)
 
 interface Props {
   aberta: boolean
@@ -15,6 +14,8 @@ interface Props {
   ranking: Classificado[]
   /** Confiança no primeiro colocado. Se o usuário escolher outra causa, grava "ainda incerto". */
   confianca: Confianca
+  /** Respostas + fotos escolhidas, para limitar o percentual salvo. */
+  evidencias: number
   /** Talhão já escolhido no início (ou o do achado guardado). */
   talhaoId: string | null
   /** Achado guardado na Coleta: talhão e ponto já definidos, sem perguntar de novo. */
@@ -22,7 +23,7 @@ interface Props {
 }
 
 /** Grava o diagnóstico escolhido num ponto de coleta. Com um achado guardado, é um toque; sem ele, escolhe talhão e ponto. */
-export function SalvarDiagnostico({ aberta, onFechar, ranking, confianca, talhaoId, achado }: Props) {
+export function SalvarDiagnostico({ aberta, onFechar, ranking, confianca, evidencias, talhaoId, achado }: Props) {
   const navegar = useNavigate()
   const mostrar = useToast((s) => s.mostrar)
   const { setTalhao, amostrador, setAmostrador, setDiagnosticoPara, setPontoFoco } = useSessao()
@@ -51,7 +52,7 @@ export function SalvarDiagnostico({ aberta, onFechar, ranking, confianca, talhao
       await anexarDiagnostico({
         talhaoId: talhao.id, pontoId: ponto.id, pendenciaId: achado?.pendenciaId ?? null, titulo: escolhido.candidato.nome,
         ...(escolhido.candidato.alvo ? { alvoId: escolhido.candidato.alvo } : {}),
-        compatibilidadePct: pct(escolhido.compat), confianca: escolhido === ranking[0] ? confianca : 'baixa', estadio: talhao.estadio, amostrador: quem,
+        compatibilidadePct: percentual(escolhido.compat, evidencias), confianca: escolhido === ranking[0] ? confianca : 'baixa', estadio: talhao.estadio, amostrador: quem,
       })
       mostrar(`Diagnóstico salvo no ponto ${ponto.order}`)
       setDiagnosticoPara(null)

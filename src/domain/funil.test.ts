@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { CANDIDATOS, PERGUNTAS } from '@/knowledge/diagnostico'
+import { ICONES } from '@/ui/components/iconPaths'
 import { classificar, confianca, explicar, fatorFenologico, ganhoDaPergunta, podeEncerrar, possibilidadesRestantes, progresso, proximaPergunta, ROTULO_CONFIANCA, validarBase, type Candidato, type PerguntaFunil } from './funil'
 
 describe('base de conhecimento do guia', () => {
   it('é íntegra: perfis citam só perguntas e opções que existem', () => {
     expect(validarBase(PERGUNTAS, CANDIDATOS)).toEqual([])
+  })
+  it('todo ícone das opções existe no conjunto do app e cada bicho tem o seu', () => {
+    for (const p of PERGUNTAS) for (const o of p.opcoes) if (o.icone) expect(ICONES, `${p.id}/${o.id}`).toContain(o.icone)
+    const bicho = PERGUNTAS.find((p) => p.id === 'bicho')!
+    const icones = bicho.opcoes.filter((o) => !['nao_sei', 'nenhum'].includes(o.id)).map((o) => o.icone)
+    expect(new Set(icones).size).toBe(icones.length) // nenhum ícone repetido entre os bichos
   })
   it('cobre pragas, doenças e causas não vivas', () => {
     const tipos = new Set(CANDIDATOS.map((c) => c.tipo))
@@ -42,7 +49,7 @@ describe('classificar', () => {
     expect(classificar(CANDIDATOS, { onde: 'haste_raiz', mofo: 'algodao', raiz: 'mofo_branco' })[0]!.candidato.id).toBe('mofo')
   })
   it('faixas retas sem bicho nem doença apontam efeito de produto', () => {
-    expect(classificar(CANDIDATOS, { onde: 'folha_cor', mancha: 'nenhuma', bicho: 'nenhum', terreno: 'faixas' })[0]!.candidato.id).toBe('fitotoxidez')
+    expect(classificar(CANDIDATOS, { onde: 'folha_cor', mancha: 'nenhuma', bicho: 'nenhum', terreno: 'faixas' })[0]!.candidato.id).toMatch(/^herb_/)
   })
   it('galhas na raiz apontam nematoides', () => {
     expect(classificar(CANDIDATOS, { onde: 'murcha', raiz: 'galhas', terreno: 'reboleira' })[0]!.candidato.id).toBe('nematoide')
@@ -133,7 +140,7 @@ describe('fase da lavoura (estádio) como contexto', () => {
 
 describe('o que aconteceu nos últimos dias', () => {
   it('produto aplicado + amarelo + faixas retas → efeito de produto', () => {
-    expect(classificar(CANDIDATOS, { onde: 'folha_cor', mancha: 'nenhuma', bicho: 'nenhum', recente: 'produto' })[0]!.candidato.id).toBe('fitotoxidez')
+    expect(classificar(CANDIDATOS, { onde: 'folha_cor', mancha: 'nenhuma', bicho: 'nenhum', recente: 'produto' })[0]!.candidato.id).toMatch(/^herb_/)
   })
   it('chuva com granizo + manchas de cantos retos → bacteriose', () => {
     expect(classificar(CANDIDATOS, { onde: 'folha_mancha', mancha: 'angular', recente: 'chuva_forte' })[0]!.candidato.id).toBe('bacteriose')
@@ -155,7 +162,7 @@ describe('explicar o resultado', () => {
     const e = explicar(porId('ferrugem'), PERGUNTAS, resp)
     expect(e.combina.map((l) => l.resposta)).toContain('Pontinhos ou pústulas por baixo')
     expect(e.combina[0]!.frequencia).toBe('tipico')
-    expect(e.naoCombina.map((l) => l.resposta)).toContain('Percevejos')
+    expect(e.naoCombina.map((l) => l.resposta)).toContain('Bicho achatado, em forma de escudo')
   })
   it('respostas neutras e puladas ficam de fora', () => {
     const e = explicar(porId('ferrugem'), PERGUNTAS, resp)
@@ -190,7 +197,7 @@ describe('progresso e confiança em palavras', () => {
 describe('janelas de estádio na base', () => {
   it('são válidas e só existem onde faz sentido agronômico declarado', () => {
     expect(validarBase(PERGUNTAS, CANDIDATOS)).toEqual([])
-    expect(CANDIDATOS.filter((c) => c.janela).map((c) => c.id).sort()).toEqual(['dfc', 'ferrugem', 'lagarta', 'lagarta_vagem', 'mofo', 'percevejo'])
+    expect(CANDIDATOS.filter((c) => c.janela).map((c) => c.id).sort()).toEqual(['anticarsia', 'dfc', 'elasmo', 'ferrugem', 'lagarta', 'lagarta_vagem', 'mofo', 'percevejo', 'percevejo_pequeno', 'percevejo_verde'])
   })
   it('janela invertida é detectada', () => {
     expect(validarBase(PERGUNTAS, [{ ...CANDIDATOS[0]!, janela: ['R5', 'R1'] }]).join('|')).toMatch(/janela de estádios inválida/)

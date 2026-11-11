@@ -6,7 +6,10 @@ import { Button } from './kit'
 
 interface Props {
   pergunta: PerguntaFunil
-  numero: number
+  /** Triagem (3 perguntas fixas) ou detalhes (perguntas do ramo escolhido). */
+  fase: 'triagem' | 'detalhes'
+  /** 1 a 3 na triagem; contagem de detalhes depois. */
+  n: number
   /** 0 a 1: quanto da incerteza já foi eliminada. */
   progresso: number
   restantes: number
@@ -20,9 +23,10 @@ interface Props {
 }
 
 const etapa = (respondidas: number, progresso: number) => (respondidas === 0 ? 'Vamos começar' : progresso < 0.34 ? 'Começando a entender' : progresso < 0.67 ? 'Afunilando as causas' : 'Quase lá')
+const rotuloEtapa = (fase: 'triagem' | 'detalhes', n: number) => (fase === 'triagem' ? `Triagem · ${n} de 3` : `Detalhes · ${n}`)
 
 /** Uma pergunta por tela, com respostas grandes e fáceis de tocar. Tocar numa resposta já avança. */
-export function Perguntas({ pergunta, numero, progresso, restantes, respondidas, contexto, onResponder, onPular, onVoltar, onVerResultado }: Props) {
+export function Perguntas({ pergunta, fase, n, progresso, restantes, respondidas, contexto, onResponder, onPular, onVoltar, onVerResultado }: Props) {
   const titulo = useRef<HTMLHeadingElement>(null)
   // A cada pergunta nova: volta ao topo e leva o foco para o enunciado (leitor de tela e teclado).
   useEffect(() => {
@@ -39,7 +43,7 @@ export function Perguntas({ pergunta, numero, progresso, restantes, respondidas,
         <button type="button" onClick={onVoltar} aria-label={respondidas === 0 ? 'Voltar ao início do diagnóstico' : 'Voltar para a pergunta anterior'} className="-ml-2 grid size-11 shrink-0 place-items-center rounded-full text-text-2 transition active:bg-surface-2"><Icon name="voltar" size={24} /></button>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="font-semibold">Pergunta {numero}</span>
+            <span className="font-semibold">{rotuloEtapa(fase, n)}</span>
             <span className="text-text-2">{etapa(respondidas, progresso)}</span>
           </div>
           <div role="progressbar" aria-label="Andamento do diagnóstico" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-valuetext={etapa(respondidas, progresso)} className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-2">
@@ -49,6 +53,7 @@ export function Perguntas({ pergunta, numero, progresso, restantes, respondidas,
       </header>
 
       {contexto && <div className="mb-4">{contexto}</div>}
+      {fase === 'triagem' && n === 1 && <p className="mb-3 text-sm text-text-2">Três perguntas rápidas para saber por onde começar. Depois vêm só as perguntas que importam para o seu caso.</p>}
 
       <div key={pergunta.id} className="animate-[entrar_.22s_ease-out]">
         <h2 ref={titulo} tabIndex={-1} className="text-2xl leading-tight outline-none">{pergunta.texto}</h2>
@@ -63,7 +68,7 @@ export function Perguntas({ pergunta, numero, progresso, restantes, respondidas,
               className={`flex rounded-card bg-surface p-3.5 text-left ring-1 ring-line transition active:scale-[0.98] active:bg-brand-soft ${duasColunas ? 'min-h-[6.5rem] flex-col items-start gap-2 sm:min-h-0 sm:flex-row sm:items-center sm:gap-3.5' : 'min-h-[4.75rem] flex-row items-center gap-3.5'}`}
             >
               <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-brand-soft text-brand">
-                <FotoRef arquivo={`resposta-${pergunta.id}-${o.id}.jpg`} alt="" className="size-full object-cover" fallback={<Icon name={(o.icone ?? 'folha') as IconName} size={24} />} />
+                <FotoRef arquivo={`resposta-${pergunta.id}-${o.id}.jpg`} alt="" className="size-full object-cover" fallback={o.cor ? <span aria-hidden className="size-7 rounded-full ring-1 ring-black/25" style={{ background: o.cor }} /> : <Icon name={(o.icone ?? 'folha') as IconName} size={24} />} />
               </span>
               <span className="min-w-0">
                 <span className="block text-base font-semibold leading-snug">{o.rotulo}</span>

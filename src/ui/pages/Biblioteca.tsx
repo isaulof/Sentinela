@@ -5,6 +5,7 @@ import { FONTES } from '@/knowledge/fontes'
 import { Badge, Card, Input, Titulo, Vazio } from '../components/kit'
 import { FotoRef } from '../components/FotoRef'
 import { Icon } from '../components/Icon'
+import { iconeDoAlvo } from '../components/iconeAlvo'
 
 import { semAcento, slugDe } from './slug'
 
@@ -41,7 +42,7 @@ export function Biblioteca() {
               <li key={a.id}>
                 <Link to="/biblioteca/$slug" params={{ slug: slugDe(a) }} className="flex min-h-20 items-center gap-4 rounded-card border border-line bg-surface p-4 shadow-card hover:bg-surface-2">
                   <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-brand-soft text-brand">
-                    <Icon name={a.tipo === 'praga' ? 'bicho' : 'folha'} />
+                    <Icon name={iconeDoAlvo(a)} />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-lg font-bold">{a.nome}</span>

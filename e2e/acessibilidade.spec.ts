@@ -65,12 +65,16 @@ test('questionário e resultado do diagnóstico não têm violações WCAG 2.1 A
   await page.getByRole('heading', { level: 2, name: 'Onde está o problema?' }).waitFor()
   const pergunta = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
   expect(pergunta.violations.map((v) => `pergunta ${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
-  const passos: [RegExp, RegExp][] = [[/Onde está/, /Manchas ou pontos nas folhas/], [/Como são as marcas/, /Pontinhos ou pústulas por baixo/], [/Em que altura/, /Folhas de baixo/], [/algum bicho/, /Nenhum bicho/], [/algo branco/, /Nada disso/], [/vagens e os grãos/, /Parecem normais/], [/raiz e a haste/, /Parecem normais/], [/aparece no terreno/, /manchas redondas/], [/últimos dias/, /Muita chuva/]]
+  const passos: [RegExp, RegExp][] = [[/Onde está/, /Manchas ou pontos nas folhas/], [/aparece no terreno/, /manchas redondas/], [/últimos dias/, /Muita chuva/], [/Como são as marcas/, /Pontinhos ou pústulas por baixo/], [/Em que altura/, /Folhas de baixo/], [/Vire a folha/, /Pontinhos em relevo/], [/Como o problema andou/, /Está aumentando/]]
   const salvar = page.getByRole('button', { name: /^Salvar (em um|no) ponto/ })
-  for (let i = 0; i < 12 && !(await salvar.first().isVisible()); i++) {
+  for (let i = 0; i < 16 && !(await salvar.first().isVisible()); i++) {
     const t = (await page.getByRole('heading', { level: 2 }).first().textContent()) ?? ''
     const par = passos.find(([q]) => q.test(t))
-    await (par ? page.getByRole('button', { name: par[1] }) : page.getByRole('button', { name: 'Não consigo ver isso' })).click()
+    if (/Qual foto mais se parece/.test(t)) {
+      const fotos = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+      expect(fotos.violations.map((v) => `fotos ${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
+      await page.getByRole('button', { name: /Ferrugem-asiática/ }).click()
+    } else await (par ? page.getByRole('button', { name: par[1] }) : page.getByRole('button', { name: 'Não consigo ver isso' })).click()
     await page.waitForTimeout(150)
   }
   await salvar.first().waitFor()

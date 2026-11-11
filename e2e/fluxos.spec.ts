@@ -5,21 +5,23 @@ import { anexarFoto, carregarDemo } from './ajuda'
 async function responderFunilFerrugem(page: Page) {
   const RESP: [RegExp, RegExp][] = [
     [/Onde está o problema/, /Manchas ou pontos nas folhas/],
-    [/Como são as marcas/, /Pontinhos ou pústulas por baixo/],
-    [/Em que altura/, /Folhas de baixo/],
-    [/algum bicho/, /Nenhum bicho/],
-    [/algo branco, preto ou escuro/, /Nada disso/],
-    [/vagens e os grãos/, /Parecem normais/],
-    [/raiz e a haste/, /Parecem normais/],
     [/aparece no terreno/, /manchas redondas/],
     [/últimos dias/, /Muita chuva ou dias nublados/],
+    [/Como são as marcas/, /Pontinhos ou pústulas por baixo/],
+    [/Em que altura/, /Folhas de baixo/],
+    [/Vire a folha/, /Pontinhos em relevo/],
+    [/Como o problema andou/, /Está aumentando/],
   ]
   const salvar = page.getByRole('button', { name: /^Salvar (em um|no) ponto/ })
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 16; i++) {
     if (await salvar.first().isVisible()) return
     const titulo = (await page.getByRole('heading', { level: 2 }).first().textContent()) ?? ''
-    const par = RESP.find(([q]) => q.test(titulo))
-    await (par ? page.getByRole('button', { name: par[1] }) : page.getByRole('button', { name: 'Não consigo ver isso' })).click()
+    if (/Qual foto mais se parece/.test(titulo)) {
+      await page.getByRole('button', { name: /Ferrugem-asiática/ }).click()
+    } else {
+      const par = RESP.find(([q]) => q.test(titulo))
+      await (par ? page.getByRole('button', { name: par[1] }) : page.getByRole('button', { name: 'Não consigo ver isso' })).click()
+    }
     await page.waitForTimeout(150)
   }
 }
@@ -102,26 +104,83 @@ test.describe('fluxos de negócio', () => {
     await expect(evitadas).toHaveCount(antes + 1)
   })
 
-  test('questionário: uma pergunta por vez, sem porcentagem, e um resultado em linguagem simples', async ({ page }) => {
+  test('questionário em etapas: triagem, detalhes, fotos e um resultado com percentual e explicação', async ({ page }) => {
     await page.goto('/#/diagnostico')
     await page.getByRole('button', { name: 'Começar' }).click()
     await expect(page.getByRole('heading', { level: 2, name: 'Onde está o problema?' })).toBeVisible()
+    await expect(page.getByText('Triagem · 1 de 3')).toBeVisible()
     await expect(page.getByRole('progressbar', { name: 'Andamento do diagnóstico' })).toBeVisible()
     await page.getByRole('button', { name: /Manchas ou pontos nas folhas/ }).click()
-    await expect(page.getByText('Pergunta 2')).toBeVisible()
+    await expect(page.getByText('Triagem · 2 de 3')).toBeVisible()
     await expect(page.getByText(/\d+%/)).toHaveCount(0) // nada de porcentagem no meio das perguntas
+    await page.getByRole('button', { name: /manchas redondas/ }).click()
+    await page.getByRole('button', { name: /Muita chuva ou dias nublados/ }).click()
+    await expect(page.getByText(/^Detalhes · 1$/)).toBeVisible() // depois da triagem só entram perguntas do ramo
+    await page.getByRole('button', { name: /Pontinhos ou pústulas por baixo/ }).click()
     await responderFunilFerrugem(page)
     await expect(page.getByRole('heading', { level: 2, name: 'Ferrugem-asiática' })).toBeVisible()
-    await expect(page.getByText(/^(Bem provável|Provável|Ainda incerto)$/)).toBeVisible()
+    await expect(page.getByText(/\d+% de certeza · (Bem provável|Provável|Ainda incerto)/)).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'É doença ou praga? Ou outra causa?' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'O que fazer agora' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Por que o app pensa isso' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Como ter certeza' })).toBeVisible()
-    await expect(page.getByText(/\d+%/)).toHaveCount(0) // nem no resultado
-    await expect(page.getByText('Quem decide se aplica algum produto é o agrônomo.')).toBeVisible()
+    await expect(page.getByText(/não a decisão final/)).toBeVisible()
     await page.getByText('Como o app chegou a esse resultado').click()
     await expect(page.getByText(/Não é uma probabilidade medida nem um laudo|não uma probabilidade medida nem um laudo/)).toBeVisible()
     await page.getByRole('button', { name: 'Voltar', exact: true }).click()
-    await expect(page.getByText(/Pergunta \d+/)).toBeVisible()
+    await expect(page.getByRole('progressbar', { name: 'Andamento do diagnóstico' })).toBeVisible()
+  })
+
+  test('sem base, o app não dá nome ao problema: pergunta as características e termina "ainda não dá para dizer"', async ({ page }) => {
+    await page.goto('/#/diagnostico')
+    await page.getByRole('button', { name: 'Começar' }).click()
+    await page.getByRole('button', { name: /Vi um bicho na planta/ }).click()
+    await page.getByRole('button', { name: /Plantas soltas/ }).click()
+    await page.getByRole('button', { name: /Nada de diferente/ }).click()
+    await page.getByRole('button', { name: /em forma de escudo/ }).click()
+    // Segue a linha do percevejo: tamanho, cor, faixa nas costas, onde estava (e nada de antenas ou como a lagarta anda)
+    const vistas: string[] = []
+    const incerto = page.getByRole('heading', { level: 2, name: 'Ainda não dá para dizer o que é' })
+    for (let i = 0; i < 20 && !(await incerto.isVisible()); i++) {
+      const titulo = (await page.getByRole('heading', { level: 2 }).first().textContent()) ?? ''
+      vistas.push(titulo)
+      if (/Qual foto mais se parece/.test(titulo)) await page.getByRole('button', { name: 'Nenhuma parece' }).click()
+      else await page.getByRole('button', { name: 'Não consigo ver isso' }).click()
+      await page.waitForTimeout(120)
+    }
+    await expect(incerto).toBeVisible()
+    expect(vistas.join('|')).toMatch(/tamanho do bicho/)
+    expect(vistas.join('|')).toMatch(/faixa clara/)
+    expect(vistas.join('|')).not.toMatch(/antenas|como ela anda/)
+    await expect(page.getByRole('heading', { name: 'Percevejo-marrom', level: 2 })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Enviar ao agrônomo' })).toBeVisible()
+  })
+
+  test('cada bicho segue a sua linha: lagarta pergunta como anda; besouro pergunta o desenho', async ({ page }) => {
+    const seguir = async (escolha: RegExp) => {
+      await page.goto('/#/diagnostico')
+      await page.reload() // recomeça do zero (a mudança de hash sozinha manteria o questionário anterior)
+      await page.getByRole('button', { name: 'Começar' }).click()
+      await page.getByRole('button', { name: /Vi um bicho na planta/ }).click()
+      await page.getByRole('button', { name: /Plantas soltas/ }).click()
+      await page.getByRole('button', { name: /Nada de diferente/ }).click()
+      await page.getByRole('button', { name: escolha }).click()
+      const vistas: string[] = []
+      for (let i = 0; i < 4; i++) {
+        const titulo = (await page.getByRole('heading', { level: 2 }).first().textContent()) ?? ''
+        if (/Qual foto mais se parece|Ainda não dá/.test(titulo)) break // acabaram as perguntas do caminho
+        vistas.push(titulo)
+        await page.getByRole('button', { name: 'Não consigo ver isso' }).click()
+        await page.waitForTimeout(120)
+      }
+      return vistas.join('|')
+    }
+    const lagarta = await seguir(/^Lagarta/)
+    expect(lagarta).toMatch(/como ela anda|patinhas/)
+    expect(lagarta).not.toMatch(/antenas|asas|Como é o besouro/)
+    const besouro = await seguir(/^Besouro/)
+    expect(besouro).toMatch(/Como é o besouro|balança a planta/)
+    expect(besouro).not.toMatch(/como ela anda|patinhas|antenas/)
   })
 
   test('liga o diagnóstico ao ponto: guarda na Coleta, diagnostica e o ponto vira "Diagnosticado"', async ({ page }) => {
@@ -147,7 +206,7 @@ test.describe('fluxos de negócio', () => {
     await folha.getByRole('button', { name: 'Salvar no ponto 1' }).click()
     await expect(page).toHaveURL(/#\/coleta/)
     await expect(page.getByRole('button', { name: 'Ponto 1, Diagnosticado' })).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText(/Ferrugem-asiática · (bem provável|provável|ainda incerto)/)).toBeVisible()
+    await expect(page.getByText(/Ferrugem-asiática · \d+% · (bem provável|provável|ainda incerto)/)).toBeVisible()
   })
 
   test('diagnóstico direto: salva o resultado num ponto escolhido, sem achado guardado', async ({ page }) => {

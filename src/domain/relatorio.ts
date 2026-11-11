@@ -7,11 +7,13 @@ export interface DadosRelatorio {
   /** Número do ponto de coleta, quando o diagnóstico é de um ponto. */
   ponto?: number
   estadio?: string
-  principal: { nome: string; cientifico?: string; confianca: Confianca }
+  principal: { nome: string; cientifico?: string; confianca: Confianca; /** Índice de certeza (%), quando houver. */ percentual?: number }
   outras: string[]
   /** Respostas dadas, na ordem em que foram feitas. */
   respostas: { pergunta: string; resposta: string }[]
   passos: string[]
+  /** Nomes dos problemas cujas fotos o produtor escolheu na comparação. */
+  fotosEscolhidas?: string[]
   quando: Date
 }
 
@@ -28,9 +30,10 @@ export function mensagemParaAgronomo(d: DadosRelatorio): string {
     ...(d.fazenda ? [d.fazenda] : []),
     ...(onde ? [`Local: ${onde}`] : []),
     '',
-    `Hipótese mais compatível: ${d.principal.nome}${d.principal.cientifico ? ` (${d.principal.cientifico})` : ''} · ${ROTULO_CONFIANCA[d.principal.confianca].toLowerCase()}`,
+    `Hipótese mais compatível: ${d.principal.nome}${d.principal.cientifico ? ` (${d.principal.cientifico})` : ''} · ${d.principal.percentual !== undefined ? `${d.principal.percentual}% de certeza, ` : ''}${ROTULO_CONFIANCA[d.principal.confianca].toLowerCase()}`,
     ...(d.outras.length ? [`Também possível: ${d.outras.join('; ')}`] : []),
     '',
+    ...(d.fotosEscolhidas?.length ? [`Na comparação de fotos o produtor escolheu: ${d.fotosEscolhidas.join('; ')}`, ''] : []),
     'O que foi observado:',
     ...d.respostas.map((r) => `- ${r.pergunta} ${r.resposta}`),
     ...(d.passos.length ? ['', 'Próximos passos sugeridos pelo app:', ...d.passos.map((p, i) => `${i + 1}. ${p}`)] : []),

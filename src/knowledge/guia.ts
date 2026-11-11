@@ -59,8 +59,8 @@ export const GUIA: Arvore = {
       tipo: 'pergunta',
       texto: 'Que bicho ou dano você encontrou?',
       opcoes: [
-        { rotulo: 'Lagartas comendo as folhas', icone: 'bicho', detalhe: 'Folhas esburacadas ou só com as nervuras', destino: 'r_lagarta' },
-        { rotulo: 'Percevejos nas plantas ou nas vagens', icone: 'bicho', detalhe: 'Vagens chochas, grãos manchados ou murchos', destino: 'r_percevejo' },
+        { rotulo: 'Lagartas comendo as folhas', icone: 'lagarta', detalhe: 'Folhas esburacadas ou só com as nervuras', destino: 'r_lagarta' },
+        { rotulo: 'Percevejos nas plantas ou nas vagens', icone: 'percevejo', detalhe: 'Vagens chochas, grãos manchados ou murchos', destino: 'r_percevejo' },
         { rotulo: 'Outro bicho ou não sei', icone: 'duvida', detalhe: 'Vou tirar foto', destino: 'r_bicho_outro' },
       ],
     },

@@ -2,9 +2,11 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { useFotoUrl } from '@/data/fotos'
 import { usePlano, usePlanos, useTalhoes, useTodasPendencias } from '@/data/hooks'
-import { classificar, confianca as confiancaDe, podeEncerrar, possibilidadesRestantes, progresso as progressoDe, proximaPergunta, type Respostas } from '@/domain/funil'
+import { proximoPasso } from '@/domain/fluxo'
+import { classificar, confianca as confiancaDe, contarEvidencias, percentual, possibilidadesRestantes, veredito as vereditoDe, progresso as progressoDe, type EscolhaFoto, type Respostas } from '@/domain/funil'
 import { mensagemParaAgronomo } from '@/domain/relatorio'
 import { CANDIDATOS, PERGUNTAS } from '@/knowledge/diagnostico'
+import { CompararFotos } from '../components/CompararFotos'
 import { Icon } from '../components/Icon'
 import { Perguntas } from '../components/Perguntas'
 import { ResultadoDiagnostico } from '../components/ResultadoDiagnostico'
@@ -13,7 +15,8 @@ import { Button, Campo, Card, Select, Titulo } from '../components/kit'
 import { useSessao } from '../state/store'
 import { useToast } from '../state/toast'
 
-interface Passo { perguntaId: string; opcaoId: string | null }
+/** O que o usuário fez, em ordem: responder (ou pular) uma pergunta, ou escolher uma foto. Voltar desfaz o último. */
+type Evento = { t: 'resp'; perguntaId: string; opcaoId: string | null } | { t: 'foto'; escolha: EscolhaFoto }
 interface Achado { talhaoId: string; pontoId: string; pendenciaId: string }
 
 function Miniatura({ id, className = 'size-14' }: { id: string; className?: string }) {
@@ -22,9 +25,9 @@ function Miniatura({ id, className = 'size-14' }: { id: string; className?: stri
 }
 
 const COMO_FUNCIONA = [
-  { icone: 'lupa', titulo: 'Responda', texto: 'Perguntas simples sobre o que você está vendo.' },
-  { icone: 'diag', titulo: 'Veja a pista', texto: 'O app aponta as causas mais prováveis e como confirmar.' },
-  { icone: 'campo', titulo: 'Salve no ponto', texto: 'O resultado fica ligado ao ponto de coleta.' },
+  { icone: 'lupa', titulo: 'Responda', texto: 'Três perguntas rápidas e depois só o que importa para o seu caso.' },
+  { icone: 'camera', titulo: 'Compare fotos', texto: 'Escolha a foto que mais se parece com o que você vê.' },
+  { icone: 'diag', titulo: 'Veja o norte', texto: 'Doença, praga ou outra causa, com a certeza e o porquê.' },
 ] as const
 
 export function Diagnostico() {
@@ -40,8 +43,9 @@ export function Diagnostico() {
     return d ? { talhaoId: d.talhaoId, pontoId: d.pontoId, pendenciaId: d.pendenciaId ?? '' } : null
   })
   const [iniciado, setIniciado] = useState(() => !!useSessao.getState().diagnosticoPara)
-  const [historico, setHistorico] = useState<Passo[]>([])
+  const [eventos, setEventos] = useState<Evento[]>([])
   const [forcado, setForcado] = useState(false)
+  const [mais, setMais] = useState(0) // perguntas extras pedidas depois de um resultado inconclusivo
   const [escolhaTalhao, setEscolhaTalhao] = useState<string | undefined>(undefined) // undefined = padrão; 'nenhum' = não informar
   const [salvarAberto, setSalvarAberto] = useState(false)
   // O achado em foco vale só enquanto esta tela está aberta.
@@ -51,32 +55,39 @@ export function Diagnostico() {
   const talhao = talhoes?.find((t) => t.id === tid)
   const plano = usePlano(tid)
   const estadio = talhao?.estadio
-  const contexto = useMemo(() => ({ estadio }), [estadio])
   const pendencia = achado ? pendencias?.find((p) => p.id === achado.pendenciaId) : undefined
   const ordemPonto = achado ? plano?.pontos.find((p) => p.id === achado.pontoId)?.order : undefined
 
-  const respostas = useMemo<Respostas>(() => Object.fromEntries(historico.filter((h) => h.opcaoId).map((h) => [h.perguntaId, h.opcaoId!])), [historico])
-  const puladas = useMemo(() => new Set(historico.filter((h) => !h.opcaoId).map((h) => h.perguntaId)), [historico])
-  const ranking = useMemo(() => classificar(CANDIDATOS, respostas, contexto), [respostas, contexto])
-  const proxima = useMemo(() => proximaPergunta(PERGUNTAS, CANDIDATOS, respostas, puladas, 'onde', contexto), [respostas, puladas, contexto])
-  const progresso = useMemo(() => progressoDe(CANDIDATOS, respostas, contexto), [respostas, contexto])
+  const respostas = useMemo<Respostas>(() => Object.fromEntries(eventos.flatMap((e) => (e.t === 'resp' && e.opcaoId ? [[e.perguntaId, e.opcaoId] as const] : []))), [eventos])
+  const puladas = useMemo(() => new Set(eventos.flatMap((e) => (e.t === 'resp' && !e.opcaoId ? [e.perguntaId] : []))), [eventos])
+  const fotos = useMemo(() => eventos.flatMap((e) => (e.t === 'foto' ? [e.escolha] : [])), [eventos])
+  const ctx = useMemo(() => ({ estadio, perguntas: PERGUNTAS, fotos }), [estadio, fotos])
+  const ranking = useMemo(() => classificar(CANDIDATOS, respostas, ctx), [respostas, ctx])
+  const passo = useMemo(() => proximoPasso(PERGUNTAS, CANDIDATOS, { respostas, puladas, fotos, encerrar: forcado, mais }, { estadio }), [respostas, puladas, fotos, forcado, mais, estadio])
+  const maisPerguntas = useMemo(() => proximoPasso(PERGUNTAS, CANDIDATOS, { respostas, puladas, fotos, mais: mais + 3 }, { estadio }).tipo === 'pergunta', [respostas, puladas, fotos, mais, estadio])
+  const progresso = useMemo(() => progressoDe(CANDIDATOS, respostas, ctx), [respostas, ctx])
   const nResp = Object.keys(respostas).length
-  const encerrado = iniciado && nResp > 0 && (forcado || podeEncerrar(ranking, nResp, !!proxima))
+  const evidencias = contarEvidencias(respostas, fotos)
+  const encerrado = iniciado && nResp > 0 && passo.tipo === 'resultado'
   const conf = confiancaDe(ranking)
+  const veredito = vereditoDe(ranking, evidencias)
 
-  const recomecar = () => { setForcado(false); setHistorico([]); setIniciado(false); setAchado(null) }
+  const recomecar = () => { setForcado(false); setMais(0); setEventos([]); setIniciado(false); setAchado(null) }
   const voltar = () => {
     setForcado(false)
-    if (historico.length === 0) { setIniciado(false); return }
-    setHistorico((h) => h.slice(0, -1))
+    if (eventos.length === 0) { setIniciado(false); return }
+    setEventos((h) => h.slice(0, -1))
   }
-  const responder = (perguntaId: string, opcaoId: string | null) => setHistorico((h) => [...h, { perguntaId, opcaoId }])
+  const responder = (perguntaId: string, opcaoId: string | null) => setEventos((h) => [...h, { t: 'resp', perguntaId, opcaoId }])
+  const escolherFoto = (mostrados: string[], escolhido: string) => setEventos((h) => [...h, { t: 'foto', escolha: { mostrados, escolhido } }])
 
   async function enviar() {
-    const resp = historico.filter((h) => h.opcaoId).map((h) => { const p = PERGUNTAS.find((x) => x.id === h.perguntaId)!; return { pergunta: p.texto, resposta: p.opcoes.find((o) => o.id === h.opcaoId)?.rotulo ?? '' } })
+    const resp = eventos.flatMap((e) => { if (e.t !== 'resp' || !e.opcaoId) return []; const p = PERGUNTAS.find((x) => x.id === e.perguntaId)!; return [{ pergunta: p.texto, resposta: p.opcoes.find((o) => o.id === e.opcaoId)?.rotulo ?? '' }] })
+    const escolhidas = fotos.flatMap((f) => { const c = CANDIDATOS.find((x) => x.id === f.escolhido); return c ? [c.nome] : [] })
     const texto = mensagemParaAgronomo({
       fazenda: 'Fazenda Santa Aurora', ...(talhao ? { talhao: talhao.nome } : {}), ...(ordemPonto !== undefined ? { ponto: ordemPonto } : {}), ...(estadio ? { estadio } : {}),
-      principal: { nome: ranking[0]!.candidato.nome, ...(ranking[0]!.candidato.cientifico ? { cientifico: ranking[0]!.candidato.cientifico } : {}), confianca: conf },
+      principal: { nome: ranking[0]!.candidato.nome, ...(ranking[0]!.candidato.cientifico ? { cientifico: ranking[0]!.candidato.cientifico } : {}), confianca: conf, percentual: percentual(ranking[0]!.compat, evidencias) },
+      ...(escolhidas.length ? { fotosEscolhidas: escolhidas } : {}),
       outras: ranking.slice(1, 3).filter((r) => r.compat >= 0.05).map((r) => r.candidato.nome),
       respostas: resp, passos: ranking[0]!.candidato.proximosPassos, quando: new Date(),
     })
@@ -102,33 +113,47 @@ export function Diagnostico() {
       <>
         <div className="mx-auto mb-3 max-w-2xl">{contextoDoAchado}</div>
         <ResultadoDiagnostico
-          ranking={ranking} confianca={conf} respostas={respostas}
+          ranking={ranking} confianca={conf} respostas={respostas} fotos={fotos} evidencias={evidencias} veredito={veredito} podePerguntarMais={maisPerguntas} onMaisPerguntas={() => setMais((m) => m + 3)}
           rotuloSalvar={ordemPonto !== undefined ? `Salvar no ponto ${ordemPonto}` : 'Salvar em um ponto'}
           onSalvar={() => setSalvarAberto(true)} onEnviar={() => void enviar()} onVoltar={voltar} onRecomecar={recomecar}
         />
-        <SalvarDiagnostico aberta={salvarAberto} onFechar={() => setSalvarAberto(false)} ranking={ranking} confianca={conf} talhaoId={tid} achado={achado && achado.pendenciaId ? { pontoId: achado.pontoId, pendenciaId: achado.pendenciaId } : null} />
+        <SalvarDiagnostico aberta={salvarAberto} onFechar={() => setSalvarAberto(false)} ranking={ranking} confianca={conf} evidencias={evidencias} talhaoId={tid} achado={achado && achado.pendenciaId ? { pontoId: achado.pontoId, pendenciaId: achado.pendenciaId } : null} />
       </>
     )
   }
 
   if (iniciado) {
-    if (!proxima) {
+    if (passo.tipo === 'fotos') {
+      const mostrados = passo.candidatos.map((c) => c.id)
+      return (
+        <>
+          <h1 className="sr-only">Diagnóstico</h1>
+          <CompararFotos
+            candidatos={passo.candidatos} rodada={passo.rodada} contexto={contextoDoAchado || undefined}
+            onEscolher={(id) => escolherFoto(mostrados, id)} onNenhuma={() => escolherFoto(mostrados, 'nenhuma')} onNaoSei={() => escolherFoto(mostrados, 'nao_sei')} onVoltar={voltar}
+          />
+        </>
+      )
+    }
+    if (passo.tipo === 'resultado') {
+      // Só chega aqui sem resposta nenhuma (todas puladas): não há o que mostrar.
       return (
         <div className="mx-auto max-w-2xl space-y-4">
           <h1 className="sr-only">Diagnóstico</h1>
           <Card className="space-y-3 text-center">
-            <h2 className="text-lg">Não há mais perguntas que ajudem</h2>
+            <h2 className="text-lg">Sem respostas, não dá para ajudar</h2>
             <p className="text-text-2">Responda pelo menos uma pergunta para ver uma pista. Você pode recomeçar e tentar de novo.</p>
             <Button variant="secondary" onClick={recomecar}>Recomeçar</Button>
           </Card>
         </div>
       )
     }
+    const proxima = passo.pergunta
     return (
       <>
         <h1 className="sr-only">Diagnóstico</h1>
         <Perguntas
-          pergunta={proxima} numero={historico.length + 1} progresso={progresso} restantes={possibilidadesRestantes(ranking)} respondidas={nResp}
+          pergunta={proxima} fase={passo.fase} n={passo.n} progresso={progresso} restantes={possibilidadesRestantes(ranking)} respondidas={nResp}
           contexto={contextoDoAchado || undefined}
           onResponder={(o) => responder(proxima.id, o)} onPular={() => responder(proxima.id, null)} onVoltar={voltar} onVerResultado={() => setForcado(true)}
         />
@@ -147,7 +172,7 @@ export function Diagnostico() {
             <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-full bg-brand text-on-brand"><Icon name="diag" size={24} /></span>
             <div>
               <h2 className="text-lg">Descobrir o que é</h2>
-              <p className="mt-0.5 text-text-2">Responda o que você está vendo na planta. Leva cerca de 1 minuto e não precisa de cadastro.</p>
+              <p className="mt-0.5 text-text-2">Descubra se é doença, praga, falta de nutriente ou efeito de produto. Leva cerca de 2 minutos.</p>
             </div>
           </div>
           {talhoes.length > 0 && (
@@ -197,7 +222,7 @@ export function Diagnostico() {
           </ol>
         </section>
 
-        <p className="text-sm text-text-2">O app aponta uma pista, não dá laudo. Quem decide se aplica algum produto é o agrônomo.</p>
+        <p className="text-sm text-text-2">O app dá um norte, não a decisão final. Quem decide se aplica algum produto é o agrônomo.</p>
 
         <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface ring-1 ring-line">
           <li><Link to="/biblioteca" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="livro" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Guia de pragas e doenças</span><span className="block text-sm text-text-2">Já sabe o nome? Leia na Biblioteca.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>

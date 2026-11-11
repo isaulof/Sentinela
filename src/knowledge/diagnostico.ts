@@ -8,8 +8,9 @@ import type { Candidato, Frequencia, PerguntaFunil } from '@/domain/funil'
  * descreve e está marcado como `origem: 'projeto'` até ser conferido nas circulares. O guia aponta uma
  * pista para o agrônomo; nunca indica produto nem dose.
  *
- * Fotos: public/imagens/diagnostico/<nome-do-problema>.jpg (ver slugDe). Fotos das respostas, se houver:
- * public/imagens/diagnostico/resposta-<pergunta>-<opcao>.jpg
+ * Fotos (JPG, ~1200 px): public/imagens/diagnostico/<id-do-problema>.jpg (ex.: ferrugem.jpg, def_mn.jpg); se não existir, o app
+ * tenta o nome da Biblioteca (ferrugem-asiatica.jpg). Fotos das respostas: public/imagens/diagnostico/resposta-<pergunta>-<opcao>.jpg
+ * (ex.: resposta-mancha-pustula.jpg). Sem foto, o app mostra um ícone ou a descrição do que olhar.
  */
 
 const T: Frequencia = 'tipico'
@@ -21,19 +22,23 @@ const N: Frequencia = 'incompativel'
 export const PERGUNTAS: PerguntaFunil[] = [
   {
     id: 'onde',
+    confiabilidade: 0.95,
     texto: 'Onde está o problema?',
     dica: 'Escolha o que mais chama atenção. Se for mais de uma coisa, comece pela que está pior.',
     opcoes: [
       { id: 'folha_mancha', rotulo: 'Manchas ou pontos nas folhas', detalhe: 'Pintas, círculos, pó ou queimado', icone: 'folha' },
-      { id: 'folha_cor', rotulo: 'Folhas amarelas ou pálidas', detalhe: 'A cor mudou, sem mancha definida', icone: 'sol' },
+      { id: 'folha_cor', rotulo: 'Folhas amarelas, pálidas ou deformadas', detalhe: 'A cor mudou ou a folha enrolou, sem mancha definida', icone: 'sol' },
       { id: 'folha_comida', rotulo: 'Folhas comidas ou furadas', detalhe: 'Buracos, só as nervuras ficaram', icone: 'bicho' },
-      { id: 'vagem', rotulo: 'Vagens ou grãos', detalhe: 'Vagem chocha, grão manchado ou furado', icone: 'circulo' },
+      { id: 'vagem', rotulo: 'Vagens ou grãos', detalhe: 'Vagem chocha, grão manchado ou furado', icone: 'vagem' },
       { id: 'haste_raiz', rotulo: 'Haste ou raiz', detalhe: 'Perto do chão, apodrecendo', icone: 'raiz' },
       { id: 'murcha', rotulo: 'Planta murcha ou seca', detalhe: 'Cai, seca ou morre', icone: 'murcha' },
+      { id: 'bicho', rotulo: 'Vi um bicho na planta', detalhe: 'Lagarta, percevejo, besouro, mosquinha...', icone: 'bicho' },
     ],
   },
   {
     id: 'mancha',
+    ramos: ['folha_mancha'],
+    confiabilidade: 0.8,
     texto: 'Olhe a folha de perto. Como são as marcas?',
     dica: 'Use o zoom da câmera do celular e vire a folha: olhe também por baixo.',
     opcoes: [
@@ -42,11 +47,14 @@ export const PERGUNTAS: PerguntaFunil[] = [
       { id: 'po_branco', rotulo: 'Pó branco por cima da folha', detalhe: 'Como se tivesse polvilhado farinha', icone: 'nuvem' },
       { id: 'pardas', rotulo: 'Pontos pardos pequenos', detalhe: 'Marrom-avermelhados, com folha amarela em volta', icone: 'pontos' },
       { id: 'angular', rotulo: 'Manchas de cantos retos', detalhe: 'Parecem encharcadas, com halo amarelo', icone: 'grade' },
-      { id: 'nenhuma', rotulo: 'Sem mancha definida', detalhe: 'Só cor diferente ou queimado', icone: 'folha' },
+      { id: 'queimado', rotulo: 'Manchas secas, de queimadura', detalhe: 'Sem anéis nem pó, apareceram em poucos dias', icone: 'fogo' },
+      { id: 'nenhuma', rotulo: 'Sem mancha definida', detalhe: 'Só cor diferente', icone: 'folha' },
     ],
   },
   {
     id: 'altura',
+    ramos: ['folha_mancha', 'folha_cor', 'murcha'],
+    confiabilidade: 0.8,
     texto: 'Em que altura da planta o problema aparece?',
     dica: 'As folhas de baixo são as mais velhas; as do topo, as mais novas.',
     opcoes: [
@@ -58,17 +66,25 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'bicho',
-    texto: 'Você viu algum bicho na planta?',
-    dica: 'Balance a planta sobre um pano branco ou uma folha de papel e veja o que cai.',
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem'],
+    confiabilidade: 0.7, // é só o "jeitão": as perguntas de anatomia (patas, antenas, asas) confirmam
+    texto: 'O bicho se parece mais com qual destes?',
+    dica: 'Não precisa saber o nome. Escolha o que mais se parece com o que você viu. Se não souber, toque em "Não consigo identificar".',
     opcoes: [
-      { id: 'lagarta', rotulo: 'Lagartas', detalhe: 'Comendo folhas ou vagens', icone: 'bicho' },
-      { id: 'percevejo', rotulo: 'Percevejos', detalhe: 'Marrons ou verdes, nas plantas ou vagens', icone: 'bicho' },
-      { id: 'mosca_branca', rotulo: 'Mosquinhas brancas', detalhe: 'Voam quando se balança a planta', icone: 'nuvem' },
+      { id: 'lagarta', rotulo: 'Lagarta', detalhe: 'Corpo mole e comprido, com patinhas, anda se arrastando', icone: 'lagarta' },
+      { id: 'besouro', rotulo: 'Besouro', detalhe: 'Casca dura nas costas, pequeno, voa ao balançar a planta', icone: 'besouro' },
+      { id: 'larva', rotulo: 'Larva', detalhe: 'Branca ou creme, mole, curvada, quase sem patas; fica no solo ou dentro da planta', icone: 'larva' },
+      { id: 'percevejo', rotulo: 'Bicho achatado, em forma de escudo', detalhe: 'Duro, triangular ou como losango, às vezes com cheiro forte', icone: 'percevejo' },
+      { id: 'mosca_branca', rotulo: 'Mosquinha ou pulgão', detalhe: 'Pequeno e mole, mosquinha de asas brancas ou bolinhas verdes agrupadas', icone: 'mosquinha' },
+      { id: 'acaro', rotulo: 'Minúsculo, só com lupa', detalhe: 'Ponto que anda, às vezes com teia fina (ácaros)', icone: 'acaro' },
+      { id: 'nao_sei', rotulo: 'Não consigo identificar', detalhe: 'Vi o bicho, mas não sei a que se parece', icone: 'duvida' },
       { id: 'nenhum', rotulo: 'Nenhum bicho', icone: 'ok' },
     ],
   },
   {
     id: 'mofo',
+    ramos: ['haste_raiz', 'murcha', 'vagem'],
+    confiabilidade: 0.9,
     texto: 'Há algo branco, preto ou escuro na haste, nos galhos ou nas vagens?',
     opcoes: [
       { id: 'algodao', rotulo: 'Mofo branco, como algodão', detalhe: 'Na haste, nas axilas ou nas vagens', icone: 'nuvem' },
@@ -79,6 +95,8 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'grao',
+    ramos: ['vagem'],
+    confiabilidade: 0.85,
     texto: 'Como estão as vagens e os grãos?',
     dica: 'Abra algumas vagens e olhe os grãos.',
     opcoes: [
@@ -90,6 +108,8 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'raiz',
+    ramos: ['haste_raiz', 'murcha', 'folha_cor'],
+    confiabilidade: 0.9,
     texto: 'Arranque uma planta com cuidado. Como estão a raiz e a haste perto do chão?',
     opcoes: [
       { id: 'podre', rotulo: 'Escuras, moles ou podres', detalhe: 'Sem mofo branco', icone: 'raiz' },
@@ -100,6 +120,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'terreno',
+    confiabilidade: 0.8,
     texto: 'Como o problema aparece no terreno?',
     dica: 'Se der, suba num ponto alto ou olhe fotos de drone. O desenho no terreno diz muito.',
     opcoes: [
@@ -111,14 +132,264 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'recente',
+    confiabilidade: 0.9,
     texto: 'O que aconteceu na lavoura nos últimos dias?',
     dica: 'O tempo e o manejo recentes ajudam a separar doença, praga e problema de produto ou de clima.',
     opcoes: [
       { id: 'chuva_forte', rotulo: 'Chuva forte, vento ou granizo', icone: 'nuvem' },
       { id: 'umido', rotulo: 'Muita chuva ou dias nublados e úmidos', icone: 'gota' },
       { id: 'seco', rotulo: 'Tempo seco e muito quente', icone: 'sol' },
-      { id: 'produto', rotulo: 'Apliquei herbicida ou outro produto', detalhe: 'Na área ou em lavoura vizinha', icone: 'fogo' },
+      { id: 'produto', rotulo: 'Apliquei herbicida', detalhe: 'Na área, na safra anterior ou em lavoura vizinha', icone: 'fogo' },
+      { id: 'calda', rotulo: 'Apliquei fungicida, inseticida ou mistura', detalhe: 'Pulverização com um ou vários produtos no tanque', icone: 'gota' },
+      { id: 'adubo', rotulo: 'Adubei', detalhe: 'Cobertura, adubo foliar ou no sulco', icone: 'pontos' },
       { id: 'nada', rotulo: 'Nada de diferente', icone: 'ok' },
+    ],
+  },
+  {
+    id: 'evolucao',
+    texto: 'Como o problema andou nos últimos dias?',
+    dica: 'Doença e praga costumam avançar de uma planta para as vizinhas. Problema de produto, adubo ou clima costuma aparecer de uma vez e depois parar.',
+    ramos: ['folha_mancha', 'folha_cor', 'folha_comida', 'murcha', 'haste_raiz', 'vagem'],
+    confiabilidade: 0.8,
+    opcoes: [
+      { id: 'espalhando', rotulo: 'Está aumentando', detalhe: 'Mais plantas ou mais folhas a cada dia', icone: 'cima' },
+      { id: 'de_uma_vez', rotulo: 'Apareceu de uma vez', detalhe: 'Em poucos dias, logo depois de um evento', icone: 'fogo' },
+      { id: 'parado', rotulo: 'Parou de piorar', detalhe: 'As folhas novas saem sadias', icone: 'ok' },
+    ],
+  },
+  {
+    id: 'face_baixo',
+    texto: 'Vire a folha. O que tem na parte de baixo?',
+    dica: 'Use o zoom do celular ou uma lupa. Olhe a face de baixo de folhas do baixeiro.',
+    ramos: ['folha_mancha'],
+    confiabilidade: 0.85,
+    opcoes: [
+      { id: 'pustulas', rotulo: 'Pontinhos em relevo', detalhe: 'Bolinhas marrons ou alaranjadas, às vezes soltam pó', icone: 'lupa' },
+      { id: 'igual', rotulo: 'Só a mesma mancha de cima', detalhe: 'Sem relevo e sem pó', icone: 'folha' },
+      { id: 'po', rotulo: 'Pó ou mofo branco', icone: 'nuvem' },
+      { id: 'bichinhos', rotulo: 'Bichinhos ou teia fina', icone: 'bicho' },
+    ],
+  },
+  {
+    id: 'cor_amarelo',
+    texto: 'Como é o amarelecimento ou a deformação?',
+    dica: 'Compare com uma folha sadia. A posição do amarelo na folha ajuda a separar falta de nutriente, produto e doença.',
+    ramos: ['folha_cor'],
+    confiabilidade: 0.7,
+    opcoes: [
+      { id: 'entre_nervuras', rotulo: 'Entre as nervuras', detalhe: 'As nervuras ficam verdes, como uma rede', icone: 'grade' },
+      { id: 'bordas', rotulo: 'Nas bordas da folha', detalhe: 'Amarelo que vira marrom e seca da ponta para dentro', icone: 'faixas' },
+      { id: 'uniforme', rotulo: 'A folha toda clara', detalhe: 'Verde-pálido, sem desenho', icone: 'sol' },
+      { id: 'deformada', rotulo: 'Enrolada ou deformada', detalhe: 'Em concha, encarquilhada, nervuras tortas', icone: 'murcha' },
+      { id: 'arroxeado', rotulo: 'Arroxeada ou avermelhada', detalhe: 'Nas nervuras ou na folha inteira', icone: 'fogo' },
+    ],
+  },
+  {
+    id: 'dano',
+    texto: 'Como é o estrago na folha?',
+    dica: 'Olhe uma folha atacada de perto e vire para ver o outro lado.',
+    ramos: ['folha_comida'],
+    confiabilidade: 0.85,
+    opcoes: [
+      { id: 'furos', rotulo: 'Furos redondos pequenos', icone: 'pontos' },
+      { id: 'rendilhada', rotulo: 'Folha rendilhada', detalhe: 'Sobram só as nervuras, como renda', icone: 'grade' },
+      { id: 'raspada', rotulo: 'Raspada ou prateada', detalhe: 'Parece lixada, com teia fina', icone: 'lupa' },
+      { id: 'rasgada', rotulo: 'Rasgada ou esfiapada', detalhe: 'Bordas irregulares', icone: 'faixas' },
+    ],
+  },
+  {
+    id: 'asas',
+    requer: ['bicho'],
+    so: { bicho: ['nao_sei'] }, // anatomia geral: só para quem não soube dizer a que o bicho se parece
+    texto: 'O bicho tem asas? Como são as costas dele?',
+    dica: 'Se der, pegue um com cuidado e olhe de perto (celular com zoom ajuda).',
+    ramos: ['bicho', 'folha_comida', 'vagem'],
+    confiabilidade: 0.85,
+    opcoes: [
+      { id: 'escudo', rotulo: 'Costas achatadas, em escudo', detalhe: 'Parte de trás mais fina, como losango', icone: 'percevejo' },
+      { id: 'casca_dura', rotulo: 'Casca dura, lisa e arredondada', detalhe: 'Como um besourinho', icone: 'besouro' },
+      { id: 'brancas', rotulo: 'Asas pequenas, brancas ou claras', detalhe: 'Mosquinha que sai voando', icone: 'mosquinha' },
+      { id: 'sem', rotulo: 'Sem asas', detalhe: 'Só corpo mole ou minúsculo', icone: 'larva' },
+    ],
+  },
+  {
+    id: 'antenas',
+    requer: ['bicho'],
+    so: { bicho: ['nao_sei'] }, // anatomia geral: só para quem não soube dizer a que o bicho se parece
+    texto: 'O bicho tem antenas?',
+    dica: 'Antenas são os fios finos na cabeça. Em bicho pequeno, use o zoom do celular.',
+    ramos: ['bicho', 'folha_comida', 'vagem'],
+    confiabilidade: 0.75,
+    opcoes: [
+      { id: 'longas', rotulo: 'Sim, longas', detalhe: 'Quase do tamanho do corpo', icone: 'besouro' },
+      { id: 'curtas', rotulo: 'Sim, curtas', detalhe: 'Pequenas, perto da cabeça', icone: 'percevejo' },
+      { id: 'nao', rotulo: 'Não tem ou não vejo', icone: 'lagarta' },
+    ],
+  },
+  {
+    id: 'patas',
+    requer: ['bicho'],
+    so: { bicho: ['nao_sei'] }, // anatomia geral: só para quem não soube dizer a que o bicho se parece
+    texto: 'Olhe as patas do bicho de perto. Quantas tem?',
+    dica: 'Use o zoom do celular. Se não conseguir contar, toque em "Não consigo ver isso".',
+    ramos: ['bicho', 'folha_comida', 'vagem'],
+    confiabilidade: 0.8,
+    opcoes: [
+      { id: 'seis', rotulo: '3 pares de patas (6 patas)', detalhe: 'Só as patas da frente, nada na barriga', icone: 'besouro' },
+      { id: 'seis_carnudas', rotulo: '6 patas e patinhas carnudas na barriga', detalhe: 'Típico de lagartas', icone: 'lagarta' },
+      { id: 'oito', rotulo: '4 pares de patas (8 patas)', detalhe: 'Ácaros e aranhinhas', icone: 'acaro' },
+    ],
+  },
+  {
+    id: 'tamanho',
+    requer: ['bicho'],
+    exceto: { bicho: ['nenhum'] },
+    texto: 'Qual o tamanho do bicho?',
+    dica: 'Compare com algo que você conhece: um grão de arroz, a unha do dedo.',
+    ramos: ['bicho', 'folha_comida', 'vagem', 'folha_cor'],
+    confiabilidade: 0.75,
+    opcoes: [
+      { id: 'minusculo', rotulo: 'Menor que 2 mm', detalhe: 'Ponto que anda, quase não se vê', icone: 'regua' },
+      { id: 'pequeno', rotulo: 'De 2 a 6 mm', detalhe: 'Como um grão de arroz', icone: 'regua' },
+      { id: 'medio', rotulo: 'De 6 a 15 mm', detalhe: 'Do tamanho da unha', icone: 'regua' },
+      { id: 'grande', rotulo: 'Maior que 15 mm', detalhe: 'Como um dedo mindinho', icone: 'regua' },
+    ],
+  },
+  {
+    id: 'cor_bicho',
+    requer: ['bicho'],
+    exceto: { bicho: ['nenhum'] },
+    texto: 'Qual a cor do bicho?',
+    ramos: ['bicho', 'folha_comida', 'vagem'],
+    confiabilidade: 0.8,
+    opcoes: [
+      { id: 'marrom', rotulo: 'Marrom', cor: '#8a5a2b' },
+      { id: 'verde', rotulo: 'Verde', cor: '#4f9d3d' },
+      { id: 'listrado', rotulo: 'Com listras claras e escuras', cor: 'repeating-linear-gradient(135deg, #d9c9a3 0 5px, #4a3b27 5px 10px)' },
+      { id: 'branco', rotulo: 'Branco ou amarelado', cor: '#f5f2e9' },
+      { id: 'escuro', rotulo: 'Preto ou cinza escuro', cor: '#2c2c2c' },
+    ],
+  },
+  {
+    id: 'andar',
+    requer: ['bicho'],
+    so: { bicho: ['lagarta', 'nao_sei'] },
+    texto: 'Se for lagarta: como ela anda?',
+    dica: 'Observe uma lagarta andando na folha por alguns segundos.',
+    ramos: ['bicho', 'folha_comida', 'vagem'],
+    confiabilidade: 0.75,
+    opcoes: [
+      { id: 'mede_palmo', rotulo: 'Arqueia o corpo, como medindo palmo', detalhe: 'Dobra no meio ao andar', icone: 'lagarta' },
+      { id: 'normal', rotulo: 'Anda esticada, normal', detalhe: 'Pode se enrolar ao ser tocada', icone: 'seta' },
+      { id: 'nao_lagarta', rotulo: 'Não é lagarta', icone: 'cruzar' },
+    ],
+  },
+  {
+    id: 'local_bicho',
+    requer: ['bicho'],
+    exceto: { bicho: ['nenhum'] },
+    texto: 'Onde o bicho estava?',
+    ramos: ['bicho', 'folha_comida', 'vagem'],
+    confiabilidade: 0.9,
+    opcoes: [
+      { id: 'folha_baixo', rotulo: 'Na face de baixo da folha', icone: 'baixo' },
+      { id: 'folha_cima', rotulo: 'Em cima da folha ou no ponteiro', icone: 'cima' },
+      { id: 'vagem', rotulo: 'Na vagem ou nas flores', icone: 'vagem' },
+      { id: 'haste', rotulo: 'Na haste', icone: 'broto' },
+      { id: 'solo', rotulo: 'No solo ou na raiz', icone: 'raiz' },
+    ],
+  },
+  {
+    id: 'dentro_haste',
+    texto: 'Corte a haste ao meio. Como está por dentro?',
+    dica: 'Use uma faca ou canivete e abra a haste perto do chão.',
+    ramos: ['haste_raiz', 'murcha'],
+    confiabilidade: 0.85,
+    opcoes: [
+      { id: 'escura', rotulo: 'Marrom ou escurecida', detalhe: 'Podre ou com listras escuras', icone: 'raiz' },
+      { id: 'pontos_pretos', rotulo: 'Pontos pretos duros ou algodão branco', detalhe: 'Escleródios ou micélio', icone: 'circulo' },
+      { id: 'sadia', rotulo: 'Branca e sadia', icone: 'ok' },
+      { id: 'oca', rotulo: 'Oca ou com larva dentro', icone: 'larva' },
+    ],
+  },
+  {
+    id: 'patas_barriga',
+    requer: ['bicho'],
+    so: { bicho: ['lagarta'] },
+    texto: 'Olhe a barriga da lagarta: as patinhas carnudas.',
+    dica: 'Vire a lagarta com cuidado e olhe de lado. Contar a olho nu é difícil; se não der, toque em "Não consigo ver isso".',
+    ramos: ['bicho', 'folha_comida', 'vagem'],
+    confiabilidade: 0.7,
+    opcoes: [
+      { id: 'poucas', rotulo: 'Poucas, só no fim do corpo', detalhe: 'O meio da barriga é liso; ela arqueia ao andar', icone: 'menos' },
+      { id: 'varias', rotulo: 'Várias, ao longo da barriga', detalhe: 'Anda esticada, sem arquear', icone: 'mais1' },
+    ],
+  },
+  {
+    id: 'besouro_tipo',
+    requer: ['bicho'],
+    so: { bicho: ['besouro'] },
+    texto: 'Como é o besouro?',
+    dica: 'Olhe de perto, com o zoom do celular.',
+    ramos: ['bicho', 'folha_comida', 'vagem'],
+    confiabilidade: 0.8,
+    opcoes: [
+      { id: 'manchas_pretas', rotulo: 'Verde-amarelado, com manchas pretas', detalhe: 'Como uma joaninha comprida', icone: 'pontos' },
+      { id: 'liso', rotulo: 'Escuro, liso, sem desenho', detalhe: 'Marrom, preto ou cinza', icone: 'circulo' },
+      { id: 'bico', rotulo: 'Tem um "bico" comprido na frente', detalhe: 'Cabeça alongada, como um focinho', icone: 'seta' },
+    ],
+  },
+  {
+    id: 'sacudir',
+    requer: ['bicho'],
+    so: { bicho: ['besouro', 'mosca_branca', 'nao_sei'] },
+    texto: 'O que acontece quando você balança a planta?',
+    dica: 'Balance uma planta com o bicho sobre um pano branco ou uma folha de papel.',
+    ramos: ['bicho', 'folha_comida', 'vagem', 'folha_cor'],
+    confiabilidade: 0.85,
+    opcoes: [
+      { id: 'voa', rotulo: 'Sai voando', detalhe: 'Uma nuvem de bichinhos levanta', icone: 'mosquinha' },
+      { id: 'cai_parado', rotulo: 'Cai e fica parado, como morto', icone: 'besouro' },
+      { id: 'fica_agarrado', rotulo: 'Fica agarrado, em grupo', detalhe: 'Colônia de bolinhas moles que não sai', icone: 'pontos' },
+    ],
+  },
+  {
+    id: 'larva_dano',
+    requer: ['bicho'],
+    so: { bicho: ['larva'] },
+    texto: 'O que a larva fez na planta?',
+    ramos: ['bicho', 'haste_raiz', 'murcha', 'folha_comida'],
+    confiabilidade: 0.85,
+    opcoes: [
+      { id: 'raiz_comida', rotulo: 'Comeu as raízes', detalhe: 'A planta se arranca fácil, sem raiz', icone: 'raiz' },
+      { id: 'cortou_colo', rotulo: 'Cortou a planta rente ao chão', detalhe: 'Planta nova caída, com tubinho de seda e terra', icone: 'broto' },
+      { id: 'haste_quebra', rotulo: 'Deixou a haste com galhas ou quebrada', detalhe: 'A larva fica dentro da haste', icone: 'murcha' },
+    ],
+  },
+  {
+    id: 'faixa_costas',
+    requer: ['bicho'],
+    so: { bicho: ['percevejo'] },
+    texto: 'O percevejo tem uma faixa clara atravessando as costas?',
+    dica: 'Olhe o bicho de cima, de perto.',
+    ramos: ['bicho', 'vagem', 'folha_comida'],
+    confiabilidade: 0.75,
+    opcoes: [
+      { id: 'com_faixa', rotulo: 'Sim, uma faixa clara ou avermelhada', icone: 'faixas' },
+      { id: 'sem_faixa', rotulo: 'Não, o corpo é de uma cor só', icone: 'circulo' },
+    ],
+  },
+  {
+    id: 'teia',
+    requer: ['bicho'],
+    so: { bicho: ['acaro'] },
+    texto: 'Há teia muito fina na face de baixo da folha?',
+    dica: 'Use lupa ou o zoom do celular. É comum em tempo seco e quente.',
+    ramos: ['bicho', 'folha_cor', 'folha_mancha', 'folha_comida'],
+    confiabilidade: 0.8,
+    opcoes: [
+      { id: 'sim', rotulo: 'Sim, com bichinhos minúsculos', icone: 'lupa' },
+      { id: 'nao', rotulo: 'Não vejo teia', icone: 'cruzar' },
     ],
   },
 ]
@@ -126,7 +397,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
 const FOTO = 'Tire uma foto da planta e outra da área toda e marque o ponto no mapa.'
 const AGRONOMO = 'Leve as fotos ao agrônomo: a decisão de aplicar é dele.'
 
-export const CANDIDATOS: Candidato[] = [
+const BASE: Candidato[] = [
   {
     id: 'ferrugem', nome: 'Ferrugem-asiática', cientifico: 'Phakopsora pachyrhizi', tipo: 'doenca', alvo: 'ferrugem', origem: 'projeto', fontes: ['ct188'],
     resumo: 'Pontinhos ou pústulas por baixo das folhas, começando pelas de baixo, são o sinal típico. Evolui para manchas marrons, amarelecimento e queda das folhas.',
@@ -155,7 +426,7 @@ export const CANDIDATOS: Candidato[] = [
     perfil: {
       recente: { chuva_forte: P, umido: C, seco: R, produto: P },
       onde: { folha_mancha: T, folha_cor: P, folha_comida: N, vagem: R, haste_raiz: R, murcha: R },
-      mancha: { alvo: T, pardas: P, pustula: R, po_branco: N, angular: P, nenhuma: R },
+      mancha: { alvo: T, pardas: P, pustula: P, po_branco: N, angular: P, nenhuma: R },
       altura: { baixo: C, meio: T, topo: P, toda: P },
       bicho: { nenhum: C, lagarta: R, percevejo: R, mosca_branca: R },
       mofo: { nada: C, algodao: N, preto_duro: N, manchas_escuras: R },
@@ -238,13 +509,13 @@ export const CANDIDATOS: Candidato[] = [
   {
     id: 'bacteriose', nome: 'Pústula e crestamento bacteriano', cientifico: 'Xanthomonas e Pseudomonas', tipo: 'doenca', origem: 'projeto', fontes: ['projeto'],
     resumo: 'Manchas de cantos retos, com aspecto encharcado e halo amarelo, que depois secam e podem rasgar a folha. Costumam aparecer depois de chuva com vento ou granizo.',
-    confundeCom: ['Ferrugem-asiática', 'Doenças de final de ciclo'],
+    confundeCom: ['Ferrugem-asiática', 'Doenças de final de ciclo', 'Queima por herbicida de contato', 'Queima por calda ou aplicação (mistura, hora quente)'],
     comoConfirmar: ['Olhe a mancha contra a luz: o halo amarelo e a borda reta ajudam.', 'Pergunte se houve chuva forte, vento ou granizo nos dias anteriores.'],
     proximosPassos: [FOTO, 'Anote chuvas e granizo recentes.', AGRONOMO],
     perfil: {
-      recente: { chuva_forte: T, umido: C, seco: R, produto: P },
+      recente: { chuva_forte: T, umido: C, seco: P, produto: P },
       onde: { folha_mancha: T, folha_cor: P, folha_comida: R, vagem: R, haste_raiz: N, murcha: N },
-      mancha: { angular: T, pardas: P, pustula: P, alvo: R, po_branco: N, nenhuma: R },
+      mancha: { angular: T, pardas: C, pustula: P, alvo: R, po_branco: N, nenhuma: R },
       altura: { meio: C, topo: C, baixo: P, toda: P },
       bicho: { nenhum: C, lagarta: R, percevejo: R, mosca_branca: R },
       mofo: { nada: C, algodao: N, preto_duro: N, manchas_escuras: R },
@@ -296,7 +567,7 @@ export const CANDIDATOS: Candidato[] = [
       recente: { chuva_forte: P, umido: P, seco: P, produto: P },
       onde: { vagem: T, folha_mancha: R, folha_cor: R, folha_comida: N, haste_raiz: N, murcha: R },
       mancha: { nenhuma: T, pardas: R, alvo: N, po_branco: N, pustula: N, angular: N },
-      bicho: { percevejo: T, nenhum: R, lagarta: P, mosca_branca: R },
+      bicho: { percevejo: T, nenhum: P, lagarta: P, mosca_branca: R }, // percevejo costuma se esconder: não ver o bicho é comum
       mofo: { nada: C, manchas_escuras: R, algodao: N, preto_duro: N },
       grao: { chochas_manchadas: T, normais: P, furadas: R, manchas_vagem: P },
       raiz: { normal: C, podre: R, mofo_branco: N, galhas: N },
@@ -358,40 +629,6 @@ export const CANDIDATOS: Candidato[] = [
     },
   },
   {
-    id: 'nutriente', nome: 'Falta de nutriente', tipo: 'abiotico', origem: 'projeto', fontes: ['projeto'],
-    resumo: 'Amarelecimento sem mancha definida, sem bicho e sem mofo. Nas folhas de baixo costuma ser nutriente que a planta move (como nitrogênio ou potássio); nas de cima, nutriente que ela não move (como enxofre, ferro ou manganês). Não é doença: fungicida não resolve.',
-    confundeCom: ['Efeito de herbicida', 'Mosca-branca', 'Nematoides'],
-    comoConfirmar: ['Compare com uma planta sadia da mesma área.', 'Peça análise de solo e de folha para saber qual nutriente falta.'],
-    proximosPassos: [FOTO, 'Confira se as raízes têm nódulos (bolinhas), que fornecem nitrogênio à soja.', 'Peça ao agrônomo análise de solo e de folha.'],
-    perfil: {
-      recente: { chuva_forte: P, umido: P, seco: P, produto: P },
-      onde: { folha_cor: T, folha_mancha: P, folha_comida: N, vagem: R, haste_raiz: R, murcha: R },
-      mancha: { nenhuma: T, pardas: P, alvo: N, po_branco: N, pustula: N, angular: R },
-      altura: { baixo: C, topo: C, toda: C, meio: P },
-      bicho: { nenhum: T, lagarta: R, percevejo: R, mosca_branca: R },
-      mofo: { nada: T, algodao: N, preto_duro: N, manchas_escuras: R },
-      raiz: { normal: C, podre: R, mofo_branco: N, galhas: P },
-      terreno: { uniforme: T, reboleira: C, faixas: P, isoladas: P },
-    },
-  },
-  {
-    id: 'fitotoxidez', nome: 'Efeito de herbicida ou outro produto', tipo: 'abiotico', origem: 'projeto', fontes: ['fitotoxicidade'],
-    resumo: 'Folhas amareladas, queimadas ou deformadas, sem doença nem bicho. A Embrapa lembra que os sintomas variam com o produto e podem ser parecidos com os de outras causas. Faixas retas que seguem a máquina apontam para falha de aplicação ou deriva.',
-    confundeCom: ['Falta de nutriente', 'Doenças foliares'],
-    comoConfirmar: ['Veja no caderno de operações o que foi aplicado ali e quando.', 'Meça a largura da faixa e compare com a barra do pulverizador.', 'Plantas novas, que nasceram depois, estão sadias?'],
-    proximosPassos: [FOTO, 'Documente o local e a data, como a Embrapa recomenda.', 'Fale com o agrônomo antes de aplicar qualquer produto: não é doença.'],
-    perfil: {
-      recente: { chuva_forte: P, umido: R, seco: P, produto: T },
-      onde: { folha_cor: T, folha_mancha: C, folha_comida: R, vagem: R, haste_raiz: N, murcha: P },
-      mancha: { nenhuma: C, pardas: P, angular: R, alvo: N, po_branco: N, pustula: N },
-      altura: { topo: C, toda: C, meio: P, baixo: P },
-      bicho: { nenhum: T, lagarta: R, percevejo: R, mosca_branca: R },
-      mofo: { nada: T, algodao: N, preto_duro: N, manchas_escuras: R },
-      raiz: { normal: C, podre: R, mofo_branco: N, galhas: N },
-      terreno: { faixas: T, uniforme: C, reboleira: R, isoladas: P },
-    },
-  },
-  {
     id: 'estresse', nome: 'Estresse hídrico, calor ou solo duro', tipo: 'abiotico', origem: 'projeto', fontes: ['projeto'],
     resumo: 'Planta murcha, com raiz e haste normais, sem bicho nem doença. Costuma ser falta de água, calor forte ou solo compactado que impede a raiz de aprofundar.',
     confundeCom: ['Podridões de raiz', 'Nematoides'],
@@ -410,3 +647,551 @@ export const CANDIDATOS: Candidato[] = [
     },
   },
 ]
+
+/** Entradas comuns às causas não vivas: sem bicho e sem mofo. */
+const SEM_BICHO = {
+  bicho: { nenhum: T, lagarta: R, percevejo: R, mosca_branca: R, besouro: R, acaro: R },
+  mofo: { nada: T, algodao: N, preto_duro: N, manchas_escuras: R },
+}
+const SADIO_SEM_GALHA = { normal: C, podre: R, mofo_branco: N, galhas: R }
+
+const NOVOS: Candidato[] = [
+  // ── Falta de nutriente: separada por onde aparece e como é o amarelo ──
+  {
+    id: 'def_k', nome: 'Falta de potássio', tipo: 'abiotico', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Amarelo que começa nas bordas das folhas de baixo e depois seca e fica marrom, da ponta para dentro. É comum em solo arenoso e depois de período seco. Não é doença: fungicida não resolve.',
+    confundeCom: ['Doenças de final de ciclo', 'Falta de magnésio', 'Queima por adubo'],
+    comoConfirmar: ['As folhas de baixo (mais velhas) estão piores que as de cima?', 'Compare com uma planta sadia da mesma área.', 'Peça análise de solo e de folha.'],
+    proximosPassos: [FOTO, 'Peça ao agrônomo análise de solo e de folha.', 'Anote o que foi adubado nesse talhão.'],
+    perfil: {
+      ...SEM_BICHO, raiz: SADIO_SEM_GALHA,
+      recente: { seco: C, umido: P, chuva_forte: P, produto: P, calda: P, adubo: P },
+      onde: { folha_cor: T, folha_mancha: C, folha_comida: N, vagem: P, haste_raiz: R, murcha: R, bicho: R },
+      mancha: { nenhuma: T, queimado: C, pardas: P, alvo: N, po_branco: N, pustula: N, angular: N },
+      altura: { baixo: T, meio: C, topo: R, toda: P },
+      cor_amarelo: { bordas: T, uniforme: P, entre_nervuras: R, deformada: N, arroxeado: R },
+      evolucao: { espalhando: C, parado: C, de_uma_vez: R },
+      terreno: { uniforme: C, reboleira: C, faixas: P, isoladas: R },
+    },
+  },
+  {
+    id: 'def_mg', nome: 'Falta de magnésio', tipo: 'abiotico', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Amarelo entre as nervuras das folhas de baixo, com as nervuras ficando verdes como uma rede. Aparece em solo ácido ou arenoso. Não é doença.',
+    confundeCom: ['Falta de manganês', 'Resíduo de herbicida', 'Podridões de raiz (morte súbita)'],
+    comoConfirmar: ['O amarelo está entre as nervuras, que continuam verdes?', 'Está nas folhas mais velhas (de baixo)?', 'Peça análise de solo e de folha.'],
+    proximosPassos: [FOTO, 'Peça ao agrônomo análise de solo e de folha.'],
+    perfil: {
+      ...SEM_BICHO, raiz: SADIO_SEM_GALHA,
+      recente: { seco: P, umido: P, chuva_forte: P, produto: P, calda: P, adubo: P },
+      onde: { folha_cor: T, folha_mancha: P, folha_comida: N, vagem: R, haste_raiz: R, murcha: R, bicho: R },
+      mancha: { nenhuma: T, pardas: P, queimado: R, alvo: N, po_branco: N, pustula: N, angular: R },
+      altura: { baixo: T, meio: C, topo: R, toda: P },
+      cor_amarelo: { entre_nervuras: T, bordas: P, uniforme: P, deformada: N, arroxeado: R },
+      evolucao: { espalhando: C, parado: C, de_uma_vez: R },
+      terreno: { reboleira: C, uniforme: C, faixas: P, isoladas: R },
+    },
+  },
+  {
+    id: 'def_mn', nome: 'Falta de manganês', tipo: 'abiotico', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Amarelo entre as nervuras das folhas de cima (as novas), com aspecto de rede verde. É frequente em solo com muita calagem ou pH alto e pode aparecer depois de aplicações na soja tolerante a glifosato. Não é doença.',
+    confundeCom: ['Falta de magnésio', 'Resíduo de herbicida', 'Mosca-branca'],
+    comoConfirmar: ['O amarelo está nas folhas novas, do ponteiro?', 'Nervuras verdes e o resto amarelo?', 'Peça análise de folha: é o jeito de ter certeza.'],
+    proximosPassos: [FOTO, 'Anote a calagem e o que foi aplicado recentemente.', 'Peça ao agrônomo análise de folha.'],
+    perfil: {
+      ...SEM_BICHO, raiz: SADIO_SEM_GALHA,
+      recente: { produto: C, seco: P, umido: P, chuva_forte: P, calda: P, adubo: P },
+      onde: { folha_cor: T, folha_mancha: P, folha_comida: N, vagem: R, haste_raiz: R, murcha: R, bicho: R },
+      mancha: { nenhuma: T, pardas: P, queimado: R, alvo: N, po_branco: N, pustula: N, angular: R },
+      altura: { topo: T, meio: C, baixo: R, toda: P },
+      cor_amarelo: { entre_nervuras: T, uniforme: P, bordas: R, deformada: R, arroxeado: R },
+      evolucao: { espalhando: C, parado: C, de_uma_vez: P },
+      terreno: { reboleira: C, uniforme: C, faixas: P, isoladas: R },
+    },
+  },
+  {
+    id: 'def_n', nome: 'Falta de nitrogênio (nódulos fracos)', tipo: 'abiotico', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Folhas de baixo amarelas e pálidas por inteiro, planta fraca. Na soja, o nitrogênio vem dos nódulos das raízes: se eles faltam ou estão brancos por dentro, a planta amarela.',
+    confundeCom: ['Falta de enxofre', 'Nematoides', 'Estresse hídrico'],
+    comoConfirmar: ['Arranque uma planta e corte alguns nódulos: por dentro devem estar rosados; brancos ou verdes indicam nódulo fraco.', 'Compare com planta sadia da mesma área.'],
+    proximosPassos: [FOTO, 'Fotografe as raízes e os nódulos cortados.', 'Peça ao agrônomo para avaliar a nodulação.'],
+    perfil: {
+      ...SEM_BICHO,
+      recente: { seco: P, umido: P, chuva_forte: P, produto: P, calda: P, adubo: P },
+      onde: { folha_cor: T, folha_mancha: R, folha_comida: N, vagem: R, haste_raiz: R, murcha: P, bicho: R },
+      mancha: { nenhuma: T, pardas: R, queimado: R, alvo: N, po_branco: N, pustula: N, angular: N },
+      altura: { baixo: T, toda: C, meio: P, topo: R },
+      cor_amarelo: { uniforme: T, bordas: P, entre_nervuras: P, deformada: N, arroxeado: P },
+      evolucao: { espalhando: C, parado: C, de_uma_vez: R },
+      terreno: { uniforme: C, reboleira: C, faixas: R, isoladas: P },
+      raiz: { normal: C, galhas: P, podre: P, mofo_branco: N },
+    },
+  },
+
+  // ── Produto aplicado: o que de fato acontece na lavoura ──
+  {
+    id: 'herb_hormonal', nome: 'Deriva de herbicida hormonal (como o 2,4-D)', tipo: 'abiotico', origem: 'projeto', fontes: ['fitotoxicidade'],
+    resumo: 'Folhas do ponteiro enroladas, em concha ou encarquilhadas, nervuras tortas e haste torcida. É o clássico da deriva: o produto aplicado em outra cultura (ou pelo vizinho) o vento leva até a soja, mais na borda.',
+    confundeCom: ['Vírus', 'Resíduo de herbicida ALS', 'Falta de cálcio ou boro'],
+    comoConfirmar: ['O problema é maior na borda do lado de onde veio o vento?', 'Confira no caderno quem aplicou o quê, e quando, nos arredores.', 'As folhas que nasceram depois estão normais?'],
+    proximosPassos: [FOTO, 'Fotografe a borda e anote a direção do vento no dia da aplicação.', 'Fale com o agrônomo: pode precisar de registro formal da ocorrência.'],
+    perfil: {
+      ...SEM_BICHO, raiz: { normal: C, podre: R, mofo_branco: N, galhas: N },
+      recente: { produto: T, calda: P, chuva_forte: P, seco: P, umido: R, adubo: R },
+      onde: { folha_cor: T, folha_mancha: P, folha_comida: N, vagem: R, haste_raiz: P, murcha: R, bicho: R },
+      mancha: { nenhuma: T, queimado: P, pardas: R, alvo: N, po_branco: N, pustula: N, angular: R },
+      altura: { topo: T, toda: C, meio: P, baixo: R },
+      cor_amarelo: { deformada: T, uniforme: P, bordas: R, entre_nervuras: R, arroxeado: R },
+      evolucao: { de_uma_vez: C, parado: C, espalhando: P },
+      terreno: { faixas: T, uniforme: C, reboleira: R, isoladas: P },
+    },
+  },
+  {
+    id: 'herb_contato', nome: 'Queima por herbicida de contato', tipo: 'abiotico', origem: 'projeto', fontes: ['fitotoxicidade'],
+    resumo: 'Manchas secas de queimadura, ou folhas queimadas nas bordas, poucos dias depois de aplicar herbicida. As folhas que nascem depois saem normais e o problema não se espalha de planta para planta.',
+    confundeCom: ['Bacteriose', 'Queima por calda', 'Mancha-alvo'],
+    comoConfirmar: ['Surgiu poucos dias depois de uma aplicação?', 'As folhas novas, que nasceram depois, estão sadias?', 'Procure o desenho da barra do pulverizador (faixas, sobreposição).'],
+    proximosPassos: [FOTO, 'Anote a data da aplicação e o que foi aplicado (olhe o caderno de operações).', 'Fale com o agrônomo antes de aplicar qualquer outro produto: não é doença.'],
+    perfil: {
+      ...SEM_BICHO, raiz: { normal: C, podre: R, mofo_branco: N, galhas: N },
+      recente: { produto: T, calda: P, chuva_forte: P, seco: P, umido: R, adubo: R },
+      onde: { folha_mancha: T, folha_cor: C, folha_comida: R, vagem: R, haste_raiz: R, murcha: R, bicho: R },
+      mancha: { queimado: T, pardas: P, angular: P, nenhuma: P, alvo: N, po_branco: N, pustula: N },
+      altura: { topo: C, meio: C, toda: C, baixo: P },
+      face_baixo: { igual: T, pustulas: N, po: N, bichinhos: N },
+      cor_amarelo: { uniforme: P, bordas: P, entre_nervuras: R, deformada: R, arroxeado: R },
+      evolucao: { de_uma_vez: T, parado: C, espalhando: R },
+      terreno: { faixas: T, uniforme: C, reboleira: R, isoladas: P },
+    },
+  },
+  {
+    id: 'herb_als', nome: 'Resíduo de herbicida no solo (efeito residual)', tipo: 'abiotico', origem: 'projeto', fontes: ['fitotoxicidade'],
+    resumo: 'Plantas pequenas e fracas, com amarelo e nervuras arroxeadas ou avermelhadas, raiz curta. Vem de herbicida usado na safra anterior que ficou no solo e aparece em faixas ou em manchas, sem se espalhar como doença.',
+    confundeCom: ['Falta de magnésio', 'Nematoides', 'Solo compactado'],
+    comoConfirmar: ['O que foi aplicado na cultura anterior nessa área?', 'A raiz está curta e grossa?', 'Aparece em faixas ou manchas que seguem a aplicação anterior?'],
+    proximosPassos: [FOTO, 'Anote o histórico de produtos usados nesse talhão na safra anterior.', 'Fale com o agrônomo: o histórico de herbicidas é a pista principal.'],
+    perfil: {
+      ...SEM_BICHO,
+      recente: { produto: C, seco: P, umido: P, chuva_forte: P, calda: P, adubo: P },
+      onde: { folha_cor: T, murcha: P, folha_mancha: P, folha_comida: N, vagem: R, haste_raiz: P, bicho: R },
+      mancha: { nenhuma: T, pardas: R, queimado: R, alvo: N, po_branco: N, pustula: N, angular: N },
+      altura: { toda: T, topo: C, meio: P, baixo: P },
+      cor_amarelo: { arroxeado: T, entre_nervuras: C, uniforme: C, deformada: P, bordas: R },
+      evolucao: { parado: C, espalhando: P, de_uma_vez: R },
+      terreno: { faixas: C, reboleira: C, uniforme: C, isoladas: R },
+      raiz: { normal: C, podre: P, mofo_branco: N, galhas: R },
+    },
+  },
+  {
+    id: 'calda', nome: 'Queima por calda ou aplicação (mistura, hora quente)', tipo: 'abiotico', origem: 'projeto', fontes: ['fitotoxicidade'],
+    resumo: 'Manchas ou pontos queimados nas folhas logo depois de uma pulverização de fungicida, inseticida ou mistura de produtos, principalmente em hora quente ou com muitos produtos no tanque. Se a barra sobrepõe, aparecem faixas.',
+    confundeCom: ['Queima por herbicida de contato', 'Bacteriose', 'Doenças de final de ciclo'],
+    comoConfirmar: ['Apareceu poucos dias depois de aplicar? Em que horário foi aplicado?', 'Em faixas que seguem a passada do pulverizador?', 'As folhas novas, que nasceram depois, estão sadias?'],
+    proximosPassos: [FOTO, 'Anote o que foi misturado no tanque, a data e o horário.', 'Fale com o agrônomo: ele avalia se é queima da calda e se compensa tratar de novo.'],
+    perfil: {
+      ...SEM_BICHO, raiz: { normal: C, podre: R, mofo_branco: N, galhas: N },
+      recente: { calda: T, produto: P, seco: C, chuva_forte: P, umido: R, adubo: R },
+      onde: { folha_mancha: T, folha_cor: P, folha_comida: R, vagem: R, haste_raiz: R, murcha: R, bicho: R },
+      mancha: { queimado: T, pardas: C, angular: P, nenhuma: P, alvo: N, po_branco: N, pustula: N },
+      altura: { toda: C, topo: C, meio: C, baixo: P },
+      face_baixo: { igual: T, pustulas: N, po: N, bichinhos: N },
+      cor_amarelo: { uniforme: P, bordas: P, entre_nervuras: R, deformada: R, arroxeado: R },
+      evolucao: { de_uma_vez: T, parado: C, espalhando: R },
+      terreno: { faixas: C, uniforme: C, reboleira: R, isoladas: P },
+    },
+  },
+  {
+    id: 'adubo_queima', nome: 'Queima por adubo (cobertura ou foliar)', tipo: 'abiotico', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Pontos ou bordas queimadas nas folhas depois de adubar, principalmente cloreto de potássio ou ureia a lanço caindo na folha molhada, ou adubo foliar forte. Também o sal do adubo no sulco pode queimar a plântula.',
+    confundeCom: ['Falta de potássio', 'Queima por calda', 'Bacteriose'],
+    comoConfirmar: ['Apareceu poucos dias depois da adubação?', 'Os pontos queimados têm cara de ter caído sobre a folha (granulado)?', 'A distribuição acompanha a passada da máquina?'],
+    proximosPassos: [FOTO, 'Anote o produto e a data da adubação.', 'Fale com o agrônomo.'],
+    perfil: {
+      ...SEM_BICHO, raiz: { normal: C, podre: R, mofo_branco: N, galhas: N },
+      recente: { adubo: T, calda: P, produto: P, chuva_forte: P, seco: P, umido: P },
+      onde: { folha_mancha: C, folha_cor: C, folha_comida: N, vagem: R, haste_raiz: R, murcha: R, bicho: R },
+      mancha: { queimado: T, pardas: C, nenhuma: P, alvo: N, po_branco: N, pustula: N, angular: R },
+      altura: { baixo: C, meio: C, toda: C, topo: P },
+      face_baixo: { igual: T, pustulas: N, po: N, bichinhos: N },
+      cor_amarelo: { bordas: T, uniforme: P, entre_nervuras: R, deformada: R, arroxeado: R },
+      evolucao: { de_uma_vez: T, parado: C, espalhando: R },
+      terreno: { faixas: C, uniforme: C, reboleira: R, isoladas: P },
+    },
+  },
+  {
+    id: 'granizo', nome: 'Dano de granizo ou vento', tipo: 'abiotico', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Folhas rasgadas ou esfiapadas, hastes machucadas e plantas quebradas depois de temporal com granizo ou vento forte. As lesões abertas depois podem receber bacteriose.',
+    confundeCom: ['Bacteriose', 'Lagartas'],
+    comoConfirmar: ['Houve temporal ou granizo na região nos últimos dias?', 'Os rasgos são irregulares e há hastes machucadas?', 'O dano começa de uma vez, em toda a área atingida?'],
+    proximosPassos: [FOTO, 'Anote a data do temporal e a área atingida.', 'Fale com o agrônomo: ele avalia o dano e se há seguro.'],
+    perfil: {
+      ...SEM_BICHO, raiz: { normal: C, podre: R, mofo_branco: N, galhas: N },
+      recente: { chuva_forte: T, umido: P, seco: R, produto: R, calda: R, adubo: R },
+      onde: { folha_comida: T, folha_mancha: C, haste_raiz: C, vagem: C, folha_cor: P, murcha: P, bicho: R },
+      mancha: { angular: C, pardas: P, nenhuma: P, queimado: R, alvo: N, po_branco: N, pustula: N },
+      altura: { toda: C, topo: C, meio: C, baixo: P },
+      dano: { rasgada: T, furos: R, rendilhada: R, raspada: N },
+      evolucao: { de_uma_vez: T, parado: C, espalhando: P },
+      terreno: { uniforme: C, reboleira: C, faixas: P, isoladas: P },
+    },
+  },
+
+  // ── Doença e pragas que faltavam para o cenário real ──
+  {
+    id: 'olho_de_ra', nome: 'Mancha olho-de-rã', cientifico: 'Cercospora sojina', tipo: 'doenca', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Manchas redondas com centro cinza-claro e borda marrom-avermelhada, parecendo um olho, nas folhas do meio e do topo. Parecida com a mancha-alvo, mas sem anéis.',
+    confundeCom: ['Mancha-alvo', 'Doenças de final de ciclo'],
+    comoConfirmar: ['Procure o centro cinza e a borda avermelhada bem definida.', 'Veja se há anéis (então é mais provável mancha-alvo).'],
+    proximosPassos: [FOTO, 'Registre o estádio e a posição das lesões na planta.', AGRONOMO],
+    perfil: {
+      bicho: { nenhum: C, lagarta: R, percevejo: R, mosca_branca: R, besouro: R, acaro: R },
+      mofo: { nada: C, algodao: N, preto_duro: N, manchas_escuras: R },
+      recente: { umido: C, chuva_forte: P, seco: R, produto: P, calda: P, adubo: P },
+      onde: { folha_mancha: T, folha_cor: P, folha_comida: N, vagem: R, haste_raiz: R, murcha: R, bicho: R },
+      mancha: { pardas: T, alvo: C, angular: P, pustula: R, po_branco: N, nenhuma: R, queimado: R },
+      altura: { topo: C, meio: T, baixo: P, toda: P },
+      face_baixo: { igual: T, pustulas: R, po: N, bichinhos: N },
+      evolucao: { espalhando: C, parado: P, de_uma_vez: R },
+      terreno: { uniforme: C, reboleira: P, isoladas: P, faixas: N },
+    },
+  },
+  {
+    id: 'anticarsia', nome: 'Lagarta-da-soja', cientifico: 'Anticarsia gemmatalis', tipo: 'praga', origem: 'projeto', fontes: ['caderneta'], janela: ['V2', 'R6'],
+    resumo: 'Lagartas com listras claras que comem as folhas e deixam só as nervuras (folha rendilhada). Em ataque forte desfolham a planta rápido.',
+    confundeCom: ['Lagarta-falsa-medideira', 'Granizo'],
+    comoConfirmar: ['Bata a planta num pano branco e conte as lagartas.', 'A lagarta anda esticando o corpo (não é "mede-palmo")? Então não é falsa-medideira.'],
+    proximosPassos: [FOTO, 'Faça a batida de pano e anote quantas lagartas por metro.', 'Registre na Coleta como lagarta.', AGRONOMO],
+    alvo: 'lagarta',
+    perfil: {
+      mofo: { nada: C, algodao: N, preto_duro: N, manchas_escuras: N },
+      recente: { umido: P, seco: P, chuva_forte: P, produto: R, calda: P, adubo: P },
+      onde: { folha_comida: T, bicho: T, folha_mancha: R, folha_cor: R, vagem: P, haste_raiz: N, murcha: N },
+      bicho: { lagarta: T, nenhum: R, percevejo: R, mosca_branca: R, besouro: R, acaro: R },
+      dano: { rendilhada: T, furos: C, rasgada: R, raspada: R },
+      altura: { toda: C, meio: C, topo: C, baixo: P },
+      evolucao: { espalhando: T, de_uma_vez: R, parado: R },
+      terreno: { uniforme: C, reboleira: C, isoladas: C, faixas: N },
+    },
+  },
+  {
+    id: 'vaquinha', nome: 'Vaquinhas e besouros pequenos', cientifico: 'Diabrotica speciosa e Cerotoma spp.', tipo: 'praga', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Furos redondos pequenos nas folhas, feitos por besouros de uns 5 mm. Costumam ficar na face de baixo ou voar quando a planta é balançada.',
+    confundeCom: ['Lagartas', 'Granizo'],
+    comoConfirmar: ['Balance a planta sobre um pano branco: os besouros caem e voam.', 'Os furos são redondos e pequenos, espalhados pela folha?'],
+    proximosPassos: [FOTO, 'Conte quantos besouros caem no pano em 5 plantas.', AGRONOMO],
+    perfil: {
+      mofo: { nada: C, algodao: N, preto_duro: N, manchas_escuras: N },
+      recente: { umido: P, seco: P, chuva_forte: P, produto: R, calda: P, adubo: P },
+      onde: { folha_comida: T, bicho: T, folha_mancha: R, folha_cor: R, vagem: R, haste_raiz: N, murcha: N },
+      bicho: { besouro: T, nenhum: R, lagarta: R, percevejo: R, mosca_branca: R, acaro: R },
+      dano: { furos: T, rendilhada: P, rasgada: R, raspada: R },
+      altura: { toda: C, meio: C, baixo: C, topo: P },
+      evolucao: { espalhando: C, parado: P, de_uma_vez: R },
+      terreno: { uniforme: C, isoladas: C, reboleira: P, faixas: N },
+    },
+  },
+  {
+    id: 'acaro', nome: 'Ácaros', tipo: 'praga', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Folhas bronzeadas ou prateadas, com teia muito fina na face de baixo, em tempo quente e seco. Costumam começar em reboleiras ou na borda, onde há mais poeira.',
+    confundeCom: ['Estresse hídrico', 'Falta de nutriente', 'Mosca-branca'],
+    comoConfirmar: ['Use uma lupa na face de baixo: bichinhos minúsculos e teia fina.', 'Sacuda a folha sobre papel branco e veja pontinhos que andam.'],
+    proximosPassos: [FOTO, 'Fotografe com a lupa do celular a face de baixo da folha.', AGRONOMO],
+    perfil: {
+      mofo: { nada: C, algodao: N, preto_duro: N, manchas_escuras: N },
+      recente: { seco: T, umido: R, chuva_forte: R, produto: P, calda: P, adubo: P },
+      onde: { folha_cor: T, folha_mancha: C, folha_comida: P, bicho: C, vagem: R, haste_raiz: N, murcha: P },
+      bicho: { acaro: T, nenhum: P, lagarta: R, percevejo: R, mosca_branca: P, besouro: R },
+      mancha: { nenhuma: C, pardas: P, queimado: R, alvo: N, po_branco: N, pustula: N, angular: N },
+      altura: { toda: C, topo: C, meio: C, baixo: P },
+      dano: { raspada: T, furos: R, rendilhada: R, rasgada: N },
+      face_baixo: { bichinhos: T, igual: P, pustulas: N, po: R },
+      cor_amarelo: { uniforme: C, deformada: P, bordas: P, arroxeado: P, entre_nervuras: R },
+      evolucao: { espalhando: T, parado: R, de_uma_vez: R },
+      terreno: { reboleira: T, uniforme: P, isoladas: P, faixas: N },
+    },
+  },
+]
+
+const BICHOS_EXTRA: Candidato[] = [
+  {
+    id: 'coro', nome: 'Corós (larvas no solo)', cientifico: 'Phyllophaga spp. e outros', tipo: 'praga', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Larvas brancas, grossas e curvadas em C, com a cabeça marrom, que comem as raízes. A planta amarela e murcha em reboleiras e sai do chão com facilidade.',
+    confundeCom: ['Nematoides', 'Podridões de raiz e haste'],
+    comoConfirmar: ['Cave em volta da planta murcha: procure larva branca curvada em C.', 'A planta se arranca sem resistência porque a raiz foi comida?'],
+    proximosPassos: [FOTO, 'Fotografe a larva e as raízes comidas, e marque o ponto no mapa.', AGRONOMO],
+    sinalChave: 'Larva branca grossa, curvada em C, no solo, com raízes comidas',
+    perfil: {
+      mofo: { nada: T, algodao: N, preto_duro: N, manchas_escuras: N },
+      recente: { seco: C, umido: P, chuva_forte: P, produto: R, calda: R, adubo: R },
+      onde: { haste_raiz: T, murcha: T, bicho: C, folha_cor: C, folha_mancha: R, folha_comida: N, vagem: N },
+      bicho: { larva: T, nao_sei: C, nenhum: R, lagarta: P, percevejo: N, mosca_branca: N, besouro: P, acaro: N },
+      raiz: { podre: C, normal: P, galhas: R, mofo_branco: N },
+      dentro_haste: { sadia: C, escura: P, pontos_pretos: N, oca: R },
+      larva_dano: { raiz_comida: T, cortou_colo: R, haste_quebra: N },
+      altura: { toda: C, topo: P, meio: P, baixo: P },
+      patas: { seis: T, seis_carnudas: R, oito: N },
+      antenas: { nao: T, curtas: P, longas: N },
+      asas: { sem: T, escudo: N, casca_dura: N, brancas: N },
+      tamanho: { grande: T, medio: C, pequeno: R, minusculo: N },
+      cor_bicho: { branco: T, marrom: P, escuro: R, verde: N, listrado: N },
+      local_bicho: { solo: T, haste: P, folha_baixo: N, folha_cima: N, vagem: N },
+      evolucao: { espalhando: C, parado: C, de_uma_vez: R },
+      terreno: { reboleira: T, isoladas: C, uniforme: R, faixas: N },
+    },
+  },
+  {
+    id: 'elasmo', nome: 'Lagarta-elasmo', cientifico: 'Elasmopalpus lignosellus', tipo: 'praga', origem: 'projeto', fontes: ['projeto'], janela: ['VE', 'V4'],
+    resumo: 'Plantas pequenas cortadas ou murchas rente ao chão, com um tubinho de seda e terra no colo. Aparece em solo seco e arenoso, nas primeiras semanas depois da emergência.',
+    confundeCom: ['Tombamento (podridões de raiz)', 'Corós', 'Estresse hídrico'],
+    comoConfirmar: ['Olhe o colo da planta: tem um tubinho de seda e terra?', 'Abra a haste: a lagarta fica dentro, perto do solo.'],
+    proximosPassos: [FOTO, 'Fotografe o colo da planta e a lagarta, e marque o ponto no mapa.', AGRONOMO],
+    sinalChave: 'Planta nova cortada no colo, com tubinho de seda e terra e lagarta dentro',
+    perfil: {
+      mofo: { nada: T, algodao: N, preto_duro: N, manchas_escuras: N },
+      recente: { seco: T, umido: R, chuva_forte: R, produto: R, calda: R, adubo: R },
+      onde: { haste_raiz: T, murcha: T, bicho: C, folha_cor: P, folha_mancha: N, folha_comida: R, vagem: N },
+      bicho: { lagarta: T, larva: C, nao_sei: C, nenhum: R, percevejo: N, mosca_branca: N, besouro: N, acaro: N },
+      raiz: { normal: C, podre: P, galhas: N, mofo_branco: N },
+      dentro_haste: { oca: T, sadia: P, escura: R, pontos_pretos: N },
+      larva_dano: { cortou_colo: T, raiz_comida: R, haste_quebra: P },
+      patas_barriga: { varias: T, poucas: R },
+      altura: { toda: C, baixo: C, meio: P, topo: P },
+      patas: { seis_carnudas: T, seis: R, oito: N },
+      antenas: { nao: T, curtas: R, longas: N },
+      asas: { sem: T, escudo: N, casca_dura: N, brancas: N },
+      tamanho: { medio: T, pequeno: C, grande: C, minusculo: N },
+      cor_bicho: { verde: C, listrado: C, marrom: P, branco: P, escuro: P },
+      andar: { normal: T, mede_palmo: R, nao_lagarta: N },
+      local_bicho: { haste: T, solo: C, folha_baixo: N, folha_cima: N, vagem: N },
+      evolucao: { espalhando: C, de_uma_vez: C, parado: P },
+      terreno: { reboleira: C, isoladas: C, uniforme: P, faixas: N },
+    },
+  },
+  {
+    id: 'pulgao', nome: 'Pulgões', cientifico: 'Aphis spp.', tipo: 'praga', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Bolinhas pequenas e moles, verdes ou escuras, agrupadas no ponteiro e na face de baixo das folhas, às vezes com formigas e uma película preta (fumagina).',
+    confundeCom: ['Mosca-branca', 'Ácaros'],
+    comoConfirmar: ['Olhe o ponteiro e a face de baixo das folhas novas: colônias de bolinhas moles agrupadas?', 'Tem formigas subindo na planta ou uma melada brilhante nas folhas?'],
+    proximosPassos: [FOTO, 'Fotografe a colônia de perto e o ponteiro atacado.', AGRONOMO],
+    sinalChave: 'Colônias de bolinhas moles, verdes ou escuras, no ponteiro e embaixo das folhas, com formigas',
+    perfil: {
+      mofo: { nada: C, algodao: N, preto_duro: N, manchas_escuras: N },
+      recente: { seco: C, umido: P, chuva_forte: R, produto: P, calda: P, adubo: P },
+      onde: { bicho: T, folha_cor: C, folha_mancha: R, folha_comida: R, vagem: P, haste_raiz: R, murcha: R },
+      bicho: { mosca_branca: T, nao_sei: C, nenhum: R, lagarta: N, percevejo: N, besouro: N, acaro: P, larva: N },
+      mancha: { nenhuma: C, pardas: R, queimado: R, alvo: N, po_branco: N, pustula: N, angular: N },
+      altura: { topo: T, meio: P, baixo: P, toda: P },
+      cor_amarelo: { deformada: C, uniforme: C, bordas: P, entre_nervuras: R, arroxeado: R },
+      face_baixo: { bichinhos: T, igual: P, pustulas: N, po: R },
+      patas: { seis: T, seis_carnudas: N, oito: N },
+      antenas: { longas: C, curtas: C, nao: P },
+      asas: { sem: C, brancas: P, escudo: N, casca_dura: N },
+      tamanho: { pequeno: T, minusculo: C, medio: N, grande: N },
+      cor_bicho: { verde: T, escuro: C, branco: P, marrom: P, listrado: N },
+      sacudir: { fica_agarrado: T, voa: R, cai_parado: N },
+      local_bicho: { folha_cima: T, haste: C, folha_baixo: C, vagem: P, solo: N },
+      evolucao: { espalhando: T, parado: P, de_uma_vez: R },
+      terreno: { reboleira: C, uniforme: C, isoladas: C, faixas: N },
+    },
+  },
+  {
+    id: 'tamandua', nome: 'Tamanduá-da-soja', cientifico: 'Sternechus subsignatus', tipo: 'praga', origem: 'projeto', fontes: ['projeto'],
+    resumo: 'Besouro escuro com um "bico" na frente. A larva vive dentro da haste, perto do chão, e faz galhas ou quebra a haste; plantas novas podem tombar.',
+    confundeCom: ['Lagarta-elasmo', 'Corós', 'Podridões de raiz e haste'],
+    comoConfirmar: ['Procure o besouro com bico na base da planta e ao redor.', 'Abra a haste atacada: a larva branca fica por dentro.'],
+    proximosPassos: [FOTO, 'Fotografe o besouro e a haste aberta, e marque o ponto no mapa.', AGRONOMO],
+    sinalChave: 'Besouro escuro com bico comprido na base da planta; haste com galhas ou quebrada',
+    perfil: {
+      mofo: { nada: C, algodao: N, preto_duro: N, manchas_escuras: R },
+      recente: { seco: P, umido: P, chuva_forte: P, produto: R, calda: R, adubo: R },
+      onde: { haste_raiz: T, murcha: C, bicho: C, folha_cor: P, folha_comida: R, folha_mancha: N, vagem: N },
+      bicho: { besouro: T, larva: C, nao_sei: C, nenhum: R, lagarta: N, percevejo: N, mosca_branca: N, acaro: N },
+      raiz: { normal: C, podre: P, galhas: R, mofo_branco: N },
+      dentro_haste: { oca: T, escura: P, sadia: P, pontos_pretos: N },
+      altura: { toda: C, baixo: P, meio: P, topo: P },
+      patas: { seis: T, seis_carnudas: R, oito: N },
+      antenas: { curtas: C, longas: P, nao: R },
+      asas: { casca_dura: T, escudo: N, brancas: N, sem: R },
+      tamanho: { pequeno: C, medio: T, grande: P, minusculo: N },
+      cor_bicho: { escuro: T, marrom: C, listrado: P, verde: N, branco: R },
+      besouro_tipo: { bico: T, liso: P, manchas_pretas: N },
+      sacudir: { cai_parado: T, voa: R, fica_agarrado: N },
+      larva_dano: { haste_quebra: T, cortou_colo: P, raiz_comida: R },
+      local_bicho: { haste: T, solo: C, folha_baixo: N, folha_cima: N, vagem: N },
+      evolucao: { espalhando: C, parado: C, de_uma_vez: R },
+      terreno: { isoladas: C, reboleira: C, uniforme: P, faixas: N },
+    },
+  },
+]
+
+const PERCEVEJO_BASE = BASE.find((c) => c.id === 'percevejo')!
+const PERCEVEJOS_VERDES: Candidato[] = [
+  {
+    ...PERCEVEJO_BASE, id: 'percevejo_verde', nome: 'Percevejo-verde', cientifico: 'Nezara viridula', alvo: undefined,
+    resumo: 'Percevejo verde, grande, nas vagens e nas plantas, com vagens chochas e grãos murchos ou manchados. Faz o mesmo tipo de dano do marrom.',
+    confundeCom: ['Percevejo-marrom', 'Percevejo-verde-pequeno'],
+    comoConfirmar: ['É todo verde e maior (uns 15 mm)?', 'Bata a planta sobre um pano branco e conte percevejos por metro.'],
+    proximosPassos: [FOTO, 'Conte os percevejos por metro com o pano de batida e anote.', 'Avise o agrônomo: o momento de agir depende da contagem e da fase.'],
+    sinalChave: 'Percevejo todo verde, grande, nas vagens',
+    perfil: { ...PERCEVEJO_BASE.perfil },
+  },
+  {
+    ...PERCEVEJO_BASE, id: 'percevejo_pequeno', nome: 'Percevejo-verde-pequeno', cientifico: 'Piezodorus guildinii', alvo: undefined,
+    resumo: 'Percevejo verde menor, com uma faixa mais clara atravessando as costas, que causa dano forte mesmo em poucos números.',
+    confundeCom: ['Percevejo-verde', 'Percevejo-marrom'],
+    comoConfirmar: ['É verde e menor (uns 10 mm), com uma faixa avermelhada ou clara atravessando as costas?', 'Bata a planta sobre um pano branco e conte percevejos por metro.'],
+    proximosPassos: [FOTO, 'Conte os percevejos por metro com o pano de batida e anote.', 'Avise o agrônomo: mesmo poucos podem causar dano.'],
+    sinalChave: 'Percevejo verde menor, com faixa clara atravessando as costas',
+    perfil: { ...PERCEVEJO_BASE.perfil },
+  },
+]
+
+type Perfil = Record<string, Record<string, Frequencia>>
+
+/** Entradas das perguntas novas para os candidatos que já existiam (decisão de projeto, a conferir). */
+const EXTRAS: Record<string, Perfil> = {
+  ferrugem: { face_baixo: { pustulas: T, igual: P, po: N, bichinhos: R }, evolucao: { espalhando: T, de_uma_vez: R, parado: R }, cor_amarelo: { uniforme: P, bordas: R, entre_nervuras: R, deformada: N, arroxeado: R } },
+  manchaalvo: { face_baixo: { igual: T, pustulas: R, po: N, bichinhos: R }, evolucao: { espalhando: C, de_uma_vez: R, parado: P } },
+  oidio: { face_baixo: { po: T, igual: R, pustulas: N, bichinhos: N }, evolucao: { espalhando: T, de_uma_vez: R, parado: P } },
+  dfc: { face_baixo: { igual: T, pustulas: R, po: N, bichinhos: N }, evolucao: { espalhando: C, de_uma_vez: R, parado: P } },
+  bacteriose: { mancha: { queimado: P }, face_baixo: { igual: C, pustulas: P, po: N, bichinhos: N }, evolucao: { espalhando: C, de_uma_vez: C, parado: P } },
+  raiz_haste: { dentro_haste: { escura: T, pontos_pretos: C, sadia: R, oca: R }, cor_amarelo: { uniforme: P, entre_nervuras: C, bordas: P, deformada: N, arroxeado: R } },
+  nematoide: { cor_amarelo: { uniforme: C, entre_nervuras: P, bordas: P, deformada: R, arroxeado: P }, evolucao: { espalhando: C, parado: C, de_uma_vez: R } },
+  mosca_branca: { cor_amarelo: { uniforme: C, deformada: P, bordas: P, entre_nervuras: P, arroxeado: R }, face_baixo: { bichinhos: T, igual: P, pustulas: N, po: R }, evolucao: { espalhando: C, parado: P, de_uma_vez: R } },
+  lagarta: { dano: { rendilhada: C, furos: C, raspada: P, rasgada: R }, evolucao: { espalhando: T, de_uma_vez: R, parado: R } },
+  lagarta_vagem: { dano: { rendilhada: P, furos: C, raspada: R, rasgada: R } },
+  percevejo: { dano: { furos: R, rendilhada: N, raspada: R, rasgada: N } },
+  mofo: { dentro_haste: { pontos_pretos: T, escura: C, sadia: P, oca: R }, evolucao: { espalhando: C, de_uma_vez: R, parado: P } },
+  antracnose: { dentro_haste: { escura: C, pontos_pretos: P, sadia: P, oca: R } },
+  estresse: { dentro_haste: { sadia: T, escura: R, pontos_pretos: N, oca: N }, cor_amarelo: { uniforme: P, bordas: C, entre_nervuras: R, deformada: P, arroxeado: R }, evolucao: { de_uma_vez: C, espalhando: C, parado: P } },
+}
+
+/** Perguntas que identificam o bicho (corpo, patas, tamanho, cor, andar, onde estava) e a haste por dentro. */
+const EXTRAS_BICHOS: Record<string, Perfil> = {
+  percevejo: {
+    faixa_costas: { sem_faixa: T, com_faixa: R },
+    asas: { escudo: T, casca_dura: R, brancas: N, sem: N }, antenas: { curtas: T, longas: P, nao: R }, patas: { seis: T, seis_carnudas: N, oito: N },
+    tamanho: { medio: T, pequeno: C, grande: R, minusculo: N }, cor_bicho: { marrom: T, verde: R, listrado: R, branco: N, escuro: P },
+    local_bicho: { vagem: T, haste: C, folha_cima: C, folha_baixo: P, solo: N },
+  },
+  percevejo_verde: {
+    faixa_costas: { sem_faixa: T, com_faixa: R },
+    asas: { escudo: T, casca_dura: R, brancas: N, sem: N }, antenas: { curtas: T, longas: P, nao: R }, patas: { seis: T, seis_carnudas: N, oito: N },
+    tamanho: { grande: C, medio: T, pequeno: P, minusculo: N }, cor_bicho: { verde: T, marrom: R, listrado: R, branco: N, escuro: R },
+    local_bicho: { vagem: T, haste: C, folha_cima: C, folha_baixo: P, solo: N },
+  },
+  percevejo_pequeno: {
+    faixa_costas: { com_faixa: T, sem_faixa: P },
+    asas: { escudo: T, casca_dura: R, brancas: N, sem: N }, antenas: { curtas: T, longas: P, nao: R }, patas: { seis: T, seis_carnudas: N, oito: N },
+    tamanho: { medio: T, pequeno: C, grande: R, minusculo: N }, cor_bicho: { verde: T, marrom: R, listrado: P, branco: N, escuro: R },
+    local_bicho: { vagem: T, haste: C, folha_cima: C, folha_baixo: P, solo: N },
+  },
+  lagarta: {
+    patas_barriga: { poucas: T, varias: R },
+    asas: { sem: T, escudo: N, casca_dura: N, brancas: N }, antenas: { nao: T, curtas: R, longas: N }, patas: { seis_carnudas: T, seis: R, oito: N },
+    tamanho: { medio: T, pequeno: C, grande: C, minusculo: R }, cor_bicho: { verde: T, listrado: P, marrom: R, branco: R, escuro: R },
+    andar: { mede_palmo: T, normal: R, nao_lagarta: N }, local_bicho: { folha_baixo: T, folha_cima: C, vagem: P, haste: R, solo: N },
+  },
+  anticarsia: {
+    patas_barriga: { varias: T, poucas: R },
+    asas: { sem: T, escudo: N, casca_dura: N, brancas: N }, antenas: { nao: T, curtas: R, longas: N }, patas: { seis_carnudas: T, seis: R, oito: N },
+    tamanho: { grande: T, medio: C, pequeno: C, minusculo: R }, cor_bicho: { listrado: T, verde: C, marrom: C, escuro: C, branco: R },
+    andar: { normal: T, mede_palmo: R, nao_lagarta: N }, local_bicho: { folha_cima: C, folha_baixo: C, vagem: P, haste: R, solo: N },
+  },
+  lagarta_vagem: {
+    patas_barriga: { varias: T, poucas: R },
+    asas: { sem: T, escudo: N, casca_dura: N, brancas: N }, antenas: { nao: T, curtas: R, longas: N }, patas: { seis_carnudas: T, seis: R, oito: N },
+    tamanho: { grande: T, medio: C, pequeno: C, minusculo: R }, cor_bicho: { verde: C, marrom: C, listrado: C, escuro: P, branco: R },
+    andar: { normal: T, mede_palmo: R, nao_lagarta: N }, local_bicho: { vagem: T, haste: C, folha_cima: C, folha_baixo: P, solo: R },
+  },
+  mosca_branca: {
+    sacudir: { voa: T, fica_agarrado: R, cai_parado: N },
+    asas: { brancas: T, sem: P, escudo: R, casca_dura: N }, antenas: { curtas: C, nao: C, longas: R }, patas: { seis: T, oito: R, seis_carnudas: N },
+    tamanho: { minusculo: T, pequeno: C, medio: N, grande: N }, cor_bicho: { branco: T, escuro: R, verde: R, marrom: R, listrado: N },
+    local_bicho: { folha_baixo: T, folha_cima: P, vagem: N, haste: R, solo: N },
+  },
+  vaquinha: {
+    besouro_tipo: { manchas_pretas: T, liso: P, bico: N }, sacudir: { voa: T, cai_parado: P, fica_agarrado: R },
+    asas: { casca_dura: T, escudo: R, brancas: N, sem: N }, antenas: { longas: T, curtas: C, nao: R }, patas: { seis: T, seis_carnudas: N, oito: N },
+    tamanho: { pequeno: T, medio: C, minusculo: R, grande: N }, cor_bicho: { verde: C, escuro: C, marrom: C, listrado: C, branco: N },
+    local_bicho: { folha_baixo: C, folha_cima: C, vagem: P, haste: R, solo: P },
+  },
+  acaro: {
+    teia: { sim: T, nao: P },
+    asas: { sem: T, escudo: N, casca_dura: N, brancas: N }, antenas: { nao: T, curtas: N, longas: N }, patas: { oito: T, seis: R, seis_carnudas: N },
+    tamanho: { minusculo: T, pequeno: R, medio: N, grande: N }, cor_bicho: { branco: C, verde: C, escuro: P, marrom: P, listrado: N },
+    local_bicho: { folha_baixo: T, folha_cima: P, vagem: N, haste: N, solo: N },
+  },
+  nematoide: {
+    local_bicho: { solo: T, haste: R, folha_baixo: N, folha_cima: N, vagem: N },
+    dentro_haste: { sadia: T, escura: R, pontos_pretos: N, oca: N },
+  },
+}
+
+/**
+ * Opções novas de perguntas que já existiam: quem tem perfil dessa pergunta e não a cita recebe um valor coerente com
+ * o tipo, em vez de ser tratado como "neutro" (que daria vantagem a quem não a descreve).
+ */
+const PADRAO_NOVAS: { pergunta: string; opcao: string; por: (c: Candidato) => Frequencia }[] = [
+  { pergunta: 'onde', opcao: 'bicho', por: (c) => (c.tipo === 'praga' ? C : R) },
+  { pergunta: 'bicho', opcao: 'besouro', por: () => R },
+  { pergunta: 'bicho', opcao: 'acaro', por: () => R },
+  { pergunta: 'bicho', opcao: 'larva', por: () => R },
+  { pergunta: 'mancha', opcao: 'queimado', por: (c) => (c.tipo === 'abiotico' ? P : R) },
+  { pergunta: 'recente', opcao: 'calda', por: () => P },
+  { pergunta: 'recente', opcao: 'adubo', por: () => P },
+]
+
+/** Doença e praga costumam avançar; sem descrição própria, é isto que se espera delas. */
+const EVOLUCAO_PADRAO: Record<string, Frequencia> = { espalhando: C, de_uma_vez: P, parado: R }
+
+function montar(): Candidato[] {
+  return [...BASE, ...NOVOS, ...BICHOS_EXTRA, ...PERCEVEJOS_VERDES].map((c) => {
+    const perfil: Perfil = Object.fromEntries(Object.entries(c.perfil).map(([q, o]) => [q, { ...o }]))
+    for (const [q, o] of Object.entries({ ...EXTRAS[c.id], ...EXTRAS_BICHOS[c.id] })) perfil[q] = { ...perfil[q], ...o }
+    for (const n of PADRAO_NOVAS) if (perfil[n.pergunta] && !(n.opcao in perfil[n.pergunta]!)) perfil[n.pergunta]![n.opcao] = n.por(c)
+    if (c.tipo !== 'abiotico' && !perfil['evolucao']) perfil['evolucao'] = { ...EVOLUCAO_PADRAO }
+    // Quem não é lagarta não anda como lagarta. Sem isto ficaria "neutro" e levaria vantagem sobre quem foi descartado.
+    if (!perfil['andar']) perfil['andar'] = { mede_palmo: R, normal: R, nao_lagarta: C }
+    const naHaste = ['haste_raiz', 'murcha'].some((r) => { const f = perfil['onde']?.[r]; return f === 'tipico' || f === 'comum' || f === 'possivel' })
+    if (naHaste && !perfil['dentro_haste']) perfil['dentro_haste'] = { sadia: C, escura: R, pontos_pretos: R, oca: R }
+    return { ...c, perfil }
+  })
+}
+
+/** O que olhar na foto de comparação, em uma frase. Decisão de projeto, a conferir. */
+const SINAL_CHAVE: Record<string, string> = {
+  ferrugem: 'Pontinhos em relevo, marrons ou alaranjados, na face de baixo das folhas do baixeiro',
+  manchaalvo: 'Círculos marrons com anéis, como um alvo, e um ponto escuro no centro',
+  mofo: 'Algodão branco na haste ou nas axilas, com pontos pretos duros',
+  oidio: 'Pó branco como farinha por cima das folhas',
+  dfc: 'Pontos pardos pequenos com amarelo em volta, nas folhas de baixo, no fim do ciclo',
+  antracnose: 'Manchas escuras na haste, no pecíolo e na vagem, com pontinhos pretos',
+  bacteriose: 'Manchas pequenas de cantos retos, encharcadas, com halo amarelo',
+  raiz_haste: 'Haste ou raiz escura e mole perto do chão, planta murcha',
+  nematoide: 'Raízes com caroços (galhas) e planta amarela em reboleira',
+  percevejo: 'Percevejo marrom na vagem e grãos chochos ou manchados',
+  lagarta: 'Lagarta que anda "medindo palmo" e folhas furadas ou raspadas',
+  lagarta_vagem: 'Lagarta em flores e vagens, grãos furados',
+  mosca_branca: 'Mosquinhas brancas na face de baixo, que voam ao balançar a planta',
+  def_k: 'Bordas das folhas de baixo amarelas que viram marrom e secam',
+  def_mg: 'Folhas de baixo amarelas entre as nervuras, que ficam verdes como uma rede',
+  def_mn: 'Folhas novas, do ponteiro, amarelas entre as nervuras (rede verde)',
+  def_n: 'Folhas de baixo pálidas por inteiro, nódulos brancos por dentro',
+  herb_hormonal: 'Folhas do ponteiro enroladas em concha, nervuras tortas',
+  herb_contato: 'Manchas secas de queimadura poucos dias depois de aplicar herbicida',
+  herb_als: 'Planta pequena, nervuras arroxeadas, raiz curta e grossa',
+  calda: 'Pontos ou manchas queimadas após pulverizar em hora quente ou com mistura',
+  adubo_queima: 'Pontos ou bordas queimadas depois de adubar sobre a folha',
+  granizo: 'Folhas rasgadas e hastes machucadas depois de temporal',
+  estresse: 'Planta murcha com raiz normal, em tempo seco e quente',
+  olho_de_ra: 'Manchas redondas com centro cinza e borda marrom-avermelhada, sem anéis',
+  coro: 'Larva branca grossa, curvada em C, no solo, com raízes comidas',
+  elasmo: 'Planta nova cortada no colo, com tubinho de seda e terra',
+  tamandua: 'Besouro escuro com bico na base da planta; haste com galhas ou quebrada',
+  pulgao: 'Colônias de bolinhas moles no ponteiro e embaixo das folhas',
+  anticarsia: 'Lagarta listrada que deixa só as nervuras (folha rendilhada)',
+  vaquinha: 'Besouro pequeno e furos redondos espalhados na folha',
+  acaro: 'Folha bronzeada ou prateada com teia fina na face de baixo',
+}
+
+export const CANDIDATOS: Candidato[] = montar().map((c) => (SINAL_CHAVE[c.id] ? { ...c, sinalChave: SINAL_CHAVE[c.id]! } : c))

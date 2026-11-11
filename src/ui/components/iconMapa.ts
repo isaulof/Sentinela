@@ -1,8 +1,9 @@
 import {
   AlignJustify, ArrowDown, Share2, RotateCcw, ListChecks, ChevronLeft, Layers, Minus, Pencil, Image as Imagem, Play, Pause, Undo2, Trash2, LocateFixed, ArrowUp, Ban, Bell, BookOpen, Bug, Camera, Check, ChevronRight, Circle, CircleCheck, CircleHelp, Cloud, Download, Droplet,
-  Ellipsis, Flame, Grid3x3, Grip, House, Info, Leaf, MapPin, Map as MapIcon, Moon, Plus, Search, Spline, Sprout, Stethoscope, Sun, Target, UserRound, Wifi, WifiOff, X,
+  Bean, Ruler, Ellipsis, Flame, Grid3x3, Grip, House, Info, Leaf, MapPin, Map as MapIcon, Moon, Plus, Search, Spline, Sprout, Stethoscope, Sun, Target, UserRound, Wifi, WifiOff, X,
   type LucideIcon,
 } from 'lucide-react'
+import { Acaro, Besouro, Lagarta, Larva, Mosquinha, Percevejo } from './iconesBichos'
 
 /** Conjunto único de ícones (Lucide): mesmo traço, mesma grade. Os nomes são os do domínio do app. */
 export const ICONES_MAPA = {
@@ -11,5 +12,8 @@ export const ICONES_MAPA = {
   fogo: Flame, cima: ArrowUp, baixo: ArrowDown, faixas: AlignJustify, circulo: Circle, grade: Grid3x3, pontos: Grip, ok: CircleCheck, duvida: CircleHelp,
   compartilhar: Share2, refazer: RotateCcw, lista: ListChecks, camadas: Layers, menos: Minus, voltar: ChevronLeft, lapis: Pencil, foto: Imagem, tocar: Play, pausar: Pause, desfazer: Undo2, lixo: Trash2, local: LocateFixed,
   murcha: Sprout, raiz: Spline, livro: BookOpen, perfil: UserRound, cruzar: Ban,
+  // Bichos e anatomia (ver iconesBichos.ts)
+  lagarta: Lagarta, larva: Larva, besouro: Besouro, percevejo: Percevejo, mosquinha: Mosquinha, acaro: Acaro,
+  vagem: Bean, regua: Ruler, broto: Sprout,
 } as const satisfies Record<string, LucideIcon>
 

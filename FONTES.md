@@ -61,3 +61,11 @@ Duas informações novas entram no cálculo do funil. **Ambas são decisão de p
 - **Pergunta "o que aconteceu nos últimos dias?"** (chuva forte/granizo, umidade, seca e calor, produto aplicado): separa, por exemplo, bacteriose (chuva com vento e granizo), efeito de produto e estresse hídrico. Quem não tem relação conhecida com a resposta recebe nível "possível" para não ficar em desvantagem.
 - **Linguagem**: o app não mostra porcentagem ao usuário. Usa "Bem provável / Provável / Ainda incerto", calculado da compatibilidade do primeiro colocado e da folga para o segundo.
 - **Pendência 5**: conferir as janelas de fase e os níveis da pergunta "últimos dias" com as circulares (CT 188 para ferrugem, CT 152 para mofo-branco, CT 205 para DFC, caderneta para percevejo e lagartas).
+
+## Diagnóstico v3 (2026-11-11)
+Decisões de projeto, a calibrar com desfechos reais e a conferir com agrônomo (todas `origem: 'projeto'`):
+- **Fluxo em etapas**: triagem fixa (onde, padrão no terreno, o que mudou) → até 5 perguntas do ramo → comparação por fotos → resultado.
+- **Peso da pergunta** (`confiabilidade`, 0 a 1): expoente da verossimilhança; pergunta subjetiva (cor do amarelo: 0,7) pesa menos que objetiva (bicho: 0,95).
+- **Foto como evidência fraca**: escolhida ×2,5; mostrada e não escolhida ×0,8; "nenhuma parece" ×0,6 nas mostradas.
+- **Percentual** = compatibilidade do primeiro colocado, limitada por 40% + 7 pontos por evidência, teto 95%. Índice, **não probabilidade calibrada**; some "viva × não viva" calculado do mesmo ranking.
+- **Causas reais da lavoura** modeladas: deficiências de K, Mg, Mn e N; deriva de hormonal (2,4-D); herbicida de contato; residual de herbicida; queima por calda/adubo; granizo. Fungicida não é causa isolada: o que ocorre é queima por calda/mistura/horário.
