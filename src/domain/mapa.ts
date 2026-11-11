@@ -17,6 +17,8 @@ import { dataBr, diaLocal } from './tempo'
 export const MIN_AMOSTRAS_CALOR = 3
 /** Raio de influência = este fator × a distância média ao vizinho mais próximo. Fora dele a célula fica "sem dado". */
 export const FATOR_RAIO = 1.5
+/** Piso do raio: pontos mais próximos que isto são, na prática, o mesmo lugar (a imprecisão típica do GPS). Evita raio 0 quando há pontos repetidos. */
+export const RAIO_MINIMO_M = 25
 
 /** Distância média (m) de cada ponto ao seu vizinho mais próximo. Nulo com menos de 2 pontos. */
 export function distanciaVizinhoMediaM(posicoes: readonly LngLat[]): number | null {
@@ -32,7 +34,7 @@ export function distanciaVizinhoMediaM(posicoes: readonly LngLat[]): number | nu
 
 export const raioDeInfluenciaM = (posicoes: readonly LngLat[]): number | null => {
   const d = distanciaVizinhoMediaM(posicoes)
-  return d === null ? null : d * FATOR_RAIO
+  return d === null ? null : Math.max(RAIO_MINIMO_M, d * FATOR_RAIO)
 }
 
 export interface CalorHonesto {
@@ -245,6 +247,8 @@ export function moranI(amostras: readonly Amostra[]): Moran {
   const base = { I: null, esperado: null, z: null, p: null, n, raioM: null, vizinhosMedios: null }
   if (n < MIN_PONTOS_MORAN) return { ...base, classe: 'indeterminado', texto: `Só ${n} ${n === 1 ? 'ponto' : 'pontos'}: o teste de foco precisa de pelo menos ${MIN_PONTOS_MORAN}.` }
   const raioM = raioDeInfluenciaM(amostras.map((a) => a.posicao))!
+  const juntos = amostras.every((a) => haversineM(a.posicao, amostras[0]!.posicao) <= RAIO_MINIMO_M)
+  if (juntos) return { ...base, raioM, classe: 'indeterminado', texto: `Todos os pontos estão a menos de ${RAIO_MINIMO_M} m uns dos outros (praticamente o mesmo lugar): não há como falar de foco no talhão.` }
   const x = amostras.map((a) => a.valor)
   const media = x.reduce((s, v) => s + v, 0) / n
   const dev = x.map((v) => v - media)

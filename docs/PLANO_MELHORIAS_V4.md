@@ -2,7 +2,7 @@
 
 > ## STATUS (atualizado em 11/11/2026) — LEIA PRIMEIRO
 >
-> **Onde paramos:** as fases **F0, F1, F2, F3, F4 e F5 estão implementadas, testadas e commitadas** (commits locais, ainda não enviados). Faltam **F6** (passe final de bugs) e **F7** (revisão com o professor).
+> **Onde paramos:** as fases **F0, F1, F2, F3, F4, F5 e F6 estão implementadas, testadas e commitadas** (commits locais, ainda não enviados). Falta apenas a **F7** (revisão com o professor agrônomo), que depende do usuário.
 >
 > **PUSH ADIADO DE PROPÓSITO (decisão do usuário):** os commits ficam só no disco desta máquina e serão enviados ao GitHub **uma única vez, quando tudo estiver pronto** (depois da F6 e da F7). `git status -sb` mostrando `ahead 7` (ou mais) é o esperado. **Não fazer `git push` por conta própria**; esperar o usuário pedir. Até lá o site do Pages continua na versão antiga. Não apagar a pasta do projeto nem trocar de computador antes do push, pois o código só existe aqui.
 >
@@ -21,6 +21,7 @@
 > | F2 | `342c8bc` | **Trilha de auditoria** (corrigir = nova versão que mantém a data/hora da medição; desfazer = anular; nada é apagado; análises usam só registros ativos); formulário v2 (repetições, condições do dia); cartão de confirmação com resumo, **Desfazer 30 s**, Ver ficha, Outro achado aqui; a Coleta não pula mais de ponto sozinha (R4); **Ficha do ponto** (método, amostra, condições, coletor, responsável, posição, fotos, versões, rastro); `domain/ficha.ts` |
 > | F3 | `08fcc0c` | Exportação **CSV** (Excel pt-BR: BOM, `;`, vírgula decimal) e **GeoJSON** com todos os campos e todas as versões; **Relatório do talhão** em `/talhoes/:id/relatorio`, para imprimir ou salvar em PDF; `domain/estatistica.ts` |
 > | F4 | `302bde0` | Mapa v2: **calor honesto** (só com 3+ pontos, só dentro do raio de 1,5× a distância média entre vizinhos, resto hachurado como "sem dado"), escala fixa entre visitas, legenda com números, camadas Calor/Estado/Mudança, valores nos pontos, painel de análise (média, mediana, máximo, desvio, índice de Moran, tendência, pontos por nível, tabela ponto × visita, contas explicadas), qualidade dos dados; `domain/mapa.ts` |
+> | F6 | (ver `git log`, commit "F6") | Passe final de bugs: **raio de influência mínimo de 25 m** (pontos repetidos davam raio 0 e o mapa ficava 100% "sem dado"; o teste de foco devolvia resultado sem sentido); **erros de gravação tratados** (aparelho sem espaço: mensagem clara e formulário preservado, em registro, foto, achado, correção e desfazer; correção e anulação são tudo-ou-nada); **rascunho do registro** (sobrevive a app fechado/aba recarregada, vale 24 h, botão Descartar); varredura de **tamanhos** (11 telas × 6 tamanhos, inclusive paisagem, sem estourar a largura); **offline** nas telas novas |
 >
 > ### Verificação no último ponto (F4, commit `302bde0`)
 > - Unitários: **364 passam** (21 arquivos). Build ok. Lint limpo.
@@ -40,9 +41,10 @@
 > - Alguns testes de e2e usam `test.slow()` (mapa renderiza por software e a gravação demora sob carga paralela). Já houve falha intermitente de axe em `/talhoes/T-01` por animação; foi resolvida não renderizando o cartão de exportar até carregar.
 >
 > ### O que falta
-> - **F6 — passe final** (ver lista da seção 2.2 C): ensaios de borda ainda não cobertos por teste: app fechado no meio do registro (rascunho), falha ao gravar com o aparelho cheio, talhão muito alongado, amostra em cima do vértice, rotação de tela, teclado aberto sobre o formulário, modo offline nas telas novas. Capturas automáticas das telas-chave em 360×640, 390×844, 412×915, 768 e 1280 (hoje só Início e Guia têm medição por tamanho). Revisar dados de demonstração para ficarem coerentes com o Registro v2.
 > - **F7 — revisão com o professor agrônomo** (precisa do usuário): confirmar os campos do registro, ver se há ficha/protocolo próprio, e decidir se quer tela de **revisão pelo agrônomo** (`revisadoPor`) e **fotos com coordenada**.
-> - **Pendências menores**: `FormPendencia`/"Não sei o que é" ainda avança sozinho de ponto (só o registro e o "sem ocorrência" ganharam confirmação); o relatório não traz ainda foco/tendência/qualidade do mapa v2; o Perfil mostra o toggle "Usar GPS real" com o texto novo, mas o padrão continua `false`.
+> - **Ensaios da seção 2.2 C que continuam sem teste automático** (não dá para reproduzir bem em headless): teclado virtual aberto sobre o formulário, mudança de horário do aparelho com registros já gravados.
+> - **Pendências menores**: `FormPendencia`/"Não sei o que é" ainda avança sozinho de ponto (só o registro e o "sem ocorrência" ganharam confirmação); o relatório não traz ainda foco/tendência/qualidade do mapa v2; o Perfil mostra o toggle "Usar GPS real" com o texto novo, mas o padrão continua `false`; o raio de influência cresce com o espaçamento (1,5× a distância média): com amostragem muito esparsa o calor cobre quase tudo, o que é coerente com a regra, mas vale explicar ao professor.
+> - **Quando tudo estiver pronto**: fazer o push único ao GitHub (`git push origin main`) e conferir a aba Actions.
 >
 
 Escopo pedido: (1) tela inicial; (2) registro dos achados e mapa inteligente, para um professor agrônomo avaliar; (3) o caminho até o ponto com GPS.

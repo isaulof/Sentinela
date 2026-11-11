@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { mensagemDeGravacao } from '@/data/erros'
 import { salvarFoto } from '@/data/fotos'
 import { novoId, repo } from '@/data/repo'
 import type { Talhao } from '@/domain/entidades'
@@ -31,8 +32,8 @@ export function FormPendencia({ talhao, pontoId, ordem, onSalvo }: Props) {
     try {
       const ids = await Promise.all([...arquivos].map((f) => salvarFoto(f)))
       setFotos((x) => [...x, ...ids])
-    } catch {
-      mostrar('Não foi possível ler a foto. Tente outra imagem.', 'erro')
+    } catch (e) {
+      mostrar(mensagemDeGravacao(e, 'Não foi possível ler a foto. Tente outra imagem.'), 'erro')
     }
   }
 
@@ -45,7 +46,7 @@ export function FormPendencia({ talhao, pontoId, ordem, onSalvo }: Props) {
       mostrar(`Ponto ${ordem} guardado para diagnóstico`)
       onSalvo()
     } catch (e) {
-      mostrar(e instanceof Error ? `Não foi possível guardar: ${e.message}` : 'Não foi possível guardar o achado.', 'erro')
+      mostrar(mensagemDeGravacao(e, 'Não foi possível guardar o achado. Tente de novo.'), 'erro')
     } finally {
       setSalvando(false)
     }

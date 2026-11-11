@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFazenda, useOrdens } from '@/data/hooks'
+import { mensagemDeGravacao } from '@/data/erros'
+import { chaveRascunho, rascunhoTemConteudo, rascunhoValido, type RascunhoRegistro } from '@/data/rascunho'
 import { salvarFoto, useFotoUrl } from '@/data/fotos'
 import { novoId, repo } from '@/data/repo'
 import type { Talhao, PlanoSalvo } from '@/domain/entidades'
 import { resolverOrdem } from '@/domain/hibrido'
 import { ESTADIOS } from '@/domain/phenology'
+import { dataHoraBr } from '@/domain/tempo'
 import { camposV2, descreverAmostra, type CondicoesDia, type Registro } from '@/domain/registro'
 import { mediaHistorica, validarRegistro } from '@/domain/validation'
 import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
@@ -39,7 +42,23 @@ interface Props {
   onSalvo: (registro: Registro) => void
 }
 
-export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGps = false, onSalvo }: Props) {
+/** Carrega o rascunho do ponto (se houver) antes de montar o formulário, para ele já abrir preenchido. */
+export function FormRegistro(props: Props) {
+  const chave = chaveRascunho(props.talhao.id, props.pontoId)
+  const [inicial, setInicial] = useState<RascunhoRegistro | null | undefined>(undefined)
+  const [versao, setVersao] = useState(0)
+  useEffect(() => {
+    let vivo = true
+    void repo.lerConfig<unknown>(chave, null).then((r) => { if (vivo) setInicial(rascunhoValido(r, new Date()) ? r : null) })
+    return () => { vivo = false }
+  }, [chave, versao])
+  if (inicial === undefined) return null
+  return <CamposRegistro key={`${chave}:${versao}`} {...props} chave={chave} inicial={inicial} onDescartar={() => { void repo.gravarConfig(chave, null).then(() => { setInicial(undefined); setVersao((v) => v + 1) }) }} />
+}
+
+interface PropsCampos extends Props { chave: string; inicial: RascunhoRegistro | null; onDescartar: () => void }
+
+function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGps = false, onSalvo, chave, inicial, onDescartar }: PropsCampos) {
   const { amostrador, setAmostrador, gpsReal } = useSessao()
   const mostrar = useToast((s) => s.mostrar)
   const ordens = useOrdens()
@@ -47,18 +66,20 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
   const ordem = ordens?.find((o) => o.status === 'aberta' && o.talhaoId === talhao.id && o.pontoId === pontoId)
 
   const ponto = plano.pontos.find((p) => p.id === pontoId)!
-  const [estadio, setEstadio] = useState(talhao.estadio)
-  const [alvoId, setAlvoId] = useState<AlvoId>('percevejo')
-  const [fase, setFase] = useState('')
-  const [quantidade, setQuantidade] = useState(0)
-  const [zero, setZero] = useState(false)
-  const [presente, setPresente] = useState<boolean | undefined>(undefined)
-  const [severidade, setSeveridade] = useState<number | undefined>(undefined)
-  const [desfolha, setDesfolha] = useState<number | undefined>(undefined)
-  const [fotos, setFotos] = useState<string[]>([])
-  const [obs, setObs] = useState('')
-  const [repeticoes, setRepeticoes] = useState(1)
-  const [condicoes, setCondicoes] = useState<CondicoesDia>({})
+  const [estadio, setEstadio] = useState(inicial?.estadio ?? talhao.estadio)
+  const [alvoId, setAlvoId] = useState<AlvoId>(inicial?.alvoId ?? 'percevejo')
+  const [fase, setFase] = useState(inicial?.fase ?? '')
+  const [quantidade, setQuantidade] = useState(inicial?.quantidade ?? 0)
+  const [zero, setZero] = useState(inicial?.zero ?? false)
+  const [presente, setPresente] = useState<boolean | undefined>(inicial?.presente)
+  const [severidade, setSeveridade] = useState<number | undefined>(inicial?.severidade)
+  const [desfolha, setDesfolha] = useState<number | undefined>(inicial?.desfolha)
+  const [fotos, setFotos] = useState<string[]>(inicial?.fotos ?? [])
+  const [obs, setObs] = useState(inicial?.obs ?? '')
+  const [repeticoes, setRepeticoes] = useState(inicial?.repeticoes ?? 1)
+  const [condicoes, setCondicoes] = useState<CondicoesDia>(inicial?.condicoes ?? {})
+  // Depois de salvar ou descartar, nenhum salvamento de rascunho que ainda esteja agendado pode reescrevê-lo.
+  const salvou = useRef(false)
   const [nome, setNome] = useState(amostrador)
   const [resultado, setResultado] = useState<'confirmada' | 'falso_positivo' | null>(null)
   const [causa, setCausa] = useState('')
@@ -67,6 +88,14 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
 
   const alvo = ALVOS[alvoId]
   const ehDoenca = alvo.tipo === 'doenca'
+
+  // Guarda o rascunho enquanto a pessoa preenche (com um pequeno atraso para não gravar a cada tecla).
+  useEffect(() => {
+    const r = { alvoId, fase, quantidade, zero, ...(presente !== undefined ? { presente } : {}), ...(severidade !== undefined ? { severidade } : {}), ...(desfolha !== undefined ? { desfolha } : {}), obs, repeticoes, condicoes, estadio, fotos }
+    if (!rascunhoTemConteudo(r)) return
+    const t = setTimeout(() => { if (!salvou.current) void repo.gravarConfig(chave, { ...r, salvoEm: new Date().toISOString() }) }, 400)
+    return () => clearTimeout(t)
+  }, [chave, alvoId, fase, quantidade, zero, presente, severidade, desfolha, obs, repeticoes, condicoes, estadio, fotos])
   const usaGps = (gpsReal || forcarGps) && gps
 
   const rascunho: Registro = useMemo(
@@ -98,8 +127,8 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
     try {
       const ids = await Promise.all([...arquivos].map((f) => salvarFoto(f)))
       setFotos((x) => [...x, ...ids])
-    } catch {
-      mostrar('Não foi possível ler a foto. Tente outra imagem.', 'erro')
+    } catch (e) {
+      mostrar(mensagemDeGravacao(e, 'Não foi possível ler a foto. Tente outra imagem.'), 'erro')
     }
   }
 
@@ -116,8 +145,13 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
         const res = resultado === 'confirmada' ? ({ confirmada: true } as const) : ({ confirmada: false, causa } as const)
         await repo.salvarOrdem(resolverOrdem(ordem, res, new Date(), reg.id))
       }
+      salvou.current = true // nenhum rascunho atrasado pode reaparecer depois de salvar
+      await repo.gravarConfig(chave, null)
       mostrar(`Registro salvo em ${pontoId}`)
       onSalvo(reg)
+    } catch (e) {
+      // O formulário continua aberto com tudo o que foi digitado: a pessoa não perde o registro.
+      mostrar(mensagemDeGravacao(e, 'Não foi possível salvar o registro. Tente de novo.'), 'erro')
     } finally {
       setSalvando(false)
     }
@@ -128,6 +162,12 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, for
 
   return (
     <div className="space-y-5">
+      {inicial && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-info-soft p-3 text-apoio">
+          <span><b className="font-semibold text-info">Rascunho recuperado</b> (salvo às {dataHoraBr(inicial.salvoEm).slice(11)}). Continue de onde parou.</span>
+          <button type="button" onClick={() => { salvou.current = true; onDescartar() }} className="inline-flex min-h-11 items-center font-semibold underline">Descartar</button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 text-apoio text-text-2">
         <Badge tom="neutral" icon="campo">Ponto {pontoId}</Badge>
         <span>{talhao.nome}</span>

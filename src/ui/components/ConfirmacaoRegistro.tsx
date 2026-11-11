@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { mensagemDeGravacao } from '@/data/erros'
 import { repo } from '@/data/repo'
 import { useToast } from '../state/toast'
 import { Icon } from './Icon'
@@ -40,9 +41,13 @@ export function ConfirmacaoRegistro({ dados, autor, janelaS = 30, onFicha, onOut
   const restante = Math.max(0, janelaS - Math.floor((agora - inicio) / 1000))
 
   async function desfazer() {
-    const n = await repo.anularRegistros(dados.ids, { autor })
-    mostrar(n > 0 ? 'Registro desfeito. Continua guardado na ficha do ponto.' : 'Nada para desfazer.', n > 0 ? 'ok' : 'erro')
-    onFechar()
+    try {
+      const n = await repo.anularRegistros(dados.ids, { autor })
+      mostrar(n > 0 ? 'Registro desfeito. Continua guardado na ficha do ponto.' : 'Nada para desfazer.', n > 0 ? 'ok' : 'erro')
+      onFechar()
+    } catch (e) {
+      mostrar(mensagemDeGravacao(e, 'Não foi possível desfazer. Tente de novo.'), 'erro')
+    }
   }
 
   return (

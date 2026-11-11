@@ -121,3 +121,67 @@ test('mapa inteligente: a ficha completa do ponto abre a partir do ponto e mostr
   await expect(ficha.getByRole('list', { name: 'Histórico do ponto 1' })).toBeVisible()
   await expect(ficha.getByText('Método não informado').first().or(ficha.getByText(/Pano de batida/).first())).toBeVisible()
 })
+
+test.describe('rascunho do registro (app fechado no meio)', () => {
+  const lerRascunho = (page: Page) => page.evaluate(() => new Promise<unknown>((ok) => {
+    const a = indexedDB.open('sentinela')
+    a.onsuccess = () => { const r = a.result.transaction('config').objectStore('config').getAll(); r.onsuccess = () => ok(r.result.find((x: { chave: string }) => x.chave.startsWith('rascunho:registro:'))?.valor ?? null) }
+  }))
+
+  async function preencher(page: Page) {
+    await page.getByRole('button', { name: 'Registrar achado' }).click()
+    const d = page.getByRole('dialog')
+    const nome = d.getByPlaceholder('Nome e sobrenome')
+    if (await nome.isVisible()) await nome.fill('Ana Teste')
+    await d.getByRole('radio', { name: 'Adulto' }).click()
+    await d.getByRole('button', { name: 'Aumentar' }).click()
+    await d.getByLabel('Observação técnica (opcional)').fill('manchas na face de baixo')
+    await expect.poll(() => lerRascunho(page), { timeout: 8000 }).not.toBeNull() // gravou no aparelho
+  }
+
+  test('se a página fechar no meio, o rascunho volta ao reabrir o ponto', async ({ page }) => {
+    await abrirT04(page)
+    await preencher(page)
+    await page.reload() // como se o celular travasse ou a aba fosse fechada
+    await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
+    await expect(page.getByText('Ponto 1 de 10')).toBeVisible()
+    await page.getByRole('button', { name: 'Registrar achado' }).click()
+    const d = page.getByRole('dialog')
+    await expect(d.getByText('Rascunho recuperado')).toBeVisible()
+    await expect(d.getByRole('radio', { name: 'Adulto' })).toHaveAttribute('aria-checked', 'true')
+    await expect(d.getByRole('textbox', { name: 'Quantidade' })).toHaveValue('1')
+    await expect(d.getByLabel('Observação técnica (opcional)')).toHaveValue('manchas na face de baixo')
+  })
+
+  test('salvar apaga o rascunho: na próxima vez o formulário abre limpo', async ({ page }) => {
+    await abrirT04(page)
+    await preencher(page)
+    const d = page.getByRole('dialog')
+    await d.getByRole('button', { name: 'Salvar registro' }).click()
+    await expect(d).toBeHidden()
+    await expect.poll(() => lerRascunho(page)).toBeNull()
+    await page.getByRole('region', { name: 'Registro salvo' }).getByRole('button', { name: 'Outro achado aqui' }).click()
+    await expect(page.getByRole('dialog').getByText('Rascunho recuperado')).toHaveCount(0)
+    await expect(page.getByRole('dialog').getByLabel('Observação técnica (opcional)')).toHaveValue('')
+  })
+
+  test('Descartar apaga o rascunho e limpa o formulário', async ({ page }) => {
+    await abrirT04(page)
+    await preencher(page)
+    await page.reload()
+    await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
+    await page.getByRole('button', { name: 'Registrar achado' }).click()
+    const d = page.getByRole('dialog')
+    await d.getByRole('button', { name: 'Descartar' }).click()
+    await expect(d.getByText('Rascunho recuperado')).toHaveCount(0)
+    await expect(d.getByLabel('Observação técnica (opcional)')).toHaveValue('')
+    await expect.poll(() => lerRascunho(page)).toBeNull()
+  })
+
+  test('um formulário aberto e parado não gera rascunho', async ({ page }) => {
+    await abrirT04(page)
+    await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.waitForTimeout(1200)
+    expect(await lerRascunho(page)).toBeNull()
+  })
+})

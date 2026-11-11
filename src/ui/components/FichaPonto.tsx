@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { mensagemDeGravacao } from '@/data/erros'
 import { useFotoUrl } from '@/data/fotos'
 import { usePendencias, useVersoesDoPonto } from '@/data/hooks'
 import { repo } from '@/data/repo'
@@ -56,6 +57,8 @@ function FormCorrecao({ registro, onFechar }: { registro: Registro; onFechar: ()
       if (!r.gravado) { setErros(r.problemas.filter((p) => p.gravidade === 'erro').map((p) => p.mensagem)); return }
       mostrar('Correção salva. A versão anterior continua guardada.')
       onFechar()
+    } catch (e) {
+      setErros([mensagemDeGravacao(e, 'Não foi possível salvar a correção. Tente de novo.')])
     } finally {
       setSalvando(false)
     }

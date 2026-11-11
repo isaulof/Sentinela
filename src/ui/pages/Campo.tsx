@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { registrarSemOcorrencia } from '@/data/coleta'
+import { ehFaltaDeEspaco, mensagemDeGravacao } from '@/data/erros'
 import { useFazenda, usePendencias, usePlano, useRegistros, useTalhoes } from '@/data/hooks'
 import { carregarDemonstracao } from '@/data/seed'
 import { avaliarRegistro, daRodada, nivelPorPonto } from '@/domain/analise'
@@ -94,7 +95,8 @@ export function Campo() {
       setConfirmacao({ ids: gravados.map((g) => g.id), pontoId: alvoPonto, ordem: pt.order, titulo: `Ponto ${pt.order}: sem ocorrência`, linhas: [`${gravados.length} alvos com zero: ${gravados.map((g) => ALVOS[g.alvo].nome).join(', ')}`, dataHoraBr(gravados[0]!.criadoEm, gravados[0]!.fusoHorario)] })
       setPonto(navegando ? null : alvoPonto)
     } catch (e) {
-      mostrar(e instanceof Error ? e.message : 'Não foi possível registrar.', 'erro')
+      // Erros nossos (ex.: ponto fora do plano) têm texto claro; falta de espaço ganha a mensagem própria.
+      mostrar(ehFaltaDeEspaco(e) ? mensagemDeGravacao(e) : e instanceof Error ? e.message : 'Não foi possível registrar.', 'erro')
     } finally {
       setSalvando(false)
     }

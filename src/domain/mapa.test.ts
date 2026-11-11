@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { LngLat } from './geo'
 import {
-  calorHonesto, diferencaEntreVisitas, distanciaVizinhoMediaM, distribuicaoPorNivel, escalaDoAlvo, matrizPontoVisita, MIN_AMOSTRAS_CALOR, moranI, normalCdf,
+  calorHonesto, diferencaEntreVisitas, RAIO_MINIMO_M, distanciaVizinhoMediaM, distribuicaoPorNivel, escalaDoAlvo, matrizPontoVisita, MIN_AMOSTRAS_CALOR, moranI, normalCdf,
   qualidadeDosDados, raioDeInfluenciaM, rotuloValor, tendencia, tetoRedondo,
 } from './mapa'
 import type { Registro } from './registro'
@@ -59,6 +59,29 @@ describe('raio de influência', () => {
     expect(distanciaVizinhoMediaM(pts)).toBeCloseTo(100, 0)
     expect(raioDeInfluenciaM(pts)).toBeCloseTo(150, 0)
     expect(distanciaVizinhoMediaM([ll([0, 0])])).toBeNull()
+  })
+})
+
+describe('bordas geométricas (F6)', () => {
+  it('pontos repetidos não zeram o raio nem pintam "sem dado" por engano: usa o raio mínimo', () => {
+    const rep = [amostra('a', 500, 500, 5), amostra('b', 500, 500, 1), amostra('c', 500, 500, 3)]
+    expect(raioDeInfluenciaM(rep.map((a) => a.posicao))).toBe(RAIO_MINIMO_M)
+    const c = calorHonesto(quadrado1km, rep)
+    expect(c.celulas.length).toBeGreaterThan(0) // ao redor dos pontos há dado
+    expect(c.coberturaPct).toBeLessThan(5) // e só ao redor deles: o resto continua sem dado
+  })
+  it('foco com todos os pontos no mesmo lugar é indeterminado, não "ao acaso"', () => {
+    const m = moranI(Array.from({ length: 9 }, (_, i) => amostra(`p${i}`, 500, 500, i)))
+    expect(m.classe).toBe('indeterminado')
+    expect(m.texto).toMatch(/mesmo lugar/)
+  })
+  it('talhão muito alongado (2000 × 40 m) e ponto exatamente no vértice geram valores finitos', () => {
+    const faixa = ([[0, 0], [2000, 0], [2000, 40], [0, 40]] as [number, number][]).map(ll)
+    const a = calorHonesto(faixa, [amostra('a', 100, 20, 5), amostra('b', 1000, 20, 1), amostra('c', 1900, 20, 3)])
+    expect(a.celulas.length).toBeGreaterThan(0)
+    expect(a.celulas.every((x) => Number.isFinite(x.valor))).toBe(true)
+    const v = calorHonesto(quadrado1km, [amostra('a', 0, 0, 5), amostra('b', 1000, 0, 1), amostra('c', 500, 1000, 3)])
+    expect(v.celulas.every((x) => Number.isFinite(x.valor))).toBe(true)
   })
 })
 
