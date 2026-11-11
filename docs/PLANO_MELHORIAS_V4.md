@@ -22,9 +22,9 @@
 > | F3 | `08fcc0c` | Exportação **CSV** (Excel pt-BR: BOM, `;`, vírgula decimal) e **GeoJSON** com todos os campos e todas as versões; **Relatório do talhão** em `/talhoes/:id/relatorio`, para imprimir ou salvar em PDF; `domain/estatistica.ts` |
 > | F4 | `302bde0` | Mapa v2: **calor honesto** (só com 3+ pontos, só dentro do raio de 1,5× a distância média entre vizinhos, resto hachurado como "sem dado"), escala fixa entre visitas, legenda com números, camadas Calor/Estado/Mudança, valores nos pontos, painel de análise (média, mediana, máximo, desvio, índice de Moran, tendência, pontos por nível, tabela ponto × visita, contas explicadas), qualidade dos dados; `domain/mapa.ts` |
 >
-> ### Verificação no último ponto
+> ### Verificação no último ponto (F4, commit `302bde0`)
 > - Unitários: **364 passam** (21 arquivos). Build ok. Lint limpo.
-> - E2E: 180 passavam ao fim da F3; na F4 os **18 testes novos (`e2e/mapa.spec.ts`) passam**, mas a **suíte e2e completa da F4 não chegou a ser confirmada** quando esta nota foi escrita. **Primeira coisa ao retomar: rodar `npx playwright test` inteiro.**
+> - E2E: **198 passam** (suíte completa, confirmada após a F4, ~6 min), sem falhas. Nada pendente de verificação.
 > - Testes novos de e2e: `inicio`, `registro`, `exportar`, `mapa`; `guia` e `fluxos` foram ajustados ao novo comportamento.
 >
 > ### Decisões tomadas (as recomendações da seção 6 foram seguidas)
