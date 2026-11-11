@@ -13,3 +13,4 @@ export const useTodosRegistros = () => useLiveQuery(() => db.registros.orderBy('
 export const usePlanos = () => useLiveQuery(() => db.planos.toArray(), [])
 export const useOrdens = () => useLiveQuery(() => db.ordens.orderBy('id').toArray(), [])
 export const useTodasPendencias = () => useLiveQuery(() => db.pendencias.toArray(), [])
+export const useFazenda = () => useLiveQuery(() => db.fazendas.get('fazenda'), [])

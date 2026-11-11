@@ -3,6 +3,7 @@ import { daRodada, idwGrade, nivelPorPonto, PESO } from './analise'
 import { NIVEL_ACAO, type Nivel } from './decision'
 import { makeProjection, type LngLat } from './geo'
 import type { Registro } from './registro'
+import { diaLocal, fimDoDia } from './tempo'
 
 /** Valor numérico do registro para o mapa de calor: contagem (pragas) ou severidade (doenças). */
 export const valorDoRegistro = (r: Registro): number => (ALVOS[r.alvo].tipo === 'praga' ? r.quantidade : (r.severidadePct ?? (r.presente ? 1 : 0)))
@@ -11,7 +12,8 @@ export const valorDoRegistro = (r: Registro): number => (ALVOS[r.alvo].tipo === 
 export const LIMITE_ACAO: Partial<Record<AlvoId, number>> = { percevejo: NIVEL_ACAO.percevejo.graos, lagarta: NIVEL_ACAO.lagartaPorMetro }
 export const UNIDADE_ALVO: Record<AlvoId, string> = { percevejo: 'perc./m', lagarta: 'lag./m', ferrugem: '% sev.', mofo: '% sev.', manchaAlvo: '% sev.' }
 
-const dia = (r: Registro) => r.criadoEm.slice(0, 10)
+/** Dia da visita = dia LOCAL da fazenda (não UTC): 21:30 em Cuiabá continua no mesmo dia. */
+const dia = (r: Registro) => diaLocal(r.criadoEm)
 
 /** Dias com coleta, em ordem. Cada um é uma "visita" na linha do tempo. */
 export function visitas(regs: readonly Registro[]): string[] {
@@ -23,7 +25,7 @@ export const ateODia = (regs: readonly Registro[], d: string): Registro[] => reg
 
 /** Estado dos pontos na data: pior nível entre os registros da rodada (7 dias) que terminou naquele dia. */
 export function niveisNaData(regs: readonly Registro[], d: string, alvo: AlvoId | null): Map<string, Nivel> {
-  const fim = new Date(`${d}T23:59:59Z`)
+  const fim = fimDoDia(d)
   const base = ateODia(regs, d).filter((r) => !alvo || r.alvo === alvo)
   return nivelPorPonto(daRodada(base, fim))
 }
@@ -74,7 +76,7 @@ const EM_ATENCAO: Nivel[] = ['proximo', 'atingido', 'deteccao']
 /** Resumo do talhão na data: quantos pontos têm ocorrência e qual alvo mais pesa. */
 export function resumirResultado(pontosIds: readonly string[], regs: readonly Registro[], d: string): ResumoResultado {
   const niveis = niveisNaData(regs, d, null)
-  const fim = new Date(`${d}T23:59:59Z`)
+  const fim = fimDoDia(d)
   const rodada = daRodada(ateODia(regs, d), fim)
   const coletados = pontosIds.filter((p) => niveis.has(p)).length
   const comOcorrencia = pontosIds.filter((p) => (niveis.get(p) ? PESO[niveis.get(p)!] >= PESO['abaixo'] && niveis.get(p) !== 'nao_aplicavel' : false)).length

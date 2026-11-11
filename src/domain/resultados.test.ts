@@ -68,3 +68,22 @@ describe('setor do foco', () => {
   })
   it('sem pontos, não inventa setor', () => expect(setorDoFoco(quadra, [])).toBeNull())
 })
+
+describe('fuso: dia da visita é o dia local (Cuiabá), não o UTC', () => {
+  // Mesma visita: 09:00 local (13:00 UTC) e 21:30 local (01:30 UTC do dia seguinte).
+  const mesmaVisita = [
+    reg({ pontoId: 'P01', criadoEm: '2026-11-11T13:00:00Z' }),
+    reg({ pontoId: 'P02', criadoEm: '2026-11-12T01:30:00Z', quantidade: 1, zero: false }),
+  ]
+  it('uma visita com registros de manhã e à noite aparece uma única vez', () => {
+    expect(visitas(mesmaVisita)).toEqual(['2026-11-11'])
+  })
+  it('23:59 e 00:01 locais são visitas diferentes', () => {
+    const r = [reg({ criadoEm: '2026-11-12T03:59:00Z' }), reg({ criadoEm: '2026-11-12T04:01:00Z' })]
+    expect(visitas(r)).toEqual(['2026-11-11', '2026-11-12'])
+  })
+  it('o registro das 21:30 entra no mapa daquele dia', () => {
+    expect(ateODia(mesmaVisita, '2026-11-11')).toHaveLength(2)
+    expect(niveisNaData(mesmaVisita, '2026-11-11', null).has('P02')).toBe(true)
+  })
+})

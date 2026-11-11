@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { registrarSemOcorrencia } from '@/data/coleta'
-import { usePendencias, usePlano, useRegistros, useTalhoes } from '@/data/hooks'
+import { useFazenda, usePendencias, usePlano, useRegistros, useTalhoes } from '@/data/hooks'
 import { carregarDemonstracao } from '@/data/seed'
 import { avaliarRegistro, daRodada, nivelPorPonto } from '@/domain/analise'
 import { rotuloDiagnostico } from '@/domain/funil'
@@ -31,6 +31,7 @@ export function Campo() {
   const mostrar = useToast((s) => s.mostrar)
   const talhao = talhoes?.find((t) => t.id === talhaoId) ?? talhoes?.[0]
   const plano = usePlano(talhao?.id)
+  const fazenda = useFazenda()
   const registros = useRegistros(talhao?.id)
   const pendencias = usePendencias(talhao?.id)
   const [navegando, setNavegando] = useState(false)
@@ -57,7 +58,7 @@ export function Campo() {
     return (
       <>
         <Titulo>Coleta</Titulo>
-        <Vazio icone="campo" titulo="Nenhum talhão para monitorar" texto="Desenhe um talhão em Talhões ou carregue a Fazenda Santa Aurora para apresentar o app." acao={<div className="flex flex-wrap justify-center gap-3"><Link to="/talhoes/novo" className="inline-flex min-h-12 items-center rounded-xl bg-brand px-5 font-semibold text-on-brand">Desenhar talhão</Link><Button variant="secondary" onClick={() => void carregarDemonstracao()}>Carregar demonstração</Button></div>} />
+        <Vazio icone="campo" titulo="Nenhum talhão para monitorar" texto="Desenhe um talhão em Talhões ou carregue a demonstração para apresentar o app." acao={<div className="flex flex-wrap justify-center gap-3"><Link to="/talhoes/novo" className="inline-flex min-h-12 items-center rounded-xl bg-brand px-5 font-semibold text-on-brand">Desenhar talhão</Link><Button variant="secondary" onClick={() => void carregarDemonstracao()}>Carregar demonstração</Button></div>} />
       </>
     )
   }
@@ -81,7 +82,7 @@ export function Campo() {
     if (!alvoPonto || !pt || !plano || !talhao) return
     setSalvando(true)
     try {
-      const n = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, gps: gps.estado === 'ok' && gpsReal ? gps.fix : null })
+      const n = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, gps: gps.estado === 'ok' && gpsReal ? gps.fix : null, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) })
       if (n === 0) { mostrar('Não foi possível registrar. Tente de novo.', 'erro'); return }
       mostrar(`Ponto ${pt.order}: sem ocorrência`)
       setPonto(null)
@@ -106,7 +107,7 @@ export function Campo() {
           <div className="h-2.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={Math.round((feitos / pontos.length) * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da coleta">
             <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(feitos / pontos.length) * 100}%` }} />
           </div>
-          {navegando && !gpsReal && <p className="px-1 text-sm text-text-2">Sala de aula: registros usam a posição planejada. <Link to="/perfil" className="font-semibold text-brand underline">Ativar GPS real</Link></p>}
+          {navegando && !gpsReal && <p className="px-1 text-apoio text-text-2">Sala de aula: registros usam a posição planejada. <Link to="/perfil" className="font-semibold text-brand underline">Ativar GPS real</Link></p>}
           <div className="relative">
             <Mapa
               className="h-[calc(100dvh-31rem)] min-h-72 w-full overflow-hidden rounded-card ring-1 ring-line lg:h-[66dvh]"
@@ -118,7 +119,7 @@ export function Campo() {
             />
             {navegando && pt && <FaixaGuia gps={gps} alvo={{ id: pt.id, ordem: pt.order, posicao: pt.position }} onParar={() => setNavegando(false)} />}
           </div>
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-2" aria-label="Legenda do mapa">
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-apoio text-text-2" aria-label="Legenda do mapa">
             {LEGENDA.map((e) => (
               <li key={e} className="flex items-center gap-1.5"><span className="size-3.5 rounded-full border border-white/70" style={{ background: COR_ESTADO[e].fundo }} />{ROTULO_ESTADO[e]}</li>
             ))}
@@ -130,37 +131,37 @@ export function Campo() {
             <div className="flex items-center justify-between gap-2">
               <button type="button" aria-label="Ponto anterior" onClick={() => irPara(idx - 1)} className="grid size-11 place-items-center rounded-xl border border-line hover:bg-surface-2"><Icon name="seta" className="rotate-180" /></button>
               <div className="text-center">
-                <p className="hidden text-sm font-medium text-text-2 lg:block">{ponto ? 'Ponto selecionado' : concluida ? 'Coleta concluída' : 'Próximo ponto'}</p>
-                <p className="text-2xl font-extrabold tracking-tight lg:text-3xl">Ponto {pt?.order ?? '—'} <span className="text-base font-semibold text-text-2">de {pontos.length}</span></p>
+                <p className="hidden text-apoio font-medium text-text-2 lg:block">{ponto ? 'Ponto selecionado' : concluida ? 'Coleta concluída' : 'Próximo ponto'}</p>
+                <p className="text-titulo font-extrabold tracking-tight lg:text-titulo">Ponto {pt?.order ?? '—'} <span className="text-corpo font-semibold text-text-2">de {pontos.length}</span></p>
               </div>
               <button type="button" aria-label="Próximo ponto" onClick={() => irPara(idx + 1)} className="grid size-11 place-items-center rounded-xl border border-line hover:bg-surface-2"><Icon name="seta" /></button>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 lg:gap-2">
               <Badge tom={TOM_ESTADO[estadoPt]}>{ROTULO_ESTADO[estadoPt]}</Badge>
-              {!navegando && <button type="button" disabled={!alvoPonto} onClick={() => setNavegando(true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-soft px-3.5 text-sm font-semibold text-brand transition active:scale-95 disabled:opacity-40"><Icon name="local" size={16} />Ir até o ponto</button>}
+              {!navegando && <button type="button" disabled={!alvoPonto} onClick={() => setNavegando(true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-soft px-3.5 text-apoio font-semibold text-brand transition active:scale-95 disabled:opacity-40"><Icon name="local" size={16} />Ir até o ponto</button>}
               {gpsReal ? (
-                <span className="hidden text-sm text-text-2 lg:inline">{gps.estado === 'ok' ? `${dist} m de você (GPS ±${Math.round(gps.fix.precisaoM)} m)` : gps.estado === 'erro' ? gps.motivo : 'Procurando GPS…'}</span>
+                <span className="hidden text-apoio text-text-2 lg:inline">{gps.estado === 'ok' ? `${dist} m de você (GPS ±${Math.round(gps.fix.precisaoM)} m)` : gps.estado === 'erro' ? gps.motivo : 'Procurando GPS…'}</span>
               ) : (
-                <span className="hidden text-sm text-text-2 lg:inline">Posição simulada (sala de aula)</span>
+                <span className="hidden text-apoio text-text-2 lg:inline">Posição simulada (sala de aula)</span>
               )}
             </div>
 
             <div className="grid grid-cols-3 gap-2 lg:grid-cols-1 lg:gap-2.5">
-              <Button block icon="check" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-base" disabled={!alvoPonto || salvando} onClick={pedirSemOcorrencia}>{salvando ? 'Registrando…' : 'Sem ocorrência'}</Button>
-              <Button block variant="secondary" icon="lupa" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-base" disabled={!alvoPonto} onClick={() => setPainel('achado')}>Registrar achado</Button>
-              <Button block variant="secondary" icon="duvida" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-base" disabled={!alvoPonto} onClick={() => setPainel('pendencia')}>Não sei o que é</Button>
+              <Button block icon="check" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-corpo" disabled={!alvoPonto || salvando} onClick={pedirSemOcorrencia}>{salvando ? 'Registrando…' : 'Sem ocorrência'}</Button>
+              <Button block variant="secondary" icon="lupa" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-corpo" disabled={!alvoPonto} onClick={() => setPainel('achado')}>Registrar achado</Button>
+              <Button block variant="secondary" icon="duvida" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-corpo" disabled={!alvoPonto} onClick={() => setPainel('pendencia')}>Não sei o que é</Button>
             </div>
           </Card>
 
           {pendPonto.length > 0 && (
             <Card className="space-y-2">
-              <h2 className="text-lg">Achados deste ponto</h2>
+              <h2 className="text-subtitulo">Achados deste ponto</h2>
               <ul className="divide-y divide-line">
                 {pendPonto.map((p) => (
                   <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{p.nota || 'Achado sem descrição'}</p>
-                      <p className="text-sm text-text-2">{p.fotoIds.length} foto(s) · {p.amostrador}</p>
+                      <p className="text-apoio text-text-2">{p.fotoIds.length} foto(s) · {p.amostrador}</p>
                     </div>
                     <Badge tom={p.resolvida ? 'ok' : 'info'}>{p.resolvida ? rotuloDiagnostico(p.resolvida) : 'Pendente'}</Badge>
                   </li>
@@ -174,7 +175,7 @@ export function Campo() {
 
           {regsPonto.length > 0 && (
             <Card className="space-y-2">
-              <h2 className="text-lg">Registros neste ponto</h2>
+              <h2 className="text-subtitulo">Registros neste ponto</h2>
               <ul className="divide-y divide-line">
                 {regsPonto.slice().reverse().map((r) => {
                   const a = avaliarRegistro(r)
@@ -182,7 +183,7 @@ export function Campo() {
                     <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
                       <div>
                         <p className="font-semibold">{ALVOS[r.alvo].nome}</p>
-                        <p className="text-sm text-text-2">{r.zero ? 'Nenhuma ocorrência' : r.presente !== undefined ? `Presente · ${r.severidadePct ?? 0}%` : `${r.quantidade} por metro`}{r.fotoIds.length ? ` · ${r.fotoIds.length} foto(s)` : ''}</p>
+                        <p className="text-apoio text-text-2">{r.zero ? 'Nenhuma ocorrência' : r.presente !== undefined ? `Presente · ${r.severidadePct ?? 0}%` : `${r.quantidade} por metro`}{r.fotoIds.length ? ` · ${r.fotoIds.length} foto(s)` : ''}</p>
                       </div>
                       <Badge tom={TOM[a.nivel] ?? 'neutral'}>{a.titulo}</Badge>
                     </li>
@@ -194,7 +195,7 @@ export function Campo() {
 
           {concluida && (
             <Card className="space-y-2">
-              <h2 className="text-lg">Coleta concluída</h2>
+              <h2 className="text-subtitulo">Coleta concluída</h2>
               <p className="text-text-2">Veja onde estão os problemas no mapa do talhão.</p>
               <Link to="/talhoes/$id" params={{ id: talhao.id }} onClick={() => { setTalhao(talhao.id); setTalhaoAba('resultados') }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 font-semibold text-on-brand">Ver resultados no mapa</Link>
             </Card>

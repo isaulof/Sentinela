@@ -1,8 +1,8 @@
 import type { LngLat } from '@/domain/geo'
 import type { OrdemChecagem, PlanoSalvo, Talhao } from '@/domain/entidades'
 import { generatePlan, recommendedPointCount, DEFAULT_BUFFER_M, type SamplingMethod } from '@/domain/sampling'
-import type { Registro } from '@/domain/registro'
-import type { AlvoId } from '@/knowledge/alvos'
+import { camposV2, type Registro } from '@/domain/registro'
+import { ALVOS, type AlvoId } from '@/knowledge/alvos'
 import { db } from './db'
 import { salvarFotoBruta } from './fotos'
 
@@ -40,7 +40,7 @@ function fotoDemo(titulo: string): Blob {
 }
 
 export async function carregarDemonstracao(agora = new Date()): Promise<void> {
-  await db.transaction('rw', [db.talhoes, db.planos, db.registros, db.ordens, db.fotos], async () => {
+  await db.transaction('rw', [db.talhoes, db.planos, db.registros, db.ordens, db.fotos, db.fazendas], async () => {
     const talhoes: Talhao[] = []
     const planos: PlanoSalvo[] = []
     const regs: Registro[] = []
@@ -66,7 +66,7 @@ export async function carregarDemonstracao(agora = new Date()): Promise<void> {
       const semNada = c.quantidade === 0 && !c.presente && !c.desfolhaPct && !c.severidadePct
       regs.push({
         id: `DEMO-${talhaoId}-${c.alvo}-${ponto.id}-${d}`, talhaoId, amostrador: 'Demonstração', criadoEm: dia(agora, d), estadio, finalidade: 'graos',
-        pontoId: ponto.id, posicao: ponto.position, posicaoSimulada: true, zero: semNada, fotoIds: fotoTitulo ? [await nova(`${fotoTitulo} · ${talhaoId} ${ponto.id}`)] : [],
+        pontoId: ponto.id, posicao: ponto.position, posicaoSimulada: true, zero: semNada, ...camposV2({ posicao: ponto.position }, { metodo: ALVOS[c.alvo].coleta.metodo, parteDaPlanta: ALVOS[c.alvo].coleta.parte, planejada: ponto.position, inicio: new Date(dia(agora, d)), fim: new Date(dia(agora, d)), responsavel: 'Prof. responsável (demonstração)' }), fotoIds: fotoTitulo ? [await nova(`${fotoTitulo} · ${talhaoId} ${ponto.id}`)] : [],
         observacao: '', ...c,
       })
     }
@@ -99,6 +99,10 @@ export async function carregarDemonstracao(agora = new Date()): Promise<void> {
         causa: 'Compactação na faixa de tráfego de máquinas; sem sinais de doença.', motivo: 'NDRE baixo em faixa estreita (comparar com operações).' },
     ]
 
+    // A demonstração só cria a fazenda se o aparelho ainda não tem uma cadastrada.
+    if (!(await db.fazendas.get('fazenda'))) {
+      await db.fazendas.put({ id: 'fazenda', nome: 'Fazenda Santa Aurora', municipio: 'Lucas do Rio Verde', uf: 'MT', safra: '25/26', fuso: 'America/Cuiaba', atualizadaEm: agora.toISOString() })
+    }
     await db.talhoes.bulkPut(talhoes)
     await db.planos.bulkPut(planos)
     await db.registros.bulkPut(regs)

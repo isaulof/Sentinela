@@ -19,7 +19,7 @@ function RiscoCard({ nome, r }: { nome: string; r: RiscoDoenca }) {
   return (
     <div className="rounded-2xl border border-line p-4">
       <div className="flex items-center justify-between gap-2"><h3 className="font-semibold">{nome}</h3><Badge tom={RISCO_TOM[r.risco]}>Risco {r.risco}</Badge></div>
-      <p className="mt-2 text-sm text-text-2">{r.explicacao}</p>
+      <p className="mt-2 text-apoio text-text-2">{r.explicacao}</p>
     </div>
   )
 }
@@ -58,7 +58,7 @@ function Fluxo() {
         <li key={p.rotulo} className="relative rounded-2xl border border-line bg-surface p-4">
           <Badge tom={p.cor}>{i + 1} · {p.rotulo}</Badge>
           <h3 className="mt-2 font-semibold">{p.titulo}</h3>
-          <p className="mt-1 text-sm text-text-2">{p.texto}</p>
+          <p className="mt-1 text-apoio text-text-2">{p.texto}</p>
           {i < passos.length - 1 && <Icon name="seta" className="absolute -right-3.5 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-bg text-text-2 md:block" />}
         </li>
       ))}
@@ -121,26 +121,26 @@ export function Alertas() {
 
       <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Talhão">
         {talhoes.map((t) => (
-          <button key={t.id} type="button" onClick={() => setTalhao(t.id)} className={`min-h-11 rounded-xl border px-4 text-sm font-semibold ${t.id === talhao?.id ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface hover:bg-surface-2'}`}>{t.nome}</button>
+          <button key={t.id} type="button" onClick={() => setTalhao(t.id)} className={`min-h-11 rounded-xl border px-4 text-apoio font-semibold ${t.id === talhao?.id ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface hover:bg-surface-2'}`}>{t.nome}</button>
         ))}
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card className="space-y-4">
           <div className="flex items-start justify-between gap-2">
-            <div><h2 className="text-lg">Clima e risco de doenças</h2><p className="text-sm text-text-2">Estação virtual · dados da Open-Meteo em {talhao?.nome}</p></div>
+            <div><h2 className="text-subtitulo">Clima e risco de doenças</h2><p className="text-apoio text-text-2">Estação virtual · dados da Open-Meteo em {talhao?.nome}</p></div>
             <Button variant="ghost" onClick={() => { setTentativa((t) => t + 1); setAgora(new Date()) }} className="min-h-11">Atualizar</Button>
           </div>
           {clima.estado === 'carregando' && <p className="text-text-2" role="status">Buscando clima…</p>}
           {clima.estado === 'erro' && <p className="rounded-xl bg-warn-soft p-3 text-warn" role="alert">{clima.motivo}. Sem internet nem leitura anterior guardada, o risco não pode ser calculado.</p>}
           {clima.estado === 'ok' && (
             <>
-              {clima.doCache && <p className="rounded-xl bg-warn-soft p-3 text-sm text-warn">Sem conexão: mostrando a última leitura de {new Date(clima.buscadoEm).toLocaleString('pt-BR')}.</p>}
+              {clima.doCache && <p className="rounded-xl bg-warn-soft p-3 text-apoio text-warn">Sem conexão: mostrando a última leitura de {new Date(clima.buscadoEm).toLocaleString('pt-BR')}.</p>}
               {agoraH && (
                 <dl className="grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl bg-surface-2 p-2"><dt className="text-xs text-text-2">Temperatura</dt><dd className="text-xl font-bold">{agoraH.temperaturaC.toFixed(1)} °C</dd></div>
-                  <div className="rounded-xl bg-surface-2 p-2"><dt className="text-xs text-text-2">Umidade</dt><dd className="text-xl font-bold">{Math.round(agoraH.umidadePct)}%</dd></div>
-                  <div className="rounded-xl bg-surface-2 p-2"><dt className="text-xs text-text-2">Chuva 6 h</dt><dd className="text-xl font-bold">{(chuva6h ?? 0).toFixed(1)} mm</dd></div>
+                  <div className="rounded-xl bg-surface-2 p-2"><dt className="text-rotulo text-text-2">Temperatura</dt><dd className="text-secao font-bold">{agoraH.temperaturaC.toFixed(1)} °C</dd></div>
+                  <div className="rounded-xl bg-surface-2 p-2"><dt className="text-rotulo text-text-2">Umidade</dt><dd className="text-secao font-bold">{Math.round(agoraH.umidadePct)}%</dd></div>
+                  <div className="rounded-xl bg-surface-2 p-2"><dt className="text-rotulo text-text-2">Chuva 6 h</dt><dd className="text-secao font-bold">{(chuva6h ?? 0).toFixed(1)} mm</dd></div>
                 </dl>
               )}
               <BarrasMolhamento dias={diasPassados} />
@@ -152,7 +152,7 @@ export function Alertas() {
                 <Button variant="secondary" disabled={ferrugem.risco !== 'alto'} onClick={() => void criarOrdemClima('ferrugem', ferrugem)}>Criar ordem (ferrugem)</Button>
                 <Button variant="secondary" disabled={mofo.risco !== 'alto'} onClick={() => void criarOrdemClima('mofo', mofo)}>Criar ordem (mofo)</Button>
               </div>
-              <details className="rounded-xl border border-line p-3 text-sm">
+              <details className="rounded-xl border border-line p-3 text-apoio">
                 <summary className="cursor-pointer font-semibold">Como o risco é calculado</summary>
                 <div className="mt-2 space-y-2 text-text-2">
                   <p>Uma hora é considerada <b className="text-text">molhada</b> quando a umidade relativa é de {LIMIARES.umidadeMolhadaPct}% ou mais, ou há chuva (proxy do molhamento foliar; não é medido).</p>
@@ -166,12 +166,12 @@ export function Alertas() {
         </Card>
 
         <Card className="space-y-4">
-          <div><h2 className="text-lg">Drone e visão computacional</h2><p className="text-sm text-text-2">Simulação: o app gera uma anomalia de índice de vegetação (NDRE) e a liga ao ponto mais próximo.</p></div>
+          <div><h2 className="text-subtitulo">Drone e visão computacional</h2><p className="text-apoio text-text-2">Simulação: o app gera uma anomalia de índice de vegetação (NDRE) e a liga ao ponto mais próximo.</p></div>
           <Button block icon="mapa" onClick={() => void simularDrone()} disabled={!plano}>Simular voo de drone</Button>
-          <p className="text-sm text-text-2">O drone mostra <b className="text-text">onde</b> há algo diferente, não <b className="text-text">o quê</b>. Herbicida, compactação e estresse hídrico também derrubam o NDRE. Por isso o alerta vira uma ordem de checagem, não uma aplicação.</p>
+          <p className="text-apoio text-text-2">O drone mostra <b className="text-text">onde</b> há algo diferente, não <b className="text-text">o quê</b>. Herbicida, compactação e estresse hídrico também derrubam o NDRE. Por isso o alerta vira uma ordem de checagem, não uma aplicação.</p>
           <div>
             <h3 className="mb-1.5 font-semibold">Limitações do sistema</h3>
-            <ul className="space-y-1.5 text-sm text-text-2">
+            <ul className="space-y-1.5 text-apoio text-text-2">
               <li className="flex gap-2"><Icon name="info" size={18} className="mt-0.5 shrink-0" />Nuvens, sombra e resolução limitam a imagem do drone; o voo exige boas condições.</li>
               <li className="flex gap-2"><Icon name="info" size={18} className="mt-0.5 shrink-0" />Sem sinal de internet no campo, o app funciona offline, mas o clima novo e os mapas não carregados ficam indisponíveis.</li>
               <li className="flex gap-2"><Icon name="info" size={18} className="mt-0.5 shrink-0" />A imagem não distingue doença de deficiência nutricional ou de herbicida; custo de drone e sensores exige escala.</li>
@@ -181,14 +181,14 @@ export function Alertas() {
       </div>
 
       <section className="mt-8 space-y-3" aria-labelledby="ordens">
-        <h2 id="ordens" className="text-xl">Ordens de checagem</h2>
+        <h2 id="ordens" className="text-secao">Ordens de checagem</h2>
         {(ordens ?? []).length === 0 && <p className="text-text-2">Nenhuma ordem ainda. Simule um voo de drone ou crie uma ordem a partir do risco climático.</p>}
         <div className="grid gap-3 lg:grid-cols-2">
           {abertas.map((o) => (
             <Card key={o.id} className="space-y-2 border-warn">
-              <div className="flex flex-wrap items-center gap-2"><Badge tom="warn" icon="alerta">Aberta</Badge><Badge tom="neutral">{ORIGEM[o.origem]}</Badge><span className="text-sm text-text-2">há {idade(o.criadaEm)} · prazo {SLA_CHECAGEM_H} h</span></div>
+              <div className="flex flex-wrap items-center gap-2"><Badge tom="warn" icon="alerta">Aberta</Badge><Badge tom="neutral">{ORIGEM[o.origem]}</Badge><span className="text-apoio text-text-2">há {idade(o.criadaEm)} · prazo {SLA_CHECAGEM_H} h</span></div>
               <p><b>{talhoes.find((t) => t.id === o.talhaoId)?.nome}</b> · ponto {o.pontoId}</p>
-              <p className="text-sm text-text-2">{o.motivo}</p>
+              <p className="text-apoio text-text-2">{o.motivo}</p>
               <Button icon="campo" onClick={() => irAoPonto(o)}>Ir ao ponto e checar</Button>
             </Card>
           ))}
@@ -196,16 +196,16 @@ export function Alertas() {
             <Card key={o.id} className="space-y-2">
               <div className="flex flex-wrap items-center gap-2"><Badge tom={o.status === 'confirmada' ? 'danger' : 'ok'} icon="check">{o.status === 'confirmada' ? 'Confirmada em campo' : 'Falso positivo'}</Badge><Badge tom="neutral">{ORIGEM[o.origem]}</Badge></div>
               <p><b>{talhoes.find((t) => t.id === o.talhaoId)?.nome}</b> · ponto {o.pontoId}</p>
-              <p className="text-sm text-text-2">{o.motivo}</p>
-              {o.causa && <p className="text-sm"><b>Causa encontrada:</b> {o.causa}</p>}
-              {o.status === 'falso_positivo' && <p className="text-sm text-ok">Aplicação desnecessária evitada.</p>}
+              <p className="text-apoio text-text-2">{o.motivo}</p>
+              {o.causa && <p className="text-apoio"><b>Causa encontrada:</b> {o.causa}</p>}
+              {o.status === 'falso_positivo' && <p className="text-apoio text-ok">Aplicação desnecessária evitada.</p>}
             </Card>
           ))}
         </div>
       </section>
 
       <section className="mt-8 space-y-3" aria-labelledby="fluxo">
-        <h2 id="fluxo" className="text-xl">Como a informação circula</h2>
+        <h2 id="fluxo" className="text-secao">Como a informação circula</h2>
         <Fluxo />
       </section>
     </>

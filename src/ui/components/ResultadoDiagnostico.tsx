@@ -21,7 +21,7 @@ function Medidor({ nivel, pct }: { nivel: Confianca; pct: number }) {
   return (
     <div className="flex items-center gap-2.5" role="img" aria-label={`Certeza: ${pct}%, ${ROTULO_CONFIANCA[nivel].toLowerCase()}`}>
       <span aria-hidden className="flex gap-1">{[1, 2, 3].map((i) => <span key={i} className={`h-2 w-7 rounded-full ${i <= cheias ? cor : 'bg-surface-2'}`} />)}</span>
-      <span className="text-sm font-semibold"><span className="text-base">{pct}%</span> de certeza · {ROTULO_CONFIANCA[nivel]}</span>
+      <span className="text-apoio font-semibold"><span className="text-corpo">{pct}%</span> de certeza · {ROTULO_CONFIANCA[nivel]}</span>
     </div>
   )
 }
@@ -30,12 +30,12 @@ function Medidor({ nivel, pct }: { nivel: Confianca; pct: number }) {
 function Grupo({ viva, naoViva }: { viva: number; naoViva: number }) {
   return (
     <Card className="space-y-2.5">
-      <h3 className="text-base">É doença ou praga? Ou outra causa?</h3>
+      <h3 className="text-corpo">É doença ou praga? Ou outra causa?</h3>
       <div role="img" aria-label={`Doença ou praga: ${viva}%. Causa não viva (produto, nutriente, clima ou solo): ${naoViva}%`} className="flex h-3 overflow-hidden rounded-full bg-surface-2">
         <span className="bg-danger" style={{ width: `${viva}%` }} />
         <span className="bg-info" style={{ width: `${naoViva}%` }} />
       </div>
-      <div className="flex justify-between gap-3 text-sm">
+      <div className="flex justify-between gap-3 text-apoio">
         <span><b>{viva}%</b> <span className="text-text-2">doença ou praga</span></span>
         <span className="text-right"><b>{naoViva}%</b> <span className="text-text-2">produto, nutriente, clima ou solo</span></span>
       </div>
@@ -46,7 +46,7 @@ function Grupo({ viva, naoViva }: { viva: number; naoViva: number }) {
 function Secao({ titulo, icone, children }: { titulo: string; icone?: ReactNode; children: ReactNode }) {
   return (
     <Card className="space-y-3">
-      <h3 className="flex items-center gap-2 text-base">{icone}{titulo}</h3>
+      <h3 className="flex items-center gap-2 text-corpo">{icone}{titulo}</h3>
       {children}
     </Card>
   )
@@ -95,18 +95,18 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
             <Badge tom="warn">Resultado incerto</Badge>
             <Medidor nivel="baixa" pct={pct} />
           </div>
-          <h2 className="text-[1.5rem] leading-tight">Ainda não dá para dizer o que é</h2>
+          <h2 className="text-titulo leading-tight">Ainda não dá para dizer o que é</h2>
           <p className="leading-relaxed">Com o que você respondeu, o app não tem base para apontar uma causa. Estas são as mais compatíveis, sem ordem de certeza:</p>
           <ul className="space-y-2">
             {ranking.slice(0, 3).map((r) => (
               <li key={r.candidato.id} className="rounded-xl bg-surface-2 px-3 py-2.5">
-                <p className="flex items-baseline justify-between gap-3"><b>{r.candidato.nome}</b><span className="text-sm text-text-2">{TIPO[r.candidato.tipo].rotulo} · {percentual(r.compat, evidencias)}%</span></p>
-                <p className="mt-0.5 text-sm leading-snug text-text-2">{r.candidato.sinalChave ?? r.candidato.resumo}</p>
+                <p className="flex items-baseline justify-between gap-3"><b>{r.candidato.nome}</b><span className="text-apoio text-text-2">{TIPO[r.candidato.tipo].rotulo} · {percentual(r.compat, evidencias)}%</span></p>
+                <p className="mt-0.5 text-apoio leading-snug text-text-2">{r.candidato.sinalChave ?? r.candidato.resumo}</p>
               </li>
             ))}
           </ul>
           {podePerguntarMais && <Button block icon="seta" onClick={onMaisPerguntas}>Responder mais perguntas</Button>}
-          <p className="rounded-xl bg-warn-soft p-3 text-sm text-warn">Quanto mais características você confirmar (corpo, patas, tamanho, cor, onde está), mais firme fica o resultado. Se não conseguir, leve as fotos ao agrônomo.</p>
+          <p className="rounded-xl bg-warn-soft p-3 text-apoio text-warn">Quanto mais características você confirmar (corpo, patas, tamanho, cor, onde está), mais firme fica o resultado. Se não conseguir, leve as fotos ao agrônomo.</p>
         </Card>
       ) : (
       <Card className="space-y-3">
@@ -115,13 +115,13 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
           <Medidor nivel={confianca} pct={pct} />
         </div>
         <div>
-          <p className="text-sm text-text-2">{incerto ? 'Ainda não dá para ter certeza. A causa mais compatível é' : confianca === 'alta' ? 'Muito provavelmente é' : 'Provavelmente é'}</p>
-          <h2 className="mt-0.5 text-[1.75rem] leading-tight">{top.nome}</h2>
+          <p className="text-apoio text-text-2">{incerto ? 'Ainda não dá para ter certeza. A causa mais compatível é' : confianca === 'alta' ? 'Muito provavelmente é' : 'Provavelmente é'}</p>
+          <h2 className="mt-0.5 text-titulo leading-tight">{top.nome}</h2>
           {top.cientifico && <p className="italic text-text-2">{top.cientifico}</p>}
         </div>
-        <p className="text-[1.0625rem] leading-relaxed">{top.resumo}</p>
+        <p className="text-subtitulo leading-relaxed">{top.resumo}</p>
         <FotoRef arquivo={fotosDoCandidato(top)} alt={`Foto de referência: ${top.nome}`} className={`${FOTO_CLASSE} rounded-xl ring-1 ring-line`} />
-        {incerto && <p className="rounded-xl bg-warn-soft p-3 text-sm text-warn">O que você viu combina com mais de uma causa. Confira os passos abaixo e leve as fotos ao agrônomo.</p>}
+        {incerto && <p className="rounded-xl bg-warn-soft p-3 text-apoio text-warn">O que você viu combina com mais de uma causa. Confira os passos abaixo e leve as fotos ao agrônomo.</p>}
       </Card>
       )}
 
@@ -129,19 +129,19 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
 
       {inconclusivo ? (
         <Card className="space-y-3 bg-brand-soft! ring-brand/20!">
-          <h3 className="text-base">O que fazer agora</h3>
+          <h3 className="text-corpo">O que fazer agora</h3>
           <ol className="space-y-2.5">
             {['Tire uma foto de perto do problema e outra da área toda, e marque o ponto no mapa.', 'Se for bicho, tente pegar um e olhar o corpo, as patas e o tamanho.', 'Leve as fotos ao agrônomo: a decisão de aplicar é dele.'].map((p, i) => (
-              <li key={p} className="flex gap-3"><span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full bg-brand text-sm font-bold text-on-brand">{i + 1}</span><span className="leading-snug">{p}</span></li>
+              <li key={p} className="flex gap-3"><span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full bg-brand text-apoio font-bold text-on-brand">{i + 1}</span><span className="leading-snug">{p}</span></li>
             ))}
           </ol>
         </Card>
       ) : (
       <Card className="space-y-3 bg-brand-soft! ring-brand/20!">
-        <h3 className="text-base">O que fazer agora</h3>
+        <h3 className="text-corpo">O que fazer agora</h3>
         <ol className="space-y-2.5">
           {top.proximosPassos.map((p, i) => (
-            <li key={p} className="flex gap-3"><span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full bg-brand text-sm font-bold text-on-brand">{i + 1}</span><span className="leading-snug">{p}</span></li>
+            <li key={p} className="flex gap-3"><span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full bg-brand text-apoio font-bold text-on-brand">{i + 1}</span><span className="leading-snug">{p}</span></li>
           ))}
         </ol>
       </Card>
@@ -164,8 +164,8 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
           )}
           {naoCombina.length > 0 && (
             <div className="space-y-2 rounded-xl bg-warn-soft p-3">
-              <p className="text-sm font-semibold text-warn">Mas isto não combina muito:</p>
-              <ul className="space-y-1.5 text-sm">
+              <p className="text-apoio font-semibold text-warn">Mas isto não combina muito:</p>
+              <ul className="space-y-1.5 text-apoio">
                 {naoCombina.map((l) => <li key={l.pergunta} className="flex gap-2"><Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-warn" /><span><span className="text-text-2">{l.pergunta}</span> <b>{l.resposta}</b></span></li>)}
               </ul>
             </div>
@@ -178,26 +178,26 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
         <ul className="space-y-2">
           {top.comoConfirmar.map((x) => <li key={x} className="flex gap-2.5"><Icon name="check" size={18} className="mt-0.5 shrink-0 text-brand" /><span className="leading-snug">{x}</span></li>)}
         </ul>
-        {top.confundeCom.length > 0 && <p className="text-sm text-text-2"><b className="text-text">Pode ser confundido com: </b>{top.confundeCom.join(', ')}.</p>}
+        {top.confundeCom.length > 0 && <p className="text-apoio text-text-2"><b className="text-text">Pode ser confundido com: </b>{top.confundeCom.join(', ')}.</p>}
         <Link to="/biblioteca/$slug" params={{ slug: top.id }} className="inline-flex min-h-11 items-center gap-1 font-semibold text-brand">Ler mais na Biblioteca<Icon name="seta" size={18} /></Link>
       </Secao>
       )}
 
       {!inconclusivo && outras.length > 0 && (
         <section aria-labelledby="outras" className="space-y-2">
-          <h3 id="outras" className="px-1 text-base">Outras possibilidades</h3>
+          <h3 id="outras" className="px-1 text-corpo">Outras possibilidades</h3>
           {outras.map((r) => {
             const c = r.candidato
             return (
               <details key={c.id} className="group rounded-card bg-surface ring-1 ring-line">
                 <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-2.5">
-                  <span className="min-w-0 flex-1"><span className="block font-semibold leading-snug">{c.nome}</span><span className="text-sm text-text-2">{TIPO[c.tipo].rotulo} · {percentual(r.compat, evidencias)}%</span></span>
+                  <span className="min-w-0 flex-1"><span className="block font-semibold leading-snug">{c.nome}</span><span className="text-apoio text-text-2">{TIPO[c.tipo].rotulo} · {percentual(r.compat, evidencias)}%</span></span>
                   <Icon name="baixo" size={18} className="shrink-0 text-text-2 transition group-open:rotate-180" />
                 </summary>
                 <div className="space-y-3 border-t border-line px-4 py-3">
                   <p className="leading-relaxed">{c.resumo}</p>
-                  <div><p className="mb-1 text-sm font-semibold">Para diferenciar</p><ul className="list-disc space-y-1 pl-5 text-sm text-text-2">{c.comoConfirmar.map((x) => <li key={x}>{x}</li>)}</ul></div>
-                  <Link to="/biblioteca/$slug" params={{ slug: c.id }} className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-brand">Ler na Biblioteca<Icon name="seta" size={16} /></Link>
+                  <div><p className="mb-1 text-apoio font-semibold">Para diferenciar</p><ul className="list-disc space-y-1 pl-5 text-apoio text-text-2">{c.comoConfirmar.map((x) => <li key={x}>{x}</li>)}</ul></div>
+                  <Link to="/biblioteca/$slug" params={{ slug: c.id }} className="inline-flex min-h-11 items-center gap-1 text-apoio font-semibold text-brand">Ler na Biblioteca<Icon name="seta" size={16} /></Link>
                 </div>
               </details>
             )
@@ -206,14 +206,14 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
       )}
 
       <details className="rounded-card bg-surface ring-1 ring-line">
-        <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold">Como o app chegou a esse resultado</summary>
-        <div className="space-y-2 border-t border-line px-4 py-3 text-sm text-text-2">
+        <summary className="flex min-h-12 cursor-pointer items-center px-4 text-apoio font-semibold">Como o app chegou a esse resultado</summary>
+        <div className="space-y-2 border-t border-line px-4 py-3 text-apoio text-text-2">
           <p>O app compara o que você viu (respostas e fotos) com o perfil de cada causa e a fase da lavoura. O percentual é um índice de certeza: cresce com o número de respostas e nunca passa de 95%. É uma comparação, não uma probabilidade medida nem um laudo.</p>
           <p>Os perfis de sintomas foram montados pela equipe a partir da literatura e ainda estão sendo conferidos. Fontes: {top.fontes.map((f, i) => { const fo = FONTES[f]; return <span key={f}>{i > 0 && ' · '}{'url' in fo && fo.url ? <a className="underline" href={fo.url} target="_blank" rel="noreferrer">{fo.rotulo}</a> : fo.rotulo}</span> })}.</p>
         </div>
       </details>
 
-      <p className="px-1 text-sm text-text-2">Isto é um norte, não a decisão final. Quem decide se aplica algum produto é o agrônomo.</p>
+      <p className="px-1 text-apoio text-text-2">Isto é um norte, não a decisão final. Quem decide se aplica algum produto é o agrônomo.</p>
 
       <div className="sticky bottom-[calc(3.6rem+env(safe-area-inset-bottom,0px))] z-10 -mx-4 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-card sm:border lg:bottom-3">
         <div className="flex gap-2.5">
@@ -221,8 +221,8 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
           <Button variant="secondary" icon="compartilhar" onClick={onEnviar}>Enviar<span className="sr-only"> ao agrônomo</span></Button>
         </div>
         <div className="mt-1 flex justify-center gap-2">
-          <Button variant="ghost" className="min-h-10 text-sm" onClick={onVoltar}>Voltar</Button>
-          <Button variant="ghost" className="min-h-10 text-sm" icon="refazer" onClick={onRecomecar}>Recomeçar</Button>
+          <Button variant="ghost" className="min-h-10 text-apoio" onClick={onVoltar}>Voltar</Button>
+          <Button variant="ghost" className="min-h-10 text-apoio" icon="refazer" onClick={onRecomecar}>Recomeçar</Button>
         </div>
       </div>
     </div>

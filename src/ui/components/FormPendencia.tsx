@@ -63,9 +63,9 @@ export function FormPendencia({ talhao, pontoId, ordem, onSalvo }: Props) {
         </div>
       </Campo>
       <Campo rotulo="O que você viu? (opcional)">
-        <textarea value={nota} onChange={(e) => setNota(e.target.value)} rows={3} placeholder="Ex.: manchas marrons nas folhas de baixo" className="w-full rounded-2xl border border-line bg-surface-2 p-3 text-base" />
+        <textarea value={nota} onChange={(e) => setNota(e.target.value)} rows={3} placeholder="Ex.: manchas marrons nas folhas de baixo" className="w-full rounded-2xl border border-line bg-surface-2 p-3 text-corpo" />
       </Campo>
-      {semNome && <p className="text-sm text-danger" role="alert">Informe seu nome para assinar o registro.</p>}
+      {semNome && <p className="text-apoio text-danger" role="alert">Informe seu nome para assinar o registro.</p>}
       <Button block icon="check" disabled={!pode} onClick={() => void salvar()}>{salvando ? 'Guardando…' : 'Guardar para diagnóstico'}</Button>
     </div>
   )

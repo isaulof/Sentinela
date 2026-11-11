@@ -8,6 +8,7 @@ import type { PlanoSalvo, Talhao } from '@/domain/entidades'
 import { rotuloDiagnostico } from '@/domain/funil'
 import { estadosDosPontos, ROTULO_ESTADO, type EstadoPonto } from '@/domain/ponto'
 import { amostrasNaData, ateODia, celulasCalor, LIMITE_ACAO, niveisNaData, resumirResultado, setorDoFoco, UNIDADE_ALVO, valorDoRegistro, visitas } from '@/domain/resultados'
+import { dataBr, dataHoraBr, diaLocal } from '@/domain/tempo'
 import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
 import { useSessao } from '../state/store'
 import { FormPendencia } from './FormPendencia'
@@ -17,7 +18,6 @@ import { Badge, Button, Card, Folha, Vazio, type Tom } from './kit'
 import { Mapa } from './Mapa'
 import { COR_ESTADO, type MarcadorPonto } from './estadoPonto'
 
-const dataBr = (d: string) => `${d.slice(8)}/${d.slice(5, 7)}`
 const TOM: Record<string, Tom> = { ausente: 'ok', abaixo: 'ok', proximo: 'warn', atingido: 'danger', deteccao: 'info', nao_aplicavel: 'neutral' }
 const TOM_ESTADO: Record<EstadoPonto, Tom> = { a_coletar: 'neutral', sem_ocorrencia: 'ok', leve: 'warn', acao: 'danger', doenca: 'info', diagnostico: 'info', diagnosticado: 'ok' }
 const LEGENDA: EstadoPonto[] = ['sem_ocorrencia', 'leve', 'acao', 'doenca', 'diagnostico', 'diagnosticado']
@@ -67,7 +67,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
     return () => clearInterval(t)
   }, [tocando, dias.length])
 
-  const pendNaData = useMemo(() => (pendencias ?? []).filter((p) => !dia || ehUltima || p.criadoEm.slice(0, 10) <= dia), [pendencias, dia, ehUltima])
+  const pendNaData = useMemo(() => (pendencias ?? []).filter((p) => !dia || ehUltima || diaLocal(p.criadoEm) <= dia), [pendencias, dia, ehUltima])
   const niveis = useMemo(() => (dia ? niveisNaData(regs, dia, alvo) : new Map<string, Nivel>()), [regs, dia, alvo])
   const niveisAntes = useMemo(() => (i > 0 && dias[i - 1] ? niveisNaData(regs, dias[i - 1]!, alvo) : null), [regs, dias, i, alvo])
   const estados = useMemo(() => estadosDosPontos(plano.pontos.map((p) => p.id), niveis, alvo ? [] : pendNaData), [plano, niveis, pendNaData, alvo])
@@ -123,7 +123,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
       <div className="min-w-0 space-y-3">
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" role="group" aria-label="Camada do mapa">
           {[{ id: null, nome: 'Só pontos' }, ...LISTA_ALVOS].map((a) => (
-            <button key={a.id ?? 'todos'} type="button" aria-pressed={alvo === a.id} onClick={() => setEscolha(a.id)} className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold transition active:scale-95 ${alvo === a.id ? 'bg-brand text-on-brand' : 'bg-surface text-text-2 ring-1 ring-line'}`}>{a.nome}</button>
+            <button key={a.id ?? 'todos'} type="button" aria-pressed={alvo === a.id} onClick={() => setEscolha(a.id)} className={`min-h-10 shrink-0 rounded-full px-4 text-apoio font-semibold transition active:scale-95 ${alvo === a.id ? 'bg-brand text-on-brand' : 'bg-surface text-text-2 ring-1 ring-line'}`}>{a.nome}</button>
           ))}
         </div>
 
@@ -135,7 +135,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
           />
           {alvo && amostras.length > 0 && (
             <button type="button" aria-pressed={calorLigado} title={`Mapa de calor de ${ALVOS[alvo].nome}`} onClick={() => setCalorLigado((v) => !v)} className={`absolute left-2.5 top-2.5 w-44 rounded-xl bg-surface/95 p-2.5 text-left shadow-card ring-1 ring-line transition ${calorLigado ? '' : 'opacity-70'}`}>
-              <span className="flex items-center justify-between text-xs font-semibold"><span>Calor · {UNIDADE_ALVO[alvo]}</span><span className="text-text-2">{calorLigado ? 'ligado' : 'desligado'}</span></span>
+              <span className="flex items-center justify-between text-rotulo font-semibold"><span>Calor · {UNIDADE_ALVO[alvo]}</span><span className="text-text-2">{calorLigado ? 'ligado' : 'desligado'}</span></span>
               <span aria-hidden className="mt-1.5 block h-2 rounded-full" style={{ background: 'linear-gradient(90deg,#fff3b0,#f59f3a,#c0391f)' }} />
               <span className="mt-1 flex justify-between text-[0.6875rem] text-text-2"><span>menos</span><span>mais</span></span>
             </button>
@@ -145,11 +145,11 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
         <div className="flex items-center gap-2 rounded-card bg-surface p-2 pr-4 ring-1 ring-line">
           <button type="button" aria-label={tocando ? 'Pausar' : 'Reproduzir evolução'} disabled={dias.length < 2} onClick={() => { if (!tocando && ehUltima) setDiaSel(0); setTocando((v) => !v) }} className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-soft text-brand transition active:scale-95 disabled:opacity-40"><Icon name={tocando ? 'pausar' : 'tocar'} size={20} /></button>
           <div className="min-w-0 flex-1">
-            <label htmlFor="visita" className="flex items-baseline justify-between gap-2 text-sm"><span className="font-semibold">Visita de {dia ? dataBr(dia) : '—'}{ehUltima ? ' · mais recente' : ''}</span><span className="text-text-2">{i + 1} de {dias.length}</span></label>
+            <label htmlFor="visita" className="flex items-baseline justify-between gap-2 text-apoio"><span className="font-semibold">Visita de {dia ? dataBr(dia) : '—'}{ehUltima ? ' · mais recente' : ''}</span><span className="text-text-2">{i + 1} de {dias.length}</span></label>
             <input id="visita" type="range" min={0} max={Math.max(0, dias.length - 1)} step={1} value={i} disabled={dias.length < 2} onChange={(e) => { setTocando(false); setDiaSel(Number(e.target.value)) }} className="h-6 w-full accent-[var(--brand)]" aria-valuetext={dia ? `Visita de ${dataBr(dia)}` : ''} />
           </div>
         </div>
-        {dias.length < 2 && <p className="px-1 text-sm text-text-2">Com mais de uma visita, você acompanha a evolução do talhão ao longo do tempo.</p>}
+        {dias.length < 2 && <p className="px-1 text-apoio text-text-2">Com mais de uma visita, você acompanha a evolução do talhão ao longo do tempo.</p>}
 
         <ul className="flex flex-wrap gap-x-4 gap-y-1.5 px-1 text-[0.8125rem] text-text-2" aria-label="Legenda do mapa">
           {LEGENDA.map((e) => <li key={e} className="flex items-center gap-1.5"><span className="size-3 rounded-full ring-1 ring-black/10" style={{ background: COR_ESTADO[e].fundo }} />{ROTULO_ESTADO[e]}</li>)}
@@ -159,7 +159,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
 
       <div className="min-w-0 space-y-4">
         <Card className="space-y-3">
-          <h2 className="text-base">Leitura do mapa</h2>
+          <h2 className="text-corpo">Leitura do mapa</h2>
           {leitura.emAtencao.length === 0 ? (
             <p>Nenhum ponto em atenção{nomeAlvo ? ` para ${nomeAlvo}` : ''} nesta visita.</p>
           ) : (
@@ -171,28 +171,28 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
             </p>
           )}
           {leitura.antes !== null && dias[i - 1] && (
-            <p className="flex items-center gap-1.5 text-sm text-text-2"><Icon name={leitura.emAtencao.length > leitura.antes ? 'cima' : leitura.emAtencao.length < leitura.antes ? 'baixo' : 'faixas'} size={15} />Na visita de {dataBr(dias[i - 1]!)} eram {leitura.antes} {leitura.antes === 1 ? 'ponto' : 'pontos'}.</p>
+            <p className="flex items-center gap-1.5 text-apoio text-text-2"><Icon name={leitura.emAtencao.length > leitura.antes ? 'cima' : leitura.emAtencao.length < leitura.antes ? 'baixo' : 'faixas'} size={15} />Na visita de {dataBr(dias[i - 1]!)} eram {leitura.antes} {leitura.antes === 1 ? 'ponto' : 'pontos'}.</p>
           )}
           {resumo && (
             <div className="grid grid-cols-3 gap-2 pt-1">
-              <div className="rounded-xl bg-surface-2 p-2.5"><p className="text-xl font-bold tabular-nums">{resumo.pctComOcorrencia}%</p><p className="text-xs text-text-2">com ocorrência</p></div>
-              <div className="rounded-xl bg-surface-2 p-2.5"><p className="text-xl font-bold tabular-nums">{resumo.coletados}/{resumo.total}</p><p className="text-xs text-text-2">coletados</p></div>
-              <div className="rounded-xl bg-surface-2 p-2.5"><p className="text-xl font-bold tabular-nums">{comFoto.size}</p><p className="text-xs text-text-2">com foto</p></div>
+              <div className="rounded-xl bg-surface-2 p-2.5"><p className="text-secao font-bold tabular-nums">{resumo.pctComOcorrencia}%</p><p className="text-rotulo text-text-2">com ocorrência</p></div>
+              <div className="rounded-xl bg-surface-2 p-2.5"><p className="text-secao font-bold tabular-nums">{resumo.coletados}/{resumo.total}</p><p className="text-rotulo text-text-2">coletados</p></div>
+              <div className="rounded-xl bg-surface-2 p-2.5"><p className="text-secao font-bold tabular-nums">{comFoto.size}</p><p className="text-rotulo text-text-2">com foto</p></div>
             </div>
           )}
-          {alvo && amostras.length > 0 && <p className="text-xs text-text-2">O calor é uma estimativa entre os pontos coletados (interpolação), não uma medição em cada metro.{limite !== undefined && <> Nível de ação: {limite} {UNIDADE_ALVO[alvo]}.</>} Quem decide aplicar algum produto é o agrônomo.</p>}
+          {alvo && amostras.length > 0 && <p className="text-rotulo text-text-2">O calor é uma estimativa entre os pontos coletados (interpolação), não uma medição em cada metro.{limite !== undefined && <> Nível de ação: {limite} {UNIDADE_ALVO[alvo]}.</>} Quem decide aplicar algum produto é o agrônomo.</p>}
         </Card>
 
         {alvo && serie.length > 0 && (
           <Card className="space-y-2">
-            <h2 className="text-base">Evolução · {ALVOS[alvo].nome}</h2>
+            <h2 className="text-corpo">Evolução · {ALVOS[alvo].nome}</h2>
             <SerieTemporal serie={serie} {...(limite !== undefined ? { limite } : {})} unidade={UNIDADE_ALVO[alvo]} />
           </Card>
         )}
 
         <Card className="space-y-3">
-          <div className="flex items-center justify-between"><h2 className="text-base">Fotos do talhão</h2><span className="text-sm text-text-2">{fotosTalhao.length}</span></div>
-          {fotosTalhao.length === 0 ? <p className="text-sm text-text-2">As fotos que você tirar na coleta aparecem aqui e também em cada ponto do mapa.</p> : (
+          <div className="flex items-center justify-between"><h2 className="text-corpo">Fotos do talhão</h2><span className="text-apoio text-text-2">{fotosTalhao.length}</span></div>
+          {fotosTalhao.length === 0 ? <p className="text-apoio text-text-2">As fotos que você tirar na coleta aparecem aqui e também em cada ponto do mapa.</p> : (
             <ul className="grid grid-cols-4 gap-2">
               {fotosTalhao.slice(0, 8).map((f) => (
                 <li key={f.id} className="relative">
@@ -222,12 +222,12 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
           <div className="space-y-4" aria-live="polite">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tom={TOM_ESTADO[estados.get(ponto.id) ?? 'a_coletar']}>{ROTULO_ESTADO[estados.get(ponto.id) ?? 'a_coletar']}</Badge>
-              <span className="text-sm text-text-2">{regsPonto[0]?.posicaoSimulada ? 'Posição simulada (sala de aula)' : regsPonto.length ? 'Posição por GPS' : ''}</span>
+              <span className="text-apoio text-text-2">{regsPonto[0]?.posicaoSimulada ? 'Posição simulada (sala de aula)' : regsPonto.length ? 'Posição por GPS' : ''}</span>
             </div>
             {pendPonto.map((p) => (
               <div key={p.id} className="rounded-xl bg-surface-2 p-3">
                 <p className="font-semibold">{p.resolvida ? `Diagnóstico: ${rotuloDiagnostico(p.resolvida)}` : 'Aguardando diagnóstico'}</p>
-                {p.nota && <p className="text-sm text-text-2">{p.nota}</p>}
+                {p.nota && <p className="text-apoio text-text-2">{p.nota}</p>}
               </div>
             ))}
             {regsPonto.length === 0 && pendPonto.length === 0 && <p className="text-text-2">Sem registros neste ponto{nomeAlvo ? ` para ${nomeAlvo}` : ''} até esta visita.</p>}
@@ -237,7 +237,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
                   const a = avaliarRegistro(r)
                   return (
                     <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
-                      <div><p className="font-semibold">{ALVOS[r.alvo].nome}</p><p className="text-sm text-text-2">{dataBr(r.criadoEm.slice(0, 10))} · {r.zero ? 'nenhuma ocorrência' : r.presente !== undefined ? `presente · ${r.severidadePct ?? 0}%` : `${r.quantidade} por metro`}</p></div>
+                      <div><p className="font-semibold">{ALVOS[r.alvo].nome}</p><p className="text-apoio text-text-2">{dataHoraBr(r.criadoEm)} · {r.zero ? 'nenhuma ocorrência' : r.presente !== undefined ? `presente · ${r.severidadePct ?? 0}%` : `${r.quantidade} por metro`}</p></div>
                       <Badge tom={TOM[a.nivel] ?? 'neutral'}>{a.titulo}</Badge>
                     </li>
                   )
@@ -245,8 +245,8 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
               </ul>
             )}
             <div>
-              <p className="mb-2 text-sm font-semibold">Fotos {fotosPonto.length > 0 && <span className="font-normal text-text-2">({fotosPonto.length})</span>}</p>
-              {fotosPonto.length === 0 ? <p className="text-sm text-text-2">Nenhuma foto neste ponto ainda.</p> : (
+              <p className="mb-2 text-apoio font-semibold">Fotos {fotosPonto.length > 0 && <span className="font-normal text-text-2">({fotosPonto.length})</span>}</p>
+              {fotosPonto.length === 0 ? <p className="text-apoio text-text-2">Nenhuma foto neste ponto ainda.</p> : (
                 <ul className="grid grid-cols-3 gap-2">
                   {fotosPonto.map((f) => <li key={f}><button type="button" aria-label="Ampliar foto" onClick={() => setVista({ tipo: 'foto', id: f })} className="block aspect-square w-full overflow-hidden rounded-xl ring-1 ring-line"><Foto id={f} className="size-full" /></button></li>)}
                 </ul>

@@ -53,9 +53,9 @@ export function Badge({ tom = 'neutral', icon, children }: { tom?: Tom; icon?: I
 export function Stat({ rotulo, valor, detalhe, tom = 'neutral' }: { rotulo: string; valor: ReactNode; detalhe?: ReactNode; tom?: Tom }) {
   return (
     <Card>
-      <p className="text-sm font-medium text-text-2">{rotulo}</p>
-      <p className={clsx('mt-1 text-3xl font-bold tracking-tight', tom === 'danger' && 'text-danger', tom === 'warn' && 'text-warn', tom === 'ok' && 'text-ok')}>{valor}</p>
-      {detalhe && <p className="mt-1 text-sm text-text-2">{detalhe}</p>}
+      <p className="text-apoio font-medium text-text-2">{rotulo}</p>
+      <p className={clsx('mt-1 text-titulo font-bold tracking-tight', tom === 'danger' && 'text-danger', tom === 'warn' && 'text-warn', tom === 'ok' && 'text-ok')}>{valor}</p>
+      {detalhe && <p className="mt-1 text-apoio text-text-2">{detalhe}</p>}
     </Card>
   )
 }
@@ -66,13 +66,13 @@ export function Campo({ rotulo, ajuda, erro, grupo, children }: { rotulo: string
   const Raiz = grupo ? 'div' : 'label'
   return (
     <Raiz className="block" {...(grupo ? { role: 'group', 'aria-label': rotulo } : {})}>
-      <span className="mb-1.5 block text-sm font-semibold">{rotulo}</span>
+      <span className="mb-1.5 block text-apoio font-semibold">{rotulo}</span>
       {children}
-      {erro ? <span className="mt-1 block text-sm text-danger" role="alert">{erro}</span> : ajuda ? <span className="mt-1 block text-sm text-text-2">{ajuda}</span> : null}
+      {erro ? <span className="mt-1 block text-apoio text-danger" role="alert">{erro}</span> : ajuda ? <span className="mt-1 block text-apoio text-text-2">{ajuda}</span> : null}
     </Raiz>
   )
 }
-const CAMPO = 'min-h-12 w-full rounded-xl border border-line bg-surface-2 px-4 text-base text-text placeholder:text-text-2/70 focus:border-brand'
+const CAMPO = 'min-h-12 w-full rounded-xl border border-line bg-surface-2 px-4 text-corpo text-text placeholder:text-text-2/70 focus:border-brand'
 export const Input = (p: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={clsx(CAMPO, p.className)} />
 export const Select = (p: SelectHTMLAttributes<HTMLSelectElement>) => <select {...p} className={clsx(CAMPO, p.className)} />
 
@@ -85,7 +85,7 @@ export function Segmentado<T extends string>({ valor, opcoes, onChange, rotulo }
           key={o.id} type="button" role="radio" aria-checked={valor === o.id} disabled={o.desabilitado}
           onClick={() => onChange(o.id)}
           className={clsx(
-            'min-h-11 rounded-xl border px-4 text-sm font-semibold transition disabled:opacity-40',
+            'min-h-11 rounded-xl border px-4 text-apoio font-semibold transition disabled:opacity-40',
             valor === o.id ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface-2 text-text hover:bg-line',
           )}
         >
@@ -101,7 +101,7 @@ export function Vazio({ icone, titulo, texto, acao }: { icone: IconName; titulo:
   return (
     <div className="flex flex-col items-center rounded-card bg-surface px-6 py-12 text-center ring-1 ring-line">
       <span className="mb-4 grid size-14 place-items-center rounded-2xl bg-brand-soft text-brand"><Icon name={icone} size={30} /></span>
-      <h2 className="text-lg">{titulo}</h2>
+      <h2 className="text-subtitulo">{titulo}</h2>
       <p className="mt-1 max-w-sm text-text-2">{texto}</p>
       {acao && <div className="mt-5">{acao}</div>}
     </div>
@@ -112,8 +112,8 @@ export function Titulo({ children, sub, acao }: { children: ReactNode; sub?: Rea
   return (
     <header className="mb-4 flex items-start justify-between gap-3 sm:mb-6">
       <div>
-        <h1 className="text-[1.75rem] sm:text-3xl">{children}</h1>
-        {sub && <p className="mt-1 text-base text-text-2 sm:mt-1.5 sm:text-[1.0625rem]">{sub}</p>}
+        <h1 className="text-titulo">{children}</h1>
+        {sub && <p className="mt-1 text-corpo text-text-2 sm:mt-1.5">{sub}</p>}
       </div>
       {acao}
     </header>
@@ -141,7 +141,7 @@ export function Folha({ aberta, onFechar, titulo, children }: { aberta: boolean;
       <div className="flex max-h-[92dvh] flex-col">
         <div aria-hidden className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-line sm:hidden" />
         <div className="flex items-center justify-between gap-3 px-5 pb-2 pt-3">
-          <h2 className="text-lg">{titulo}</h2>
+          <h2 className="text-subtitulo">{titulo}</h2>
           <button type="button" onClick={onFechar} aria-label="Fechar" className="grid size-11 place-items-center rounded-xl text-text-2 hover:bg-surface-2"><Icon name="x" /></button>
         </div>
         <div className="safe-b overflow-y-auto px-5 py-4">{aberta ? children : null}</div>

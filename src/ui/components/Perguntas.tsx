@@ -42,7 +42,7 @@ export function Perguntas({ pergunta, fase, n, progresso, restantes, respondidas
       <header className="mb-4 flex items-center gap-1">
         <button type="button" onClick={onVoltar} aria-label={respondidas === 0 ? 'Voltar ao início do diagnóstico' : 'Voltar para a pergunta anterior'} className="-ml-2 grid size-11 shrink-0 place-items-center rounded-full text-text-2 transition active:bg-surface-2"><Icon name="voltar" size={24} /></button>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-3 text-sm">
+          <div className="flex items-baseline justify-between gap-3 text-apoio">
             <span className="font-semibold">{rotuloEtapa(fase, n)}</span>
             <span className="text-text-2">{etapa(respondidas, progresso)}</span>
           </div>
@@ -53,12 +53,12 @@ export function Perguntas({ pergunta, fase, n, progresso, restantes, respondidas
       </header>
 
       {contexto && <div className="mb-4">{contexto}</div>}
-      {fase === 'triagem' && n === 1 && <p className="mb-3 text-sm text-text-2">Três perguntas rápidas para saber por onde começar. Depois vêm só as perguntas que importam para o seu caso.</p>}
+      {fase === 'triagem' && n === 1 && <p className="mb-3 text-apoio text-text-2">Três perguntas rápidas para saber por onde começar. Depois vêm só as perguntas que importam para o seu caso.</p>}
 
       <div key={pergunta.id} className="animate-[entrar_.22s_ease-out]">
-        <h2 ref={titulo} tabIndex={-1} className="text-2xl leading-tight outline-none">{pergunta.texto}</h2>
+        <h2 ref={titulo} tabIndex={-1} className="text-titulo leading-tight outline-none">{pergunta.texto}</h2>
         {pergunta.dica && (
-          <p className="mt-2.5 flex gap-2.5 rounded-xl bg-info-soft px-3 py-2.5 text-sm leading-snug text-info"><Icon name="info" size={20} className="mt-0.5 shrink-0" /><span>{pergunta.dica}</span></p>
+          <p className="mt-2.5 flex gap-2.5 rounded-xl bg-info-soft px-3 py-2.5 text-apoio leading-snug text-info"><Icon name="info" size={20} className="mt-0.5 shrink-0" /><span>{pergunta.dica}</span></p>
         )}
 
         <div className={`mt-4 grid gap-2.5 ${duasColunas ? 'grid-cols-2' : 'grid-cols-1'} sm:grid-cols-2`}>
@@ -71,8 +71,8 @@ export function Perguntas({ pergunta, fase, n, progresso, restantes, respondidas
                 <FotoRef arquivo={`resposta-${pergunta.id}-${o.id}.jpg`} alt="" className="size-full object-cover" fallback={o.cor ? <span aria-hidden className="size-7 rounded-full ring-1 ring-black/25" style={{ background: o.cor }} /> : <Icon name={(o.icone ?? 'folha') as IconName} size={24} />} />
               </span>
               <span className="min-w-0">
-                <span className="block text-base font-semibold leading-snug">{o.rotulo}</span>
-                {o.detalhe && <span className="mt-0.5 block text-sm leading-snug text-text-2">{o.detalhe}</span>}
+                <span className="block text-corpo font-semibold leading-snug">{o.rotulo}</span>
+                {o.detalhe && <span className="mt-0.5 block text-apoio leading-snug text-text-2">{o.detalhe}</span>}
               </span>
             </button>
           ))}
@@ -82,7 +82,7 @@ export function Perguntas({ pergunta, fase, n, progresso, restantes, respondidas
           <Button variant="ghost" onClick={onPular}>Não consigo ver isso</Button>
           {respondidas >= 3 && <Button variant="secondary" onClick={onVerResultado}>Ver o que já deu para descobrir</Button>}
         </div>
-        <p className="mt-3 text-center text-sm text-text-2">{restantes === 1 ? 'Só resta 1 possibilidade' : `Ainda são ${restantes} possibilidades`}</p>
+        <p className="mt-3 text-center text-apoio text-text-2">{restantes === 1 ? 'Só resta 1 possibilidade' : `Ainda são ${restantes} possibilidades`}</p>
       </div>
     </div>
   )

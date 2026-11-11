@@ -37,7 +37,7 @@ export function Biblioteca() {
         <Input type="search" aria-label="Buscar na biblioteca" placeholder="Buscar: ferrugem, manganês, lagarta…" value={busca} onChange={(e) => setBusca(e.target.value)} />
         <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filtrar por tipo">
           {FILTROS.map((f) => (
-            <button key={f.id} type="button" aria-pressed={filtro === f.id} onClick={() => setFiltro(f.id)} className={`min-h-11 shrink-0 rounded-xl border px-4 text-sm font-semibold ${filtro === f.id ? 'border-brand bg-brand-soft text-brand' : 'border-line bg-surface'}`}>{f.nome}</button>
+            <button key={f.id} type="button" aria-pressed={filtro === f.id} onClick={() => setFiltro(f.id)} className={`min-h-11 shrink-0 rounded-xl border px-4 text-apoio font-semibold ${filtro === f.id ? 'border-brand bg-brand-soft text-brand' : 'border-line bg-surface'}`}>{f.nome}</button>
           ))}
         </div>
         {lista.length === 0 ? (
@@ -51,8 +51,8 @@ export function Biblioteca() {
                     <FotoRef arquivo={fotosDoCandidato(c)} alt="" className="size-full object-cover object-center" fallback={<Icon name={iconeDoCandidato(c)} size={26} />} />
                   </span>
                   <span className="min-w-0 flex-1 space-y-0.5">
-                    <span className="block text-lg font-bold leading-snug">{c.nome}</span>
-                    {c.cientifico && <span className="block text-sm italic text-text-2">{c.cientifico}</span>}
+                    <span className="block text-subtitulo font-bold leading-snug">{c.nome}</span>
+                    {c.cientifico && <span className="block text-apoio italic text-text-2">{c.cientifico}</span>}
                     <Badge tom={TOM[categoriaDe(c)]}>{ROTULO_CATEGORIA[categoriaDe(c)]}</Badge>
                   </span>
                   <Icon name="seta" className="text-text-2" />
@@ -84,7 +84,7 @@ export function Artigo() {
 
   return (
     <article className="mx-auto max-w-2xl space-y-5">
-      <Link to="/biblioteca" className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-brand"><Icon name="seta" size={18} className="rotate-180" />Biblioteca</Link>
+      <Link to="/biblioteca" className="inline-flex min-h-11 items-center gap-1 text-apoio font-semibold text-brand"><Icon name="seta" size={18} className="rotate-180" />Biblioteca</Link>
       <Titulo sub={c.cientifico ? <span className="italic">{c.cientifico}</span> : undefined}>{c.nome}</Titulo>
       <div className="flex flex-wrap gap-2">
         <Badge tom={TOM[categoria]}>{ROTULO_CATEGORIA[categoria]}</Badge>
@@ -94,19 +94,19 @@ export function Artigo() {
       <FotoRef arquivo={fotosDoCandidato(c)} alt={`Foto de referência: ${c.nome}`} className={`${FOTO_CLASSE} rounded-card border border-line`} />
 
       <Card className="space-y-2">
-        <h2 className="text-xl">O que é</h2>
+        <h2 className="text-secao">O que é</h2>
         <p className="leading-relaxed text-text-2">{c.resumo}</p>
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="text-xl">Como reconhecer</h2>
+        <h2 className="text-secao">Como reconhecer</h2>
         {c.sinalChave && <p className="font-semibold leading-snug">{c.sinalChave}</p>}
         <ul className="list-disc space-y-1 pl-5 text-text-2">{c.comoConfirmar.map((x) => <li key={x}>{x}</li>)}</ul>
       </Card>
 
       {parecidos.length > 0 && (
         <Card className="space-y-2">
-          <h2 className="text-xl">Pode ser confundido com</h2>
+          <h2 className="text-secao">Pode ser confundido com</h2>
           <ul className="space-y-1">
             {parecidos.map(({ nome, outro }) => (
               <li key={nome}>{outro ? <Link to="/biblioteca/$slug" params={{ slug: outro.id }} className="font-semibold text-brand underline">{nome}</Link> : <span className="text-text-2">{nome}</span>}</li>
@@ -116,14 +116,14 @@ export function Artigo() {
       )}
 
       <Card className="space-y-2">
-        <h2 className="text-xl">O que fazer</h2>
+        <h2 className="text-secao">O que fazer</h2>
         <ol className="list-decimal space-y-1 pl-5 text-text-2">{c.proximosPassos.map((x) => <li key={x}>{x}</li>)}</ol>
       </Card>
 
       {alvo && (
         <>
           <Card className="space-y-3">
-            <h2 className="text-xl">Como coletar</h2>
+            <h2 className="text-secao">Como coletar</h2>
             <dl className="space-y-3">
               <div><dt className="font-semibold">Método</dt><dd className="text-text-2">{alvo.coleta.metodo}</dd></div>
               <div><dt className="font-semibold">O que contar ou avaliar</dt><dd className="text-text-2">{alvo.coleta.unidade}</dd></div>
@@ -131,7 +131,7 @@ export function Artigo() {
             </dl>
           </Card>
           <Card className="space-y-2">
-            <h2 className="text-xl">Fases que você pode registrar</h2>
+            <h2 className="text-secao">Fases que você pode registrar</h2>
             <ul className="list-disc space-y-1 pl-5 text-text-2">{alvo.fases.map((f) => <li key={f}>{f}</li>)}</ul>
           </Card>
         </>
@@ -139,8 +139,8 @@ export function Artigo() {
 
       <Link to="/diagnostico" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand px-5 font-semibold text-on-brand shadow-card hover:bg-brand-strong"><Icon name="diag" size={20} />Identificar o que estou vendo</Link>
 
-      <section aria-label="Fontes" className="space-y-1 text-sm text-text-2">
-        <h2 className="text-base font-semibold text-text">Fontes</h2>
+      <section aria-label="Fontes" className="space-y-1 text-apoio text-text-2">
+        <h2 className="text-corpo font-semibold text-text">Fontes</h2>
         <ul className="space-y-1">
           {[...new Set([...(alvo?.fontes ?? []), ...c.fontes])].map((id) => {
             const f = FONTES[id]

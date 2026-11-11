@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
-import { useOrdens } from '@/data/hooks'
+import { useFazenda, useOrdens } from '@/data/hooks'
 import { salvarFoto, useFotoUrl } from '@/data/fotos'
 import { novoId, repo } from '@/data/repo'
 import type { Talhao, PlanoSalvo } from '@/domain/entidades'
 import { resolverOrdem } from '@/domain/hibrido'
 import { ESTADIOS } from '@/domain/phenology'
-import type { Registro } from '@/domain/registro'
+import { camposV2, type Registro } from '@/domain/registro'
 import { mediaHistorica, validarRegistro } from '@/domain/validation'
 import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
 import { FONTES } from '@/knowledge/fontes'
@@ -40,6 +40,7 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
   const { amostrador, setAmostrador, gpsReal } = useSessao()
   const mostrar = useToast((s) => s.mostrar)
   const ordens = useOrdens()
+  const fazenda = useFazenda()
   const ordem = ordens?.find((o) => o.status === 'aberta' && o.talhaoId === talhao.id && o.pontoId === pontoId)
 
   const ponto = plano.pontos.find((p) => p.id === pontoId)!
@@ -70,8 +71,9 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
       alvo: alvoId, fase, quantidade, zero, ...(presente !== undefined ? { presente } : {}),
       ...(severidade !== undefined ? { severidadePct: severidade } : {}), ...(desfolha !== undefined ? { desfolhaPct: desfolha } : {}),
       fotoIds: fotos, observacao: obs,
+      ...camposV2({ posicao: usaGps ? gps.posicao : ponto.position }, { metodo: alvo.coleta.metodo, parteDaPlanta: alvo.coleta.parte, planejada: ponto.position, inicio: t0, fim: t0, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) }),
     }),
-    [t0, talhao, nome, estadio, pontoId, usaGps, gps, ponto, alvoId, fase, quantidade, zero, presente, severidade, desfolha, fotos, obs],
+    [t0, fazenda, alvo, talhao, nome, estadio, pontoId, usaGps, gps, ponto, alvoId, fase, quantidade, zero, presente, severidade, desfolha, fotos, obs],
   )
   const hist = useMemo(() => mediaHistorica(registrosTalhao.filter((r) => r.alvo === alvoId).map((r) => r.quantidade)), [registrosTalhao, alvoId])
   const v = useMemo(
@@ -100,7 +102,8 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
     setSalvando(true)
     try {
       setAmostrador(nome.trim())
-      const reg: Registro = { ...rascunho, id: novoId('REG'), criadoEm: new Date().toISOString(), ...(ordem ? { ordemId: ordem.id } : {}) }
+      const agora = new Date()
+      const reg: Registro = { ...rascunho, id: novoId('REG'), criadoEm: agora.toISOString(), fimEm: agora.toISOString(), ...(ordem ? { ordemId: ordem.id } : {}) }
       const r = await repo.salvarRegistro(reg, { agora: new Date(), anelTalhao: talhao.anel, pontosDoPlano: plano.pontos.map((p) => p.id) })
       if (!r.gravado) { mostrar('Corrija os erros antes de salvar.', 'erro'); return }
       if (ordem && resultado) {
@@ -119,14 +122,14 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2 text-sm text-text-2">
+      <div className="flex flex-wrap items-center gap-2 text-apoio text-text-2">
         <Badge tom="neutral" icon="campo">Ponto {pontoId}</Badge>
         <span>{talhao.nome}</span>
         <Badge tom={usaGps ? 'ok' : 'info'}>{usaGps ? `GPS ±${Math.round(gps.precisaoM)} m` : 'Posição simulada (sala de aula)'}</Badge>
       </div>
 
       {ordem && (
-        <div className="rounded-2xl border border-warn bg-warn-soft p-4 text-sm">
+        <div className="rounded-2xl border border-warn bg-warn-soft p-4 text-apoio">
           <p className="font-semibold text-warn">Ordem de checagem aberta ({ordem.origem})</p>
           <p className="mt-1">{ordem.motivo}</p>
         </div>
@@ -142,7 +145,7 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
         <Segmentado rotulo="Alvo" valor={alvoId} onChange={(id) => { setAlvoId(id); setFase(''); setQuantidade(0); setZero(false); setPresente(undefined); setSeveridade(undefined); setDesfolha(undefined) }} opcoes={LISTA_ALVOS.map((a) => ({ id: a.id, nome: a.nome }))} />
       </Campo>
 
-      <div className="rounded-2xl bg-surface-2 p-4 text-sm text-text-2">
+      <div className="rounded-2xl bg-surface-2 p-4 text-apoio text-text-2">
         <p><i>{alvo.cientifico}</i></p>
         <p className="mt-1"><b className="text-text">Método:</b> {alvo.coleta.metodo}</p>
         <p><b className="text-text">Onde olhar:</b> {alvo.coleta.parte}</p>
@@ -155,9 +158,9 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
       {!ehDoenca ? (
         <Campo grupo rotulo={`Quantidade (${alvo.coleta.unidade})`}>
           <div className="flex items-center justify-center gap-5 py-1">
-            <button type="button" aria-label="Diminuir" className="grid size-16 place-items-center rounded-full bg-surface-2 text-3xl active:scale-95" onClick={() => alterar(() => setQuantidade((q) => Math.max(0, q - 1)))}>−</button>
+            <button type="button" aria-label="Diminuir" className="grid size-16 place-items-center rounded-full bg-surface-2 text-titulo active:scale-95" onClick={() => alterar(() => setQuantidade((q) => Math.max(0, q - 1)))}>−</button>
             <input aria-label="Quantidade" inputMode="numeric" value={quantidade} onChange={(e) => alterar(() => setQuantidade(Math.max(0, Math.floor(Number(e.target.value.replace(/\D/g, '')) || 0))))} className="w-24 bg-transparent text-center text-5xl font-bold" />
-            <button type="button" aria-label="Aumentar" className="grid size-16 place-items-center rounded-full bg-surface-2 text-3xl active:scale-95" onClick={() => alterar(() => setQuantidade((q) => q + 1))}>+</button>
+            <button type="button" aria-label="Aumentar" className="grid size-16 place-items-center rounded-full bg-surface-2 text-titulo active:scale-95" onClick={() => alterar(() => setQuantidade((q) => q + 1))}>+</button>
           </div>
         </Campo>
       ) : (
@@ -185,7 +188,7 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
       </Campo>
 
       <Campo rotulo="Observação técnica (opcional)">
-        <textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} className="w-full rounded-2xl border border-line bg-surface-2 p-3 text-base" />
+        <textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} className="w-full rounded-2xl border border-line bg-surface-2 p-3 text-corpo" />
       </Campo>
 
       {ordem && (
@@ -199,11 +202,11 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
         <div className="flex flex-wrap items-center gap-2">
           <Badge tom={TOM[v.avaliacao.nivel] ?? 'neutral'}>{v.avaliacao.titulo}</Badge>
         </div>
-        <p className="text-sm text-text-2">{v.avaliacao.detalhe}</p>
-        <p className="text-xs text-text-2">Fonte: {v.avaliacao.fontes.map((f) => FONTES[f].rotulo).join(' · ')}</p>
-        {erros.map((p) => <p key={p.regra + p.campo} className="text-sm text-danger" role="alert"><b>{p.regra}</b> · {p.mensagem}</p>)}
-        {avisos.map((p) => <p key={p.regra + p.campo} className="text-sm text-warn"><b>{p.regra}</b> · {p.mensagem}</p>)}
-        {semNome && <p className="text-sm text-danger" role="alert">Informe seu nome para assinar o registro.</p>}
+        <p className="text-apoio text-text-2">{v.avaliacao.detalhe}</p>
+        <p className="text-rotulo text-text-2">Fonte: {v.avaliacao.fontes.map((f) => FONTES[f].rotulo).join(' · ')}</p>
+        {erros.map((p) => <p key={p.regra + p.campo} className="text-apoio text-danger" role="alert"><b>{p.regra}</b> · {p.mensagem}</p>)}
+        {avisos.map((p) => <p key={p.regra + p.campo} className="text-apoio text-warn"><b>{p.regra}</b> · {p.mensagem}</p>)}
+        {semNome && <p className="text-apoio text-danger" role="alert">Informe seu nome para assinar o registro.</p>}
       </section>
 
       <Button block icon="check" disabled={!pode} onClick={() => void salvar()}>Salvar registro</Button>

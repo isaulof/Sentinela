@@ -6,6 +6,8 @@
  * temperatura do mofo-branco (15–25 °C) vêm da Embrapa (CT 152); os demais limiares são
  * escolhas da equipe, descritas em `LIMIARES` e na tela "Como o risco é calculado".
  */
+import { diaLocal } from './tempo'
+
 export interface HoraClima {
   /** ISO local, ex.: 2026-11-07T14:00 */
   hora: string
@@ -38,8 +40,8 @@ export const FUSO_CUIABA = '-04:00'
 export function instante(hora: string): number {
   return Date.parse(/(Z|[+-]\d{2}:\d{2})$/.test(hora) ? hora : `${hora.length === 16 ? hora + ':00' : hora}${FUSO_CUIABA}`)
 }
-/** Data (yyyy-mm-dd) em Cuiabá para um instante. */
-export const diaEmCuiaba = (d: Date): string => new Date(d.getTime() - 4 * 3_600_000).toISOString().slice(0, 10)
+/** Data (yyyy-mm-dd) em Cuiabá para um instante. Mantido por compatibilidade: use `diaLocal` de `tempo.ts`. */
+export const diaEmCuiaba = (d: Date): string => diaLocal(d)
 
 export const horaMolhada = (h: HoraClima): boolean =>
   h.umidadePct >= LIMIARES.umidadeMolhadaPct || h.chuvaMm >= LIMIARES.chuvaMolhadaMm

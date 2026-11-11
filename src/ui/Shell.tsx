@@ -20,7 +20,7 @@ function Marca() {
   return (
     <div className="flex items-center gap-2.5">
       <span className="grid size-9 place-items-center rounded-xl bg-brand text-on-brand"><Icon name="folha" size={20} /></span>
-      <p className="text-lg font-bold tracking-tight">Sentinela</p>
+      <p className="text-subtitulo font-bold tracking-tight">Sentinela</p>
     </div>
   )
 }
@@ -30,7 +30,7 @@ function AvisoOffline() {
   const on = useOnline()
   if (on) return null
   return (
-    <div role="status" className="safe-t sticky top-0 z-30 flex items-center justify-center gap-2 bg-warn-soft px-4 py-2 text-sm font-medium text-warn lg:col-span-2">
+    <div role="status" className="safe-t sticky top-0 z-30 flex items-center justify-center gap-2 bg-warn-soft px-4 py-2 text-apoio font-medium text-warn lg:col-span-2">
       <Icon name="semwifi" size={16} />Sem internet. Seus dados continuam salvos no aparelho.
     </div>
   )
@@ -40,8 +40,8 @@ function Perfil() {
   const nome = useSessao((s) => s.amostrador).trim()
   return (
     <Link to="/perfil" className="flex min-h-12 items-center gap-3 rounded-xl px-2.5 py-1.5 transition hover:bg-surface-2 data-[status=active]:bg-brand-soft">
-      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft text-sm font-bold text-brand">{nome ? nome[0]!.toUpperCase() : <Icon name="perfil" size={18} />}</span>
-      <span className="min-w-0 leading-tight"><span className="block truncate text-sm font-semibold">{nome || 'Seu perfil'}</span><span className="block text-xs text-text-2">Preferências</span></span>
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft text-apoio font-bold text-brand">{nome ? nome[0]!.toUpperCase() : <Icon name="perfil" size={18} />}</span>
+      <span className="min-w-0 leading-tight"><span className="block truncate text-apoio font-semibold">{nome || 'Seu perfil'}</span><span className="block text-rotulo text-text-2">Preferências</span></span>
     </Link>
   )
 }

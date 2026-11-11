@@ -92,3 +92,59 @@ describe('anexar diagnóstico ao ponto', () => {
     await expect(anexarDiagnostico({ ...base, pendenciaId: 'PEN-fantasma' }, repo)).rejects.toThrow(/não foi encontrado/)
   })
 })
+
+describe('Registro v2 e migração', () => {
+  it('migrarRegistro só marca a versão e não inventa campos', async () => {
+    const { migrarRegistro, metodoDoRegistro, ehRegistroAntigo, METODO_NAO_INFORMADO } = await import('@/domain/registro')
+    const antigo = reg()
+    const m = migrarRegistro(antigo)
+    expect(m.schema).toBe(1)
+    expect(m.metodo).toBeUndefined()
+    expect(m.fusoHorario).toBeUndefined()
+    expect(ehRegistroAntigo(m)).toBe(true)
+    expect(metodoDoRegistro(m)).toBe(METODO_NAO_INFORMADO)
+  })
+  it('a migração do banco v2 → v3 marca os registros existentes como schema 1', async () => {
+    const nome = `migra-${++n}`
+    const { default: Dexie } = await import('dexie')
+    const velho = new Dexie(nome)
+    velho.version(1).stores({ talhoes: 'id, nome', planos: 'talhaoId', registros: 'id, talhaoId, alvo, criadoEm, [talhaoId+pontoId], [talhaoId+alvo]', fotos: 'id', ordens: 'id, talhaoId, status', clima: 'chave', config: 'chave' })
+    velho.version(2).stores({ pendencias: 'id, talhaoId, [talhaoId+pontoId]' })
+    await velho.open()
+    await velho.table('registros').put(reg({ id: 'antigo-1' }))
+    velho.close()
+    const novo = new SentinelaDB(nome)
+    const lido = await novo.registros.get('antigo-1')
+    expect(lido?.schema).toBe(1)
+    expect(lido?.metodo).toBeUndefined()
+    expect(lido?.quantidade).toBe(1) // dados originais intactos
+  })
+  it('camposV2 preenche método, protocolo, fuso, posição planejada e distância', async () => {
+    const { camposV2, PROTOCOLO_VERSAO } = await import('@/domain/registro')
+    const t = new Date('2026-11-11T17:00:00Z')
+    const c = camposV2({ posicao: [-55.9150, -13.0520] }, { metodo: 'Pano de batida', planejada: [-55.9150, -13.0520], inicio: t, fim: new Date(t.getTime() + 90_000), responsavel: 'Resp. Técnico' })
+    expect(c).toMatchObject({ schema: 2, metodo: 'Pano de batida', protocoloVersao: PROTOCOLO_VERSAO, fusoHorario: 'America/Cuiaba', distanciaDoPontoM: 0, responsavel: 'Resp. Técnico' })
+    expect(Date.parse(c.fimEm) - Date.parse(c.inicioEm)).toBe(90_000)
+    const longe = camposV2({ posicao: [-55.9140, -13.0520] }, { metodo: 'x', planejada: [-55.9150, -13.0520], inicio: t, fim: t })
+    expect(longe.distanciaDoPontoM).toBeGreaterThan(100)
+  })
+  it('registro v2 completo é gravado e lido com todos os campos', async () => {
+    const r = reg({ schema: 2, metodo: 'Pano de batida de 1 m', protocoloVersao: '2026-11', fusoHorario: 'America/Cuiaba', posicaoPlanejada: [-55.915, -13.052], distanciaDoPontoM: 0 })
+    expect((await repo.salvarRegistro(r, ctx)).gravado).toBe(true)
+    expect((await repo.listarRegistros('T-02'))[0]).toMatchObject({ schema: 2, metodo: 'Pano de batida de 1 m', fusoHorario: 'America/Cuiaba' })
+  })
+})
+
+describe('fazenda', () => {
+  it('começa sem fazenda, salva e atualiza (uma só por aparelho)', async () => {
+    expect(await repo.obterFazenda()).toBeUndefined()
+    await repo.salvarFazenda({ nome: 'Fazenda Teste', municipio: 'Lucas do Rio Verde', uf: 'MT', safra: '25/26', fuso: 'America/Cuiaba' })
+    await repo.salvarFazenda({ nome: 'Fazenda Teste 2', municipio: 'Sorriso', uf: 'MT', safra: '25/26', fuso: 'America/Cuiaba' })
+    expect((await repo.obterFazenda())?.nome).toBe('Fazenda Teste 2')
+  })
+  it('apagar tudo remove também a fazenda', async () => {
+    await repo.salvarFazenda({ nome: 'X', municipio: 'Y', uf: 'MT', safra: '25/26', fuso: 'America/Cuiaba' })
+    await repo.apagarTudo()
+    expect(await repo.obterFazenda()).toBeUndefined()
+  })
+})

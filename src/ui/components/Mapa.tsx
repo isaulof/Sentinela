@@ -270,7 +270,7 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     <div className={`relative ${className ?? ''}`} style={{ minHeight: 280 }}>
       <div ref={el} style={{ position: 'absolute', inset: 0 }} />
       {seguir && soltou && (
-        <button type="button" onClick={() => { vivo.current.mexeu = false; setSoltou(false); enquadrarGuia(500) }} className="absolute bottom-9 left-2.5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface/95 px-3 text-sm font-semibold shadow-card ring-1 ring-line active:bg-surface-2"><Icon name="local" size={18} />Seguir meu caminho</button>
+        <button type="button" onClick={() => { vivo.current.mexeu = false; setSoltou(false); enquadrarGuia(500) }} className="absolute bottom-9 left-2.5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface/95 px-3 text-apoio font-semibold shadow-card ring-1 ring-line active:bg-surface-2"><Icon name="local" size={18} />Seguir meu caminho</button>
       )}
       {!fixo && (
         <div className="absolute right-2.5 top-2.5 flex flex-col gap-2">

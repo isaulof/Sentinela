@@ -105,6 +105,19 @@
   --color-accent: var(--accent);
   --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Escala tipográfica: use estes nomes, não tamanhos soltos. Título e seção são fluidos (360 → 1280 px). */
+  --text-rotulo: 0.75rem;
+  --text-rotulo--line-height: 1rem;
+  --text-apoio: 0.875rem;
+  --text-apoio--line-height: 1.25rem;
+  --text-corpo: 1rem;
+  --text-corpo--line-height: 1.5rem;
+  --text-subtitulo: 1.125rem;
+  --text-subtitulo--line-height: 1.6rem;
+  --text-secao: clamp(1.125rem, 1.02rem + 0.45vw, 1.25rem);
+  --text-secao--line-height: 1.5rem;
+  --text-titulo: clamp(1.5rem, 1.25rem + 1.1vw, 1.875rem);
+  --text-titulo--line-height: 1.2;
   --radius-card: 1rem;
   --shadow-card: var(--shadow);
   --shadow-lift: var(--shadow-lift);

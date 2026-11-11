@@ -51,3 +51,10 @@ describe('série temporal', () => {
     expect(s).toEqual([{ dia: '2026-10-30', media: 1, n: 1 }, { dia: '2026-11-02', media: 3, n: 2 }])
   })
 })
+
+describe('série temporal e fuso', () => {
+  it('registros das 09:00 e das 21:30 locais entram no mesmo dia', () => {
+    const s = serieTemporal([reg({ criadoEm: '2026-11-11T13:00:00Z', quantidade: 2 }), reg({ criadoEm: '2026-11-12T01:30:00Z', quantidade: 4 })])
+    expect(s).toEqual([{ dia: '2026-11-11', media: 3, n: 2 }])
+  })
+})

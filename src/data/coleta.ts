@@ -1,5 +1,5 @@
 import type { Pendencia, PlanoSalvo, Talhao } from '@/domain/entidades'
-import type { Registro } from '@/domain/registro'
+import { camposV2, type Registro } from '@/domain/registro'
 import { LISTA_ALVOS } from '@/knowledge/alvos'
 import { novoId, repo as repoPadrao, type Repo } from './repo'
 
@@ -11,6 +11,9 @@ export interface ParamsSemOcorrencia {
   /** GPS real, quando houver; senão vale a posição planejada (modo sala de aula). */
   gps?: { posicao: readonly [number, number]; precisaoM: number } | null
   agora?: Date
+  /** Responsável técnico e fuso da fazenda, quando cadastrados. */
+  responsavel?: string
+  fuso?: string
 }
 
 /**
@@ -29,6 +32,7 @@ export async function registrarSemOcorrencia(p: ParamsSemOcorrencia, repo: Repo 
       pontoId: p.pontoId, posicao, posicaoSimulada: !p.gps, ...(p.gps ? { precisaoM: p.gps.precisaoM } : {}),
       alvo: alvo.id, fase: alvo.fases[0]!, quantidade: 0, zero: true, ...(alvo.tipo === 'doenca' ? { presente: false } : {}),
       fotoIds: [], observacao: '',
+      ...camposV2({ posicao }, { metodo: alvo.coleta.metodo, parteDaPlanta: alvo.coleta.parte, planejada: ponto.position, inicio: agora, fim: agora, ...(p.responsavel ? { responsavel: p.responsavel } : {}), ...(p.fuso ? { fuso: p.fuso } : {}) }),
     }
     const r = await repo.salvarRegistro(reg, { agora, anelTalhao: p.talhao.anel, pontosDoPlano: p.plano.pontos.map((x) => x.id) })
     if (r.gravado) gravados++

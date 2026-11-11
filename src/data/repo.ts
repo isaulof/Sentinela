@@ -1,4 +1,4 @@
-import type { OrdemChecagem, Pendencia, PlanoSalvo, Talhao } from '@/domain/entidades'
+import type { Fazenda, OrdemChecagem, Pendencia, PlanoSalvo, Talhao } from '@/domain/entidades'
 import type { Registro } from '@/domain/registro'
 import { mediaHistorica, validarRegistro, type ContextoValidacao, type ResultadoValidacao } from '@/domain/validation'
 import type { AlvoId } from '@/knowledge/alvos'
@@ -54,6 +54,10 @@ export function criarRepo(db: SentinelaDB = dbPadrao) {
     salvarPendencia: (p: Pendencia) => db.pendencias.put(p),
     listarPendencias: (talhaoId: string) => db.pendencias.where('talhaoId').equals(talhaoId).sortBy('criadoEm'),
     apagarPendencia: (id: string) => db.pendencias.delete(id),
+
+    // Fazenda (uma por aparelho)
+    obterFazenda: () => db.fazendas.get('fazenda'),
+    salvarFazenda: (f: Omit<Fazenda, 'id' | 'atualizadaEm'>, agora = new Date()) => db.fazendas.put({ ...f, id: 'fazenda', atualizadaEm: agora.toISOString() }),
 
     // Configuração
     async lerConfig<T>(chave: string, padrao: T): Promise<T> {

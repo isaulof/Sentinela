@@ -28,7 +28,7 @@ export function CompararFotos({ candidatos, rodada, contexto, onEscolher, onNenh
       <header className="mb-4 flex items-center gap-1">
         <button type="button" onClick={onVoltar} aria-label="Voltar para a pergunta anterior" className="-ml-2 grid size-11 shrink-0 place-items-center rounded-full text-text-2 transition active:bg-surface-2"><Icon name="voltar" size={24} /></button>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-3 text-sm">
+          <div className="flex items-baseline justify-between gap-3 text-apoio">
             <span className="font-semibold">Comparar fotos{rodada > 1 ? ' · outras opções' : ''}</span>
             <span className="text-text-2">Quase lá</span>
           </div>
@@ -39,8 +39,8 @@ export function CompararFotos({ candidatos, rodada, contexto, onEscolher, onNenh
       </header>
       {contexto && <div className="mb-4">{contexto}</div>}
 
-      <h2 ref={titulo} tabIndex={-1} className="text-2xl leading-tight outline-none">Qual foto mais se parece com o que você vê?</h2>
-      <p className="mt-2.5 flex gap-2.5 rounded-xl bg-info-soft px-3 py-2.5 text-sm leading-snug text-info"><Icon name="info" size={20} className="mt-0.5 shrink-0" /><span>Compare com a planta na sua mão. Leia o que olhar embaixo de cada foto. Se nenhuma parece, tudo bem.</span></p>
+      <h2 ref={titulo} tabIndex={-1} className="text-titulo leading-tight outline-none">Qual foto mais se parece com o que você vê?</h2>
+      <p className="mt-2.5 flex gap-2.5 rounded-xl bg-info-soft px-3 py-2.5 text-apoio leading-snug text-info"><Icon name="info" size={20} className="mt-0.5 shrink-0" /><span>Compare com a planta na sua mão. Leia o que olhar embaixo de cada foto. Se nenhuma parece, tudo bem.</span></p>
 
       <ul className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         {candidatos.map((c) => (
@@ -48,11 +48,11 @@ export function CompararFotos({ candidatos, rodada, contexto, onEscolher, onNenh
             <button type="button" onClick={() => onEscolher(c.id)} className="flex h-full w-full flex-col overflow-hidden rounded-card bg-surface text-left ring-1 ring-line transition active:scale-[0.98] active:bg-brand-soft">
               <FotoRef
                 arquivo={fotosDoCandidato(c)} alt={`Foto de referência: ${c.nome}`} className={FOTO_CLASSE}
-                fallback={<span className="grid aspect-[4/3] w-full place-items-center bg-surface-2 text-text-2"><span className="flex flex-col items-center gap-1 px-3 text-center text-sm"><Icon name="camera" size={26} />Foto ainda não adicionada</span></span>}
+                fallback={<span className="grid aspect-[4/3] w-full place-items-center bg-surface-2 text-text-2"><span className="flex flex-col items-center gap-1 px-3 text-center text-apoio"><Icon name="camera" size={26} />Foto ainda não adicionada</span></span>}
               />
               <span className="block space-y-1 p-3">
-                <span className="block text-base font-semibold leading-snug">{c.nome}</span>
-                <span className="block text-sm leading-snug text-text-2"><span className="font-semibold text-text">O que olhar: </span>{c.sinalChave ?? c.comoConfirmar[0]}</span>
+                <span className="block text-corpo font-semibold leading-snug">{c.nome}</span>
+                <span className="block text-apoio leading-snug text-text-2"><span className="font-semibold text-text">O que olhar: </span>{c.sinalChave ?? c.comoConfirmar[0]}</span>
               </span>
             </button>
           </li>

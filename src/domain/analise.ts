@@ -1,6 +1,7 @@
 import { avaliar, type Avaliacao, type Nivel } from './decision'
 import { makeProjection, pointInRing, type LngLat } from './geo'
 import type { Registro } from './registro'
+import { diaLocal } from './tempo'
 
 /** Uma "rodada" de monitoramento = registros dos últimos N dias (decisão de projeto). */
 export const RODADA_DIAS = 7
@@ -103,7 +104,7 @@ export function idwGrade(
 export function serieTemporal(regs: readonly Registro[]): { dia: string; media: number; n: number }[] {
   const por = new Map<string, number[]>()
   for (const r of regs) {
-    const d = r.criadoEm.slice(0, 10)
+    const d = diaLocal(r.criadoEm)
     por.set(d, [...(por.get(d) ?? []), r.quantidade])
   }
   return [...por.entries()]

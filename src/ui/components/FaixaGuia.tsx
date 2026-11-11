@@ -49,22 +49,22 @@ export function FaixaGuia({ gps, alvo, onParar }: Props) {
             <p className="font-semibold">Procurando sinal de GPS…</p>
           ) : chegou ? (
             <>
-              <p className="text-lg font-bold leading-tight">Você chegou ao ponto {alvo.ordem}</p>
-              <p className="text-sm opacity-90">Registre o que encontrou. GPS ±{precisao} m</p>
+              <p className="text-subtitulo font-bold leading-tight">Você chegou ao ponto {alvo.ordem}</p>
+              <p className="text-apoio opacity-90">Registre o que encontrou. GPS ±{precisao} m</p>
             </>
           ) : (
             <>
-              <p className="flex items-baseline gap-2"><span className="text-2xl font-bold leading-none tabular-nums">{formatarDistancia(guia.distanciaM)}</span><span className={`text-xs ${guia.sinalFraco ? 'font-semibold text-warn' : 'text-text-2'}`}>GPS ±{precisao} m</span></p>
-              <p className="mt-0.5 text-sm text-text-2">Ponto {alvo.ordem} · {guia.cardeal} · {formatarTempoAPe(guia.distanciaM)}</p>
-              {guia.seta != null && <p className="text-xs text-text-2">Siga na direção da seta.</p>}
-              {guia.sinalFraco && <p className="text-xs font-semibold text-warn">Sinal fraco: vá para um lugar aberto.</p>}
+              <p className="flex items-baseline gap-2"><span className="text-titulo font-bold leading-none tabular-nums">{formatarDistancia(guia.distanciaM)}</span><span className={`text-rotulo ${guia.sinalFraco ? 'font-semibold text-warn' : 'text-text-2'}`}>GPS ±{precisao} m</span></p>
+              <p className="mt-0.5 text-apoio text-text-2">Ponto {alvo.ordem} · {guia.cardeal} · {formatarTempoAPe(guia.distanciaM)}</p>
+              {guia.seta != null && <p className="text-rotulo text-text-2">Siga na direção da seta.</p>}
+              {guia.sinalFraco && <p className="text-rotulo font-semibold text-warn">Sinal fraco: vá para um lugar aberto.</p>}
             </>
           )}
         </div>
         <button type="button" onClick={onParar} aria-label="Parar o guia" className={`grid size-10 shrink-0 place-items-center rounded-full transition active:scale-95 ${chegou ? 'hover:bg-white/15' : 'text-text-2 hover:bg-surface-2'}`}><Icon name="x" size={20} /></button>
       </div>
       {guia && guia.distanciaM > DISTANCIA_DE_CARRO_M && (
-        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-sm">
+        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-apoio">
           <span className="text-text-2">Está longe? Rota de carro:</span>
           <a href={links.google} target="_blank" rel="noreferrer" className="font-semibold text-brand underline">Google Maps</a>
           <a href={links.waze} target="_blank" rel="noreferrer" className="font-semibold text-brand underline">Waze</a>

@@ -53,8 +53,8 @@ export function Talhoes() {
                     <MiniTalhao anel={t.anel} pontos={plano?.pontos ?? []} className="size-14 shrink-0 rounded-xl bg-surface-2" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold">{t.nome}</p>
-                      <p className="truncate text-sm text-text-2">{(plano?.areaHa ?? polygonAreaHa(t.anel)).toFixed(0)} ha · {t.cultivar} · {t.estadio}</p>
-                      <p className="truncate text-sm text-text-2">{plano ? `${plano.pontos.length} pontos · ${NOME_METODO[plano.params.method]}` : 'Sem plano de pontos'}</p>
+                      <p className="truncate text-apoio text-text-2">{(plano?.areaHa ?? polygonAreaHa(t.anel)).toFixed(0)} ha · {t.cultivar} · {t.estadio}</p>
+                      <p className="truncate text-apoio text-text-2">{plano ? `${plano.pontos.length} pontos · ${NOME_METODO[plano.params.method]}` : 'Sem plano de pontos'}</p>
                     </div>
                     <Icon name="seta" size={18} className="shrink-0 text-text-2" />
                   </Link>
@@ -113,8 +113,8 @@ export function NovoTalhao() {
       <header className="mb-3 flex items-center gap-1">
         <button type="button" onClick={sair} aria-label="Cancelar e voltar" className="-ml-2 grid size-11 place-items-center rounded-full text-text-2 transition active:bg-surface-2"><Icon name="voltar" size={24} /></button>
         <div className="min-w-0">
-          <h1 className="text-xl">Desenhar talhão</h1>
-          <p className="text-sm text-text-2">{vertices.length < 3 ? 'Toque no mapa ou ande até cada canto e use "Marcar canto aqui".' : 'Ajuste os cantos se precisar e conclua o contorno.'}</p>
+          <h1 className="text-secao">Desenhar talhão</h1>
+          <p className="text-apoio text-text-2">{vertices.length < 3 ? 'Toque no mapa ou ande até cada canto e use "Marcar canto aqui".' : 'Ajuste os cantos se precisar e conclua o contorno.'}</p>
         </div>
       </header>
 
@@ -126,16 +126,16 @@ export function NovoTalhao() {
           eu={gps.estado === 'ok' ? { posicao: gps.fix.posicao, precisaoM: gps.fix.precisaoM, rumo: gps.fix.rumo } : null}
         />
         <div className="absolute left-2.5 top-2.5 flex flex-col items-start gap-2">
-          <button type="button" onClick={minhaPosicao} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface/95 px-3 text-sm font-semibold shadow-card ring-1 ring-line active:bg-surface-2"><Icon name="local" size={18} />Minha posição</button>
-          <button type="button" onClick={marcarCantoAqui} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand px-3 text-sm font-semibold text-on-brand shadow-card active:bg-brand-strong"><Icon name="mais1" size={18} />Marcar canto aqui</button>
-          <p role="status" className={`rounded-lg bg-surface/95 px-2.5 py-1 text-xs font-semibold shadow-card ring-1 ring-line ${gps.estado === 'ok' ? { boa: 'text-ok', media: 'text-warn', ruim: 'text-danger' }[nivelGps(gps.fix.precisaoM)] : 'text-text-2'}`}>
+          <button type="button" onClick={minhaPosicao} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface/95 px-3 text-apoio font-semibold shadow-card ring-1 ring-line active:bg-surface-2"><Icon name="local" size={18} />Minha posição</button>
+          <button type="button" onClick={marcarCantoAqui} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand px-3 text-apoio font-semibold text-on-brand shadow-card active:bg-brand-strong"><Icon name="mais1" size={18} />Marcar canto aqui</button>
+          <p role="status" className={`rounded-lg bg-surface/95 px-2.5 py-1 text-rotulo font-semibold shadow-card ring-1 ring-line ${gps.estado === 'ok' ? { boa: 'text-ok', media: 'text-warn', ruim: 'text-danger' }[nivelGps(gps.fix.precisaoM)] : 'text-text-2'}`}>
             {gps.estado === 'ok' ? `GPS ±${Math.round(gps.fix.precisaoM)} m${gps.fix.precisaoM <= PRECISAO_BOA_M ? ' · bom' : gps.fix.precisaoM <= PRECISAO_MAXIMA_CANTO_M ? ' · aceitável' : ' · fraco'}` : gps.estado === 'erro' ? 'GPS indisponível' : 'Procurando GPS…'}
           </p>
         </div>
         <div className="absolute inset-x-2.5 bottom-9 flex items-center gap-2 rounded-2xl bg-surface/95 p-2 shadow-lift ring-1 ring-line backdrop-blur">
           <button type="button" aria-label="Desfazer último canto" onClick={() => setVertices((d) => d.slice(0, -1))} disabled={vertices.length === 0} className="grid size-11 shrink-0 place-items-center rounded-xl text-text-2 transition active:bg-surface-2 disabled:opacity-35"><Icon name="desfazer" size={20} /></button>
           <button type="button" aria-label="Limpar contorno" onClick={() => setVertices([])} disabled={vertices.length === 0} className="grid size-11 shrink-0 place-items-center rounded-xl text-text-2 transition active:bg-surface-2 disabled:opacity-35"><Icon name="lixo" size={20} /></button>
-          <p className="min-w-0 flex-1 truncate text-center text-sm font-medium text-text-2">{vertices.length === 0 ? 'Nenhum canto' : `${vertices.length} ${vertices.length === 1 ? 'canto' : 'cantos'}${vertices.length >= 3 ? ` · ${polygonAreaHa(vertices).toFixed(1)} ha` : ''}`}</p>
+          <p className="min-w-0 flex-1 truncate text-center text-apoio font-medium text-text-2">{vertices.length === 0 ? 'Nenhum canto' : `${vertices.length} ${vertices.length === 1 ? 'canto' : 'cantos'}${vertices.length >= 3 ? ` · ${polygonAreaHa(vertices).toFixed(1)} ha` : ''}`}</p>
           <Button icon="check" disabled={vertices.length < 3} onClick={() => setContorno(vertices)}>Concluir</Button>
         </div>
       </div>
@@ -163,15 +163,15 @@ export function TalhaoDetalhe() {
       <header className="mb-3 flex items-center gap-1">
         <Link to="/talhoes" aria-label="Voltar para Talhões" className="-ml-2 grid size-11 shrink-0 place-items-center rounded-full text-text-2 transition active:bg-surface-2"><Icon name="voltar" size={24} /></Link>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl">{talhao.nome}</h1>
-          <p className="truncate text-sm text-text-2">{polygonAreaHa(talhao.anel).toFixed(1)} ha · {talhao.cultivar} · {talhao.estadio}</p>
+          <h1 className="truncate text-secao">{talhao.nome}</h1>
+          <p className="truncate text-apoio text-text-2">{polygonAreaHa(talhao.anel).toFixed(1)} ha · {talhao.cultivar} · {talhao.estadio}</p>
         </div>
-        {plano && <Link to="/coleta" onClick={() => setTalhao(talhao.id)} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-on-brand transition active:scale-95"><Icon name="campo" size={17} />Coletar</Link>}
+        {plano && <Link to="/coleta" onClick={() => setTalhao(talhao.id)} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 text-apoio font-semibold text-on-brand transition active:scale-95"><Icon name="campo" size={17} />Coletar</Link>}
       </header>
 
       <div role="tablist" aria-label="Visão do talhão" className="mb-4 grid grid-cols-2 border-b border-line">
         {([['resultados', 'Mapa inteligente'], ['plano', 'Plano de pontos']] as const).map(([k, nome]) => (
-          <button key={k} type="button" role="tab" aria-selected={aba === k} disabled={k === 'resultados' && !plano} onClick={() => setTalhaoAba(k)} className={`-mb-px min-h-11 border-b-2 text-sm font-semibold transition disabled:opacity-40 ${aba === k ? 'border-brand text-brand' : 'border-transparent text-text-2'}`}>{nome}</button>
+          <button key={k} type="button" role="tab" aria-selected={aba === k} disabled={k === 'resultados' && !plano} onClick={() => setTalhaoAba(k)} className={`-mb-px min-h-11 border-b-2 text-apoio font-semibold transition disabled:opacity-40 ${aba === k ? 'border-brand text-brand' : 'border-transparent text-text-2'}`}>{nome}</button>
         ))}
       </div>
 
@@ -229,7 +229,7 @@ function PlanoTalhao({ talhao }: { talhao: Talhao }) {
       />
       <div className="space-y-4">
         <Card className="space-y-4">
-          <h2 className="text-lg">Plano de amostragem</h2>
+          <h2 className="text-subtitulo">Plano de amostragem</h2>
           <Campo rotulo="Caminhamento" ajuda={METODOS.find((m) => m.id === efetivo.method)?.quando}>
             <Segmentado rotulo="Caminhamento" valor={efetivo.method} onChange={(method) => setParams({ ...efetivo, method })} opcoes={METODOS.map((m) => ({ id: m.id, nome: m.nome }))} />
           </Campo>
@@ -241,7 +241,7 @@ function PlanoTalhao({ talhao }: { talhao: Talhao }) {
               <InputNumero min={0} max={100} valor={efetivo.bufferM} onValor={(bufferM) => setParams({ ...efetivo, bufferM })} />
             </Campo>
           </div>
-          <ul className="space-y-1.5 text-sm">
+          <ul className="space-y-1.5 text-apoio">
             <li>{preview.points.length} pontos · caminhada de ~{(preview.walkLengthM / 1000).toFixed(1)} km · espaçamento médio de {preview.meanSpacingM.toFixed(0)} m</li>
             {preview.issues.map((i) => (
               <li key={i.code}><Badge tom={i.severity === 'erro' ? 'danger' : 'warn'} icon="alerta">{i.severity === 'erro' ? 'Erro' : 'Atenção'}</Badge> <span className="text-text-2">{i.message}</span></li>
@@ -250,13 +250,13 @@ function PlanoTalhao({ talhao }: { talhao: Talhao }) {
           <Button block icon="check" onClick={() => void salvarPlano()} disabled={(!alterado && !!planoSalvo) || preview.points.length === 0}>
             {planoSalvo ? (alterado ? 'Salvar novo plano' : 'Plano salvo') : 'Salvar plano'}
           </Button>
-          {planoSalvo && alterado && <p className="text-sm text-text-2">Salvar o novo plano mantém os registros anteriores, mas os pontos mudam.</p>}
+          {planoSalvo && alterado && <p className="text-apoio text-text-2">Salvar o novo plano mantém os registros anteriores, mas os pontos mudam.</p>}
         </Card>
 
         <Card className="space-y-3">
-          <h2 className="text-lg">Croqui</h2>
+          <h2 className="text-subtitulo">Croqui</h2>
           <Croqui anel={talhao.anel} pontos={preview.points} caminho={preview.paths} titulo={`Croqui de ${talhao.nome}`} />
-          <p className="text-sm text-text-2">Linha tracejada: caminhamento. Círculos: pontos de amostragem.</p>
+          <p className="text-apoio text-text-2">Linha tracejada: caminhamento. Círculos: pontos de amostragem.</p>
         </Card>
       </div>
     </div>
@@ -305,7 +305,7 @@ function FormTalhao({ anel, sugestao, onFechar, onSalvo }: { anel: LngLat[] | nu
         <Campo grupo rotulo="Finalidade" ajuda="Sementes têm nível de ação mais rígido para percevejo">
           <Segmentado rotulo="Finalidade" valor={finalidade} onChange={setFinalidade} opcoes={[{ id: 'graos', nome: 'Grãos' }, { id: 'sementes', nome: 'Sementes' }]} />
         </Campo>
-        {nomeFinal.trim().length < 2 && <p className="text-sm text-danger" role="alert">Dê um nome ao talhão para salvar.</p>}
+        {nomeFinal.trim().length < 2 && <p className="text-apoio text-danger" role="alert">Dê um nome ao talhão para salvar.</p>}
         <Button block icon="check" disabled={!ok} onClick={() => void salvar()}>{salvando ? 'Salvando…' : 'Salvar talhão e gerar plano'}</Button>
       </div>
     </Folha>

@@ -1,7 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { HoraClima } from '@/domain/climate'
-import type { OrdemChecagem, Pendencia, PlanoSalvo, Talhao } from '@/domain/entidades'
-import type { Registro } from '@/domain/registro'
+import type { Fazenda, OrdemChecagem, Pendencia, PlanoSalvo, Talhao } from '@/domain/entidades'
+import { migrarRegistro, type Registro } from '@/domain/registro'
 
 export interface FotoRow {
   id: string
@@ -29,6 +29,7 @@ export class SentinelaDB extends Dexie {
   pendencias!: EntityTable<Pendencia, 'id'>
   clima!: EntityTable<ClimaRow, 'chave'>
   config!: EntityTable<ConfigRow, 'chave'>
+  fazendas!: EntityTable<Fazenda, 'id'>
 
   constructor(nome = 'sentinela') {
     super(nome)
@@ -43,6 +44,11 @@ export class SentinelaDB extends Dexie {
     })
     // v2: achados pendentes de diagnóstico (tabela nova; nada a migrar nos dados existentes).
     this.version(2).stores({ pendencias: 'id, talhaoId, [talhaoId+pontoId]' })
+    // v3: entidade Fazenda e Registro v2. Os registros antigos só ganham a marca de versão (schema 1);
+    // método, fuso e demais campos novos ficam ausentes, nunca inventados.
+    this.version(3)
+      .stores({ fazendas: 'id' })
+      .upgrade((tx) => tx.table('registros').toCollection().modify((r: Registro) => { Object.assign(r, migrarRegistro(r)) }))
   }
 }
 

@@ -79,7 +79,7 @@ export function SalvarDiagnostico({ aberta, onFechar, ranking, confianca, eviden
               <label key={r.candidato.id} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-line bg-surface px-4 py-2 has-[:checked]:border-brand has-[:checked]:bg-brand-soft">
                 <input type="radio" name="diag" checked={escolhido?.candidato.id === r.candidato.id} onChange={() => setEscolhaId(r.candidato.id)} className="size-5 accent-[var(--brand)]" />
                 <span className="flex-1 font-semibold leading-snug">{r.candidato.nome}</span>
-                {i === 0 && <span className="text-sm text-text-2">mais compatível</span>}
+                {i === 0 && <span className="text-apoio text-text-2">mais compatível</span>}
               </label>
             ))}
           </fieldset>

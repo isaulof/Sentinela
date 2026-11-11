@@ -20,7 +20,7 @@ const Origem = ({ o }: { o: Arvore['origem'] }) =>
 
 function Fontes({ ids }: { ids: Arvore['fontes'] }) {
   return (
-    <p className="text-sm text-text-2">
+    <p className="text-apoio text-text-2">
       Fontes: {ids.map((id, i) => {
         const f = FONTES[id]
         return <span key={id}>{i > 0 && ' · '}{'url' in f ? <a className="underline" href={f.url} target="_blank" rel="noreferrer">{f.rotulo}</a> : f.rotulo}</span>
@@ -40,7 +40,7 @@ function Arvores() {
     <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
       <nav aria-label="Árvores de decisão" className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
         {ARVORES.map((a) => (
-          <button key={a.id} type="button" onClick={() => { setId(a.id); setResp([]) }} aria-current={a.id === id} className={`min-h-12 shrink-0 rounded-2xl border px-4 py-2 text-left text-sm font-semibold transition ${a.id === id ? 'border-brand bg-brand-soft text-brand' : 'border-line bg-surface hover:bg-surface-2'}`}>
+          <button key={a.id} type="button" onClick={() => { setId(a.id); setResp([]) }} aria-current={a.id === id} className={`min-h-12 shrink-0 rounded-2xl border px-4 py-2 text-left text-apoio font-semibold transition ${a.id === id ? 'border-brand bg-brand-soft text-brand' : 'border-line bg-surface hover:bg-surface-2'}`}>
             {a.titulo}
           </button>
         ))}
@@ -48,12 +48,12 @@ function Arvores() {
 
       <div className="space-y-4">
         <Card className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2"><h2 className="text-lg">{arvore.titulo}</h2><Origem o={arvore.origem} /></div>
+          <div className="flex flex-wrap items-center gap-2"><h2 className="text-subtitulo">{arvore.titulo}</h2><Origem o={arvore.origem} /></div>
           <p className="text-text-2">{arvore.descricao}</p>
         </Card>
 
         {passo.trilha.length > 0 && (
-          <ol className="space-y-1.5 text-sm" aria-label="Respostas dadas">
+          <ol className="space-y-1.5 text-apoio" aria-label="Respostas dadas">
             {passo.trilha.map((t, i) => (
               <li key={i} className="rounded-xl bg-surface-2 px-3 py-2"><span className="text-text-2">{t.pergunta}</span><br /><b>{t.resposta}</b></li>
             ))}
@@ -62,8 +62,8 @@ function Arvores() {
 
         {no.tipo === 'pergunta' ? (
           <Card className="space-y-4">
-            <h3 className="text-xl">{no.texto}</h3>
-            {no.dica && <p className="flex gap-2 rounded-xl bg-info-soft p-3 text-sm text-info"><Icon name="info" size={18} className="mt-0.5 shrink-0" />{no.dica}</p>}
+            <h3 className="text-secao">{no.texto}</h3>
+            {no.dica && <p className="flex gap-2 rounded-xl bg-info-soft p-3 text-apoio text-info"><Icon name="info" size={18} className="mt-0.5 shrink-0" />{no.dica}</p>}
             <div className="grid gap-2">
               {no.opcoes.map((o, i) => (
                 <button key={o.rotulo} type="button" onClick={() => setResp([...resp, i])} className="min-h-14 rounded-2xl border border-line bg-surface-2 px-4 py-3 text-left font-semibold transition hover:border-brand active:scale-[0.99]">{o.rotulo}</button>
@@ -73,7 +73,7 @@ function Arvores() {
         ) : (
           <Card className="space-y-4" aria-live="polite">
             <Badge tom={CAT[no.categoria].tom}>{CAT[no.categoria].texto}</Badge>
-            <h3 className="text-xl">{no.titulo}</h3>
+            <h3 className="text-secao">{no.titulo}</h3>
             <p>{no.explicacao}</p>
             <div>
               <h4 className="mb-1.5 font-semibold">Antes de qualquer aplicação</h4>
@@ -82,7 +82,7 @@ function Arvores() {
               </ul>
             </div>
             <Fontes ids={arvore.fontes} />
-            <p className="text-sm text-text-2">Esta é uma hipótese de apoio ao técnico. A decisão de aplicar é sempre do agrônomo.</p>
+            <p className="text-apoio text-text-2">Esta é uma hipótese de apoio ao técnico. A decisão de aplicar é sempre do agrônomo.</p>
           </Card>
         )}
 
@@ -100,7 +100,7 @@ function Quadro() {
     <div className="space-y-4">
       <p className="text-text-2"><b className="text-text">Sintoma</b> é o que a planta mostra e o produtor vê. <b className="text-text">Sinal</b> é a estrutura do próprio agente (pústula, micélio, escleródio) e é o que confirma a doença.</p>
       <div className="hidden overflow-hidden rounded-card border border-line md:block">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-apoio">
           <thead className="bg-surface-2 text-text-2"><tr><th className="p-3">Doença</th><th className="p-3">Sintoma que o produtor vê</th><th className="p-3">Sinal que confirma</th><th className="p-3">Onde procurar</th></tr></thead>
           <tbody>
             {SINTOMA_SINAL.map((l) => (
@@ -117,11 +117,11 @@ function Quadro() {
       <div className="space-y-3 md:hidden">
         {SINTOMA_SINAL.map((l) => (
           <Card key={l.doenca} className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2"><h3 className="text-lg">{l.doenca}</h3><Badge tom={l.cultura === 'soja' ? 'ok' : 'neutral'}>{l.cultura}</Badge></div>
+            <div className="flex flex-wrap items-center gap-2"><h3 className="text-subtitulo">{l.doenca}</h3><Badge tom={l.cultura === 'soja' ? 'ok' : 'neutral'}>{l.cultura}</Badge></div>
             <p><b>Sintoma: </b>{l.sintoma}</p>
             <p><b>Sinal: </b>{l.sinal}</p>
             <p><b>Onde procurar: </b>{l.onde}</p>
-            {l.aConfirmar && <p className="text-sm text-warn">A confirmar: {l.aConfirmar}</p>}
+            {l.aConfirmar && <p className="text-apoio text-warn">A confirmar: {l.aConfirmar}</p>}
           </Card>
         ))}
       </div>
@@ -134,8 +134,8 @@ function Regras() {
     <div className="grid gap-4 lg:grid-cols-2">
       {REGRAS.map((r) => (
         <Card key={r.id} className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2"><h3 className="text-lg">{r.titulo}</h3><Origem o={r.origem} /></div>
-          <p className="font-mono text-sm leading-relaxed">
+          <div className="flex flex-wrap items-center gap-2"><h3 className="text-subtitulo">{r.titulo}</h3><Origem o={r.origem} /></div>
+          <p className="font-mono text-apoio leading-relaxed">
             {r.se.map((c, i) => <span key={c} className="block"><b className="text-brand">{i === 0 ? 'SE' : 'E'}</b> {c}</span>)}
             <span className="block"><b className="text-brand">ENTÃO</b> {r.entao}</span>
             {r.senao && <span className="mt-2 block text-text-2"><b>SENÃO </b>{r.senao}</span>}
@@ -154,8 +154,8 @@ export function DiagnosticoTecnico() {
       <header className="mb-4 flex items-center gap-1">
         <Link to="/diagnostico" aria-label="Voltar para Diagnóstico" className="-ml-2 grid size-11 shrink-0 place-items-center rounded-full text-text-2 transition active:bg-surface-2"><Icon name="voltar" size={24} /></Link>
         <div className="min-w-0">
-          <h1 className="text-xl">Material do técnico</h1>
-          <p className="text-sm text-text-2">Árvores de decisão, sintoma × sinal e regras SE … ENTÃO, para o agrônomo e para a banca.</p>
+          <h1 className="text-secao">Material do técnico</h1>
+          <p className="text-apoio text-text-2">Árvores de decisão, sintoma × sinal e regras SE … ENTÃO, para o agrônomo e para a banca.</p>
         </div>
       </header>
       <div className="mb-4">

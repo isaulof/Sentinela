@@ -20,7 +20,7 @@ export function Erro({ error, reset }: ErrorComponentProps) {
         texto="Seus dados continuam salvos no aparelho. Tente de novo; se persistir, volte ao Painel."
         acao={<div className="flex flex-wrap justify-center gap-3"><Button onClick={reset}>Tentar de novo</Button><Link to="/"><Button variant="secondary">Painel</Button></Link></div>}
       />
-      <details className="mx-auto mt-4 max-w-xl text-sm text-text-2"><summary className="cursor-pointer">Detalhes técnicos</summary><pre className="mt-2 overflow-auto whitespace-pre-wrap">{error instanceof Error ? error.message : String(error)}</pre></details>
+      <details className="mx-auto mt-4 max-w-xl text-apoio text-text-2"><summary className="cursor-pointer">Detalhes técnicos</summary><pre className="mt-2 overflow-auto whitespace-pre-wrap">{error instanceof Error ? error.message : String(error)}</pre></details>
     </div>
   )
 }

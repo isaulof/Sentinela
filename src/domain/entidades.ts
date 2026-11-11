@@ -3,6 +3,24 @@ import type { LngLat } from './geo'
 import type { Estadio } from './phenology'
 import type { PlanPoint, SamplingParams } from './sampling'
 
+/** A fazenda monitorada. Uma por aparelho (decisão do plano v4); guarda o contexto que aparece nas telas e relatórios. */
+export interface Fazenda {
+  id: 'fazenda'
+  nome: string
+  proprietario?: string
+  municipio: string
+  /** Sigla da UF, ex.: MT. */
+  uf: string
+  /** Safra, ex.: 25/26. */
+  safra: string
+  responsavelTecnico?: string
+  /** Fuso IANA em que as datas são lidas. */
+  fuso: string
+  atualizadaEm: string
+}
+
+export const NOME_FAZENDA_PADRAO = 'Sua fazenda'
+
 export interface Talhao {
   id: string
   nome: string

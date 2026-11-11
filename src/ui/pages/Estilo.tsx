@@ -8,7 +8,7 @@ export function Estilo() {
       <Titulo sub="Componentes e estados. Esta página é só para desenvolvimento e revisão visual.">Guia de estilo</Titulo>
 
       <section className="space-y-3">
-        <h2 className="text-lg">Estados de decisão</h2>
+        <h2 className="text-subtitulo">Estados de decisão</h2>
         <div className="flex flex-wrap gap-2">
           <Badge tom="ok" icon="check">Abaixo do nível</Badge>
           <Badge tom="warn" icon="alerta">Próximo do nível</Badge>
@@ -26,7 +26,7 @@ export function Estilo() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg">Botões</h2>
+        <h2 className="text-subtitulo">Botões</h2>
         <div className="flex flex-wrap gap-3">
           <Button icon="camera">Tirar foto</Button>
           <Button variant="secondary">Cancelar</Button>
@@ -37,7 +37,7 @@ export function Estilo() {
       </section>
 
       <Card className="space-y-4">
-        <h2 className="text-lg">Formulário de registro</h2>
+        <h2 className="text-subtitulo">Formulário de registro</h2>
         <Campo rotulo="Alvo">
           <Segmentado rotulo="Alvo" valor={alvo} onChange={setAlvo} opcoes={[{ id: 'percevejo', nome: 'Percevejo-marrom' }, { id: 'lagarta', nome: 'Lagarta' }, { id: 'ferrugem', nome: 'Ferrugem' }, { id: 'mofo', nome: 'Mofo-branco', desabilitado: true }]} />
         </Campo>

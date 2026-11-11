@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { useFotoUrl } from '@/data/fotos'
-import { usePlano, usePlanos, useTalhoes, useTodasPendencias } from '@/data/hooks'
+import { useFazenda, usePlano, usePlanos, useTalhoes, useTodasPendencias } from '@/data/hooks'
+import { NOME_FAZENDA_PADRAO } from '@/domain/entidades'
 import { proximoPasso } from '@/domain/fluxo'
 import { classificar, confianca as confiancaDe, contarEvidencias, percentual, possibilidadesRestantes, veredito as vereditoDe, progresso as progressoDe, type EscolhaFoto, type Respostas } from '@/domain/funil'
 import { mensagemParaAgronomo } from '@/domain/relatorio'
@@ -26,6 +27,7 @@ function Miniatura({ id, className = 'size-14' }: { id: string; className?: stri
 
 export function Diagnostico() {
   const talhoes = useTalhoes()
+  const fazenda = useFazenda()
   const planos = usePlanos()
   const pendencias = useTodasPendencias()
   const mostrar = useToast((s) => s.mostrar)
@@ -79,7 +81,7 @@ export function Diagnostico() {
     const resp = eventos.flatMap((e) => { if (e.t !== 'resp' || !e.opcaoId) return []; const p = PERGUNTAS.find((x) => x.id === e.perguntaId)!; return [{ pergunta: p.texto, resposta: p.opcoes.find((o) => o.id === e.opcaoId)?.rotulo ?? '' }] })
     const escolhidas = fotos.flatMap((f) => { const c = CANDIDATOS.find((x) => x.id === f.escolhido); return c ? [c.nome] : [] })
     const texto = mensagemParaAgronomo({
-      fazenda: 'Fazenda Santa Aurora', ...(talhao ? { talhao: talhao.nome } : {}), ...(ordemPonto !== undefined ? { ponto: ordemPonto } : {}), ...(estadio ? { estadio } : {}),
+      fazenda: fazenda?.nome ?? NOME_FAZENDA_PADRAO, ...(talhao ? { talhao: talhao.nome } : {}), ...(ordemPonto !== undefined ? { ponto: ordemPonto } : {}), ...(estadio ? { estadio } : {}),
       principal: { nome: ranking[0]!.candidato.nome, ...(ranking[0]!.candidato.cientifico ? { cientifico: ranking[0]!.candidato.cientifico } : {}), confianca: conf, percentual: percentual(ranking[0]!.compat, evidencias) },
       ...(escolhidas.length ? { fotosEscolhidas: escolhidas } : {}),
       outras: ranking.slice(1, 3).filter((r) => r.compat >= 0.05).map((r) => r.candidato.nome),
@@ -95,7 +97,7 @@ export function Diagnostico() {
 
   /** Contexto do achado: lavoura, fase e fotos que o usuário guardou na Coleta. */
   const contextoDoAchado = (talhao || pendencia) && (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-surface px-3 py-2.5 text-sm ring-1 ring-line">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-surface px-3 py-2.5 text-apoio ring-1 ring-line">
       <Icon name="mapa" size={16} className="shrink-0 text-brand" />
       <span className="font-medium">{talhao?.nome}{estadio ? ` · fase ${estadio}` : ''}{ordemPonto !== undefined ? ` · ponto ${ordemPonto}` : ''}</span>
       {pendencia && pendencia.fotoIds.length > 0 && <span className="flex gap-1.5">{pendencia.fotoIds.slice(0, 3).map((f) => <Miniatura key={f} id={f} className="size-10" />)}</span>}
@@ -135,7 +137,7 @@ export function Diagnostico() {
         <div className="mx-auto max-w-2xl space-y-4">
           <h1 className="sr-only">Diagnóstico</h1>
           <Card className="space-y-3 text-center">
-            <h2 className="text-lg">Sem respostas, não dá para ajudar</h2>
+            <h2 className="text-subtitulo">Sem respostas, não dá para ajudar</h2>
             <p className="text-text-2">Responda pelo menos uma pergunta para ver uma pista. Você pode recomeçar e tentar de novo.</p>
             <Button variant="secondary" onClick={recomecar}>Recomeçar</Button>
           </Card>
@@ -165,7 +167,7 @@ export function Diagnostico() {
           <div className="flex items-start gap-3.5">
             <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-full bg-brand text-on-brand"><Icon name="diag" size={24} /></span>
             <div>
-              <h2 className="text-lg">Diagnóstico assistido</h2>
+              <h2 className="text-subtitulo">Diagnóstico assistido</h2>
               <p className="mt-0.5 text-text-2">Informe o que você observa em campo. O app cruza os sintomas, a fase da lavoura e fotos de referência para indicar as causas mais compatíveis: doença, praga, deficiência nutricional ou efeito de manejo.</p>
             </div>
           </div>
@@ -182,7 +184,7 @@ export function Diagnostico() {
 
         {abertas.length > 0 && (
           <section aria-labelledby="aguardando" className="space-y-3">
-            <h2 id="aguardando" className="text-lg">Achados aguardando diagnóstico ({abertas.length})</h2>
+            <h2 id="aguardando" className="text-subtitulo">Achados aguardando diagnóstico ({abertas.length})</h2>
             <ul className="space-y-2.5">
               {abertas.map((p) => {
                 const t = talhoes.find((x) => x.id === p.talhaoId)
@@ -193,9 +195,9 @@ export function Diagnostico() {
                       <span className="flex gap-1.5">{p.fotoIds.slice(0, 2).map((f) => <Miniatura key={f} id={f} />)}{p.fotoIds.length === 0 && <span aria-hidden className="grid size-14 place-items-center rounded-xl bg-surface-2 text-text-2"><Icon name="camera" size={22} /></span>}</span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-semibold">Ponto {ordem ?? '?'} · {t?.nome ?? p.talhaoId}</span>
-                        <span className="block truncate text-sm text-text-2">{p.nota || 'Sem descrição'}</span>
+                        <span className="block truncate text-apoio text-text-2">{p.nota || 'Sem descrição'}</span>
                       </span>
-                      <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand">Diagnosticar<Icon name="seta" size={16} /></span>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-apoio font-semibold text-brand">Diagnosticar<Icon name="seta" size={16} /></span>
                     </button>
                   </li>
                 )
@@ -204,11 +206,11 @@ export function Diagnostico() {
           </section>
         )}
 
-        <p className="text-sm text-text-2">Resultado de apoio à decisão, não é laudo. A recomendação de manejo é do agrônomo responsável.</p>
+        <p className="text-apoio text-text-2">Resultado de apoio à decisão, não é laudo. A recomendação de manejo é do agrônomo responsável.</p>
 
         <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface ring-1 ring-line">
-          <li><Link to="/biblioteca" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="livro" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Guia de pragas e doenças</span><span className="block text-sm text-text-2">Já sabe o nome? Leia na Biblioteca.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>
-          <li><Link to="/diagnostico/tecnico" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="lista" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Material do técnico</span><span className="block text-sm text-text-2">Árvores de decisão, sintoma × sinal e regras.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>
+          <li><Link to="/biblioteca" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="livro" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Guia de pragas e doenças</span><span className="block text-apoio text-text-2">Já sabe o nome? Leia na Biblioteca.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>
+          <li><Link to="/diagnostico/tecnico" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="lista" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Material do técnico</span><span className="block text-apoio text-text-2">Árvores de decisão, sintoma × sinal e regras.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>
         </ul>
       </div>
     </>

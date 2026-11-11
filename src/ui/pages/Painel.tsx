@@ -1,10 +1,11 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import { useOrdens, usePlanos, useTalhoes, useTodasPendencias, useTodosRegistros } from '@/data/hooks'
+import { useFazenda, useOrdens, usePlanos, useTalhoes, useTodasPendencias, useTodosRegistros } from '@/data/hooks'
 import { carregarDemonstracao } from '@/data/seed'
 import { daRodada, nivelPorPonto } from '@/domain/analise'
-import type { Talhao } from '@/domain/entidades'
+import { NOME_FAZENDA_PADRAO, type Talhao } from '@/domain/entidades'
 import { panorama, type Panorama } from '@/domain/panorama'
+import { dataBr } from '@/domain/tempo'
 import { proximaAcao, type ProximaAcao } from '@/domain/proximaAcao'
 import { ALVOS } from '@/knowledge/alvos'
 import { Icon, type IconName } from '../components/Icon'
@@ -14,7 +15,6 @@ import { useSessao } from '../state/store'
 
 interface Cartao { tom: 'ok' | 'warn'; icone: IconName; titulo: string; texto: string; botao: string; ir: () => void }
 
-const dataBr = (d: string) => `${d.slice(8)}/${d.slice(5, 7)}`
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
 
 function situacao(p: Panorama): { tom: Tom; texto: string } {
@@ -39,15 +39,15 @@ function CartaoTalhao({ talhao, p, plano }: { talhao: Talhao; p: Panorama; plano
           <MiniTalhao anel={talhao.anel} pontos={plano} estados={p.estados} className="size-24 shrink-0 rounded-xl bg-surface-2" />
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="truncate text-base">{talhao.nome}</h3>
+              <h3 className="truncate text-corpo">{talhao.nome}</h3>
               <Icon name="seta" size={18} className="mt-0.5 shrink-0 text-text-2" />
             </div>
-            <p className="text-sm text-text-2">{p.areaHa.toFixed(0)} ha · {talhao.estadio} · {talhao.cultivar}</p>
+            <p className="text-apoio text-text-2">{p.areaHa.toFixed(0)} ha · {talhao.estadio} · {talhao.cultivar}</p>
             <div className="mt-auto pt-2"><Badge tom={tom}>{texto}</Badge></div>
           </div>
         </div>
-        <p className="mt-3 text-sm">{analise}</p>
-        <div className="mt-2.5 flex items-center gap-3 text-xs text-text-2">
+        <p className="mt-3 text-apoio">{analise}</p>
+        <div className="mt-2.5 flex items-center gap-3 text-rotulo text-text-2">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`Coleta de ${talhao.nome}`}><div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} /></div>
           <span className="tabular-nums">{p.coletados}/{p.total} pontos</span>
           {p.pontosComFoto > 0 && <span className="inline-flex items-center gap-1"><Icon name="camera" size={13} />{p.pontosComFoto}</span>}
@@ -66,6 +66,7 @@ export function Painel() {
   const pendencias = useTodasPendencias()
   const { setTalhao, setTalhaoAba, amostrador } = useSessao()
   const navegar = useNavigate()
+  const fazenda = useFazenda()
   const [agora] = useState(() => new Date())
 
   const dados = useMemo(() => (talhoes ?? []).map((t) => {
@@ -92,8 +93,8 @@ export function Painel() {
   const cabecalho = (
     <header className="mb-5 flex items-center justify-between gap-3">
       <div className="min-w-0">
-        <p className="text-sm text-text-2">{amostrador.trim() ? `Olá, ${amostrador.trim().split(' ')[0]}` : 'Olá'}</p>
-        <h1 className="truncate text-2xl">Fazenda Santa Aurora</h1>
+        <p className="text-apoio text-text-2">{amostrador.trim() ? `Olá, ${amostrador.trim().split(' ')[0]}` : 'Olá'}</p>
+        <h1 className="truncate text-titulo">{fazenda?.nome ?? NOME_FAZENDA_PADRAO}</h1>
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <Link to="/alertas" aria-label={ordensAbertas ? `Alertas, ${ordensAbertas} para checar` : 'Alertas'} className="relative grid size-11 place-items-center rounded-full text-text-2 transition hover:bg-surface-2 active:bg-surface-2">
@@ -101,7 +102,7 @@ export function Painel() {
           {ordensAbertas > 0 && <span aria-hidden className="absolute right-2 top-2 size-2.5 rounded-full bg-danger ring-2 ring-bg" />}
         </Link>
         <Link to="/perfil" aria-label="Perfil e configurações" className="grid size-11 place-items-center rounded-full text-text-2 transition hover:bg-surface-2 active:bg-surface-2">
-          <span className="grid size-8 place-items-center rounded-full bg-brand-soft text-sm font-bold text-brand">{amostrador.trim() ? amostrador.trim()[0]!.toUpperCase() : <Icon name="perfil" size={17} />}</span>
+          <span className="grid size-8 place-items-center rounded-full bg-brand-soft text-apoio font-bold text-brand">{amostrador.trim() ? amostrador.trim()[0]!.toUpperCase() : <Icon name="perfil" size={17} />}</span>
         </Link>
       </div>
     </header>
@@ -144,15 +145,15 @@ export function Painel() {
         <span aria-hidden className={`grid size-11 shrink-0 place-items-center rounded-full ${aviso ? 'bg-warn text-warn-soft' : 'bg-brand text-on-brand'}`}><Icon name={cartao.icone} size={22} /></span>
         <div className="min-w-0 flex-1">
           <p className="font-semibold leading-snug">{cartao.titulo}</p>
-          <p className="mt-0.5 text-sm text-text-2">{cartao.texto}</p>
+          <p className="mt-0.5 text-apoio text-text-2">{cartao.texto}</p>
         </div>
-        <button type="button" onClick={cartao.ir} className={`inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full px-4 text-sm font-semibold transition active:scale-95 ${aviso ? 'bg-warn text-warn-soft' : 'bg-brand text-on-brand'}`}>{cartao.botao}</button>
+        <button type="button" onClick={cartao.ir} className={`inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full px-4 text-apoio font-semibold transition active:scale-95 ${aviso ? 'bg-warn text-warn-soft' : 'bg-brand text-on-brand'}`}>{cartao.botao}</button>
       </section>
 
       <section className="mt-7" aria-labelledby="talhoes">
         <div className="mb-3 flex items-center justify-between">
-          <h2 id="talhoes" className="text-lg">Seus talhões</h2>
-          <button type="button" onClick={novoTalhao} className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-brand transition active:bg-brand-soft"><Icon name="mais1" size={18} />Novo talhão</button>
+          <h2 id="talhoes" className="text-subtitulo">Seus talhões</h2>
+          <button type="button" onClick={novoTalhao} className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-apoio font-semibold text-brand transition active:bg-brand-soft"><Icon name="mais1" size={18} />Novo talhão</button>
         </div>
         <ul className="grid gap-3 md:grid-cols-2">
           {dados.map(({ talhao, plano, p }) => <CartaoTalhao key={talhao.id} talhao={talhao} p={p} plano={plano?.pontos ?? []} />)}

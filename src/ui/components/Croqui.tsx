@@ -88,7 +88,7 @@ const LEGENDA: { nivel: Nivel | 'sem'; texto: string }[] = [
 
 export function LegendaCroqui() {
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-2">
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-apoio text-text-2">
       {LEGENDA.map((l) => (
         <li key={l.nivel} className="flex items-center gap-1.5">
           <span className="size-3 rounded-full border-2" style={{ borderColor: COR[l.nivel], background: l.nivel === 'sem' ? 'transparent' : COR[l.nivel] }} />
