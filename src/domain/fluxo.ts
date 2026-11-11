@@ -1,4 +1,4 @@
-import { classificar, confianca, dispensada, proximaPergunta, ramoDe, type Candidato, type Classificado, type Contexto, type EscolhaFoto, type PerguntaFunil, type Respostas } from './funil'
+import { classificar, confianca, dispensada, nichoDe, paraRamo, proximaPergunta, ramoDe, type Candidato, type Classificado, type Contexto, type EscolhaFoto, type PerguntaFunil, type Respostas } from './funil'
 
 /**
  * Fluxo do diagnóstico em etapas, para o usuário saber onde está e por que cada pergunta aparece:
@@ -17,6 +17,7 @@ export const MAX_DETALHES_INCERTO = 8
 export const MIN_DETALHES = 2
 export const MAX_RODADAS_FOTO = 2
 const MAX_FOTOS_POR_RODADA = 4
+const MIN_FOTOS_POR_RODADA = 3
 const COMPAT_MIN_FOTO = 0.03
 /** Na segunda rodada o usuário disse que nenhuma parecia: mostra os seguintes mesmo com compatibilidade baixa. */
 const COMPAT_MIN_FOTO_2 = 0.003
@@ -52,6 +53,11 @@ export function candidatosParaFotos(ranking: readonly Classificado[], jaMostrado
     if (lista.length >= MAX_FOTOS_POR_RODADA) break
     if (!lista.includes(r.candidato) && r.compat >= minimo) lista.push(r.candidato)
   }
+  // Mesmo com a resposta já concentrada, a comparação mostra pelo menos 3 fotos (as seguintes do ranking) para o usuário confirmar.
+  for (const r of livres) {
+    if (lista.length >= MIN_FOTOS_POR_RODADA) break
+    if (!lista.includes(r.candidato)) lista.push(r.candidato)
+  }
   return lista
 }
 
@@ -61,7 +67,7 @@ export function proximoPasso(perguntas: readonly PerguntaFunil[], candidatos: re
 
   const triagem = TRIAGEM.map((id) => perguntas.find((p) => p.id === id)).filter((p): p is PerguntaFunil => !!p)
   const falta = triagem.find((p) => !respondida(estado, p.id))
-  if (falta) return { tipo: 'pergunta', pergunta: falta, fase: 'triagem', n: triagem.indexOf(falta) + 1 }
+  if (falta) return { tipo: 'pergunta', pergunta: paraRamo(falta, ramoDe(estado.respostas)), fase: 'triagem', n: triagem.indexOf(falta) + 1 }
 
   const ctx: Contexto = { ...contexto, perguntas, fotos: estado.fotos }
   const ranking = classificar(candidatos, estado.respostas, ctx)
@@ -70,9 +76,23 @@ export function proximoPasso(perguntas: readonly PerguntaFunil[], candidatos: re
   const limite = (confianca(ranking) === 'baixa' ? MAX_DETALHES_INCERTO : MAX_DETALHES) + (estado.mais ?? 0)
   if (feitas < limite && !(feitas >= MIN_DETALHES && confianca(ranking) === 'alta')) {
     const ramo = ramoDe(estado.respostas)
-    const elegiveis = perguntas.filter((p) => !ehTriagem(p.id) && (!ramo || !p.ramos || p.ramos.includes(ramo)) && !dispensada(p, estado.respostas) && (p.requer ?? []).every((q) => respondida(estado, q)))
-    const prox = proximaPergunta(elegiveis, candidatos, estado.respostas, estado.puladas, undefined, ctx)
-    if (prox) return { tipo: 'pergunta', pergunta: prox, fase: 'detalhes', n: feitas + 1 }
+    // "Vi um bicho, mas não sei a que se parece" (pulou a pergunta) vale como "não consigo identificar": pede a anatomia geral.
+    const ef: Respostas = estado.puladas.has('bicho') && estado.respostas['onde'] === 'bicho' ? { ...estado.respostas, bicho: 'nao_sei' } : estado.respostas
+    const elegiveis = perguntas.filter((p) => !ehTriagem(p.id) && (!ramo || !p.ramos || p.ramos.includes(ramo)) && !dispensada(p, ef) && (p.requer ?? []).every((q) => respondida(estado, q)))
+    // Com um nicho ativo (ex.: aplicação de produto), a linha é a do nicho; só amplia para o resto se ainda faltar base.
+    const nicho = nichoDe(estado.respostas)
+    const doNicho = nicho ? elegiveis.filter((p) => p.nichos?.includes(nicho)) : elegiveis
+    // Etapas da conversa: o que decorre da resposta anterior, depois o sintoma, depois investigar, depois o contexto.
+    const porEtapa = (lista: readonly PerguntaFunil[]): PerguntaFunil | null => {
+      for (const e of [0, 1, 2, 3] as const) {
+        const q = proximaPergunta(lista.filter((p) => (p.etapa ?? 2) === e), candidatos, estado.respostas, estado.puladas, undefined, ctx)
+        if (q) return q
+      }
+      return null
+    }
+    let prox = porEtapa(doNicho)
+    if (!prox && nicho && confianca(ranking) === 'baixa') prox = porEtapa(elegiveis)
+    if (prox) return { tipo: 'pergunta', pergunta: paraRamo(prox, ramo), fase: 'detalhes', n: feitas + 1 }
   }
 
   const rodadas = estado.fotos.length

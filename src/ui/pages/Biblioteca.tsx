@@ -6,6 +6,8 @@ import { Badge, Card, Input, Titulo, Vazio } from '../components/kit'
 import { FotoRef } from '../components/FotoRef'
 import { Icon } from '../components/Icon'
 import { iconeDoAlvo } from '../components/iconeAlvo'
+import { FOTO_CLASSE } from '../components/fotosDiagnostico'
+import { CANDIDATOS } from '@/knowledge/diagnostico'
 
 import { semAcento, slugDe } from './slug'
 
@@ -73,7 +75,7 @@ export function Artigo() {
         <Badge tom={alvo.tipo === 'praga' ? 'warn' : 'info'}>{alvo.tipo === 'praga' ? 'Praga' : 'Doença'}</Badge>
         <Badge tom="neutral">Monitorar a partir de {alvo.estadioMin}</Badge>
       </div>
-      <FotoRef arquivo={`${slugDe(alvo)}.jpg`} alt={`Foto de referência: ${alvo.nome}`} className="aspect-video w-full rounded-card border border-line object-cover" />
+      <FotoRef arquivo={[`${CANDIDATOS.find((c) => c.alvo === alvo.id)?.id ?? slugDe(alvo)}.jpg`, `${slugDe(alvo)}.jpg`]} alt={`Foto de referência: ${alvo.nome}`} className={`${FOTO_CLASSE} rounded-card border border-line`} />
 
       <Card className="space-y-3">
         <h2 className="text-xl">Como coletar</h2>

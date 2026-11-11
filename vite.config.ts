@@ -36,6 +36,12 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
           {
+            // Fotos de referência do diagnóstico: guardadas ao ver pela primeira vez, para funcionarem sem internet no campo.
+            urlPattern: /\/imagens\/diagnostico\//,
+            handler: 'CacheFirst',
+            options: { cacheName: 'fotos-diagnostico', expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 180 } },
+          },
+          {
             urlPattern: /^https:\/\/(tile\.openstreetmap\.org|server\.arcgisonline\.com)\//,
             handler: 'CacheFirst',
             options: { cacheName: 'tiles', expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 30 } },

@@ -65,7 +65,7 @@ test('questionário e resultado do diagnóstico não têm violações WCAG 2.1 A
   await page.getByRole('heading', { level: 2, name: 'Onde está o problema?' }).waitFor()
   const pergunta = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
   expect(pergunta.violations.map((v) => `pergunta ${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
-  const passos: [RegExp, RegExp][] = [[/Onde está/, /Manchas ou pontos nas folhas/], [/aparece no terreno/, /manchas redondas/], [/últimos dias/, /Muita chuva/], [/Como são as marcas/, /Pontinhos ou pústulas por baixo/], [/Em que altura/, /Folhas de baixo/], [/Vire a folha/, /Pontinhos em relevo/], [/Como o problema andou/, /Está aumentando/]]
+  const passos: [RegExp, RegExp][] = [[/Onde está/, /Manchas ou pontos nas folhas/], [/aparece no terreno/, /manchas redondas/], [/O que aconteceu na lavoura/, /Muita chuva/], [/Como são as marcas/, /Pontinhos ou pústulas por baixo/], [/Em que altura/, /Folhas de baixo/], [/Vire a folha/, /Pontinhos em relevo/], [/Como o problema andou/, /Está aumentando/]]
   const salvar = page.getByRole('button', { name: /^Salvar (em um|no) ponto/ })
   for (let i = 0; i < 16 && !(await salvar.first().isVisible()); i++) {
     const t = (await page.getByRole('heading', { level: 2 }).first().textContent()) ?? ''

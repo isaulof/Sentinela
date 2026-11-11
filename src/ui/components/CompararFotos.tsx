@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { Candidato } from '@/domain/funil'
-import { fotosDoCandidato } from './fotosDiagnostico'
+import { FOTO_CLASSE, fotosDoCandidato } from './fotosDiagnostico'
 import { FotoRef } from './FotoRef'
 import { Icon } from './Icon'
 import { Button } from './kit'
@@ -47,7 +47,7 @@ export function CompararFotos({ candidatos, rodada, contexto, onEscolher, onNenh
           <li key={c.id}>
             <button type="button" onClick={() => onEscolher(c.id)} className="flex h-full w-full flex-col overflow-hidden rounded-card bg-surface text-left ring-1 ring-line transition active:scale-[0.98] active:bg-brand-soft">
               <FotoRef
-                arquivo={fotosDoCandidato(c)} alt={`Foto de referência: ${c.nome}`} className="aspect-[4/3] w-full object-cover"
+                arquivo={fotosDoCandidato(c)} alt={`Foto de referência: ${c.nome}`} className={FOTO_CLASSE}
                 fallback={<span className="grid aspect-[4/3] w-full place-items-center bg-surface-2 text-text-2"><span className="flex flex-col items-center gap-1 px-3 text-center text-sm"><Icon name="camera" size={26} />Foto ainda não adicionada</span></span>}
               />
               <span className="block space-y-1 p-3">

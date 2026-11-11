@@ -1,20 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import { CANDIDATOS, PERGUNTAS } from '@/knowledge/diagnostico'
 import { MAX_DETALHES_INCERTO, proximoPasso, TRIAGEM, type EstadoFluxo } from './fluxo'
-import { classificar, contarEvidencias, dispensada, percentual, porGrupo, RAMOS, TETO_PCT, veredito, VEROSSIMILHANCA, type EscolhaFoto, type Respostas } from './funil'
+import { nichoDe, APLICACAO_RECENTE, RAMOS_DO_NICHO_APLICACAO, paraRamo, ramoDe, classificar, contarEvidencias, dispensada, percentual, porGrupo, RAMOS, TETO_PCT, veredito, VEROSSIMILHANCA, type EscolhaFoto, type Respostas } from './funil'
 
 interface Caso { id: string; resp: Record<string, string>; estadio?: string }
 
 /** O que um usuário atento responderia ao ver cada problema "de livro". */
 const OURO: Caso[] = [
+  { id: 'herb_hormonal', estadio: 'V5', resp: { onde: 'folha_cor', terreno: 'faixas', recente: 'produto', herb_grupo: 'hormonal', tempo_apos: 'dias_4_10', folhas_novas: 'tambem', desenho_aplic: 'borda_vento', condicao_aplic: 'vento', cor_amarelo: 'deformada', altura: 'topo', evolucao: 'de_uma_vez' } },
+  { id: 'herb_contato', estadio: 'V5', resp: { onde: 'folha_mancha', terreno: 'faixas', recente: 'produto', herb_grupo: 'pos_soja', tempo_apos: 'dias_1_3', folhas_novas: 'sadias', desenho_aplic: 'faixas_barra', condicao_aplic: 'normal', mancha: 'queimado', evolucao: 'de_uma_vez' } },
+  { id: 'herb_als', estadio: 'V3', resp: { onde: 'folha_cor', terreno: 'reboleira', recente: 'produto', herb_grupo: 'safra_anterior', tempo_apos: 'desde_inicio', folhas_novas: 'tambem', desenho_aplic: 'manchas', condicao_aplic: 'normal', cor_amarelo: 'arroxeado', altura: 'toda', evolucao: 'parado' } },
+  { id: 'calda', estadio: 'R2', resp: { onde: 'folha_mancha', terreno: 'uniforme', recente: 'calda', tempo_apos: 'dias_1_3', folhas_novas: 'sadias', desenho_aplic: 'sem_desenho', condicao_aplic: 'quente', mistura: 'sim', mancha: 'queimado', evolucao: 'de_uma_vez' } },
+  { id: 'adubo_queima', estadio: 'V6', resp: { onde: 'folha_mancha', terreno: 'faixas', recente: 'adubo', tempo_apos: 'dias_1_3', folhas_novas: 'sadias', desenho_aplic: 'faixas_barra', mancha: 'queimado', evolucao: 'de_uma_vez' } },
+  { id: 'def_mn', estadio: 'V6', resp: { onde: 'folha_cor', terreno: 'reboleira', recente: 'produto', herb_grupo: 'dessecacao', tempo_apos: 'mais_10', folhas_novas: 'tambem', desenho_aplic: 'manchas', condicao_aplic: 'normal', cor_amarelo: 'entre_nervuras', altura: 'topo', evolucao: 'parado' } },
   { id: 'ferrugem', estadio: 'R3', resp: { onde: 'folha_mancha', terreno: 'uniforme', recente: 'umido', mancha: 'pustula', altura: 'baixo', face_baixo: 'pustulas', evolucao: 'espalhando' } },
   { id: 'manchaalvo', estadio: 'R2', resp: { onde: 'folha_mancha', terreno: 'uniforme', recente: 'umido', mancha: 'alvo', altura: 'meio', face_baixo: 'igual', evolucao: 'espalhando' } },
   { id: 'oidio', estadio: 'R2', resp: { onde: 'folha_mancha', terreno: 'uniforme', recente: 'seco', mancha: 'po_branco', face_baixo: 'po', evolucao: 'espalhando' } },
   { id: 'bacteriose', estadio: 'V6', resp: { onde: 'folha_mancha', terreno: 'uniforme', recente: 'chuva_forte', mancha: 'angular', face_baixo: 'igual', evolucao: 'de_uma_vez' } },
-  { id: 'herb_hormonal', estadio: 'V5', resp: { onde: 'folha_cor', terreno: 'faixas', recente: 'produto', cor_amarelo: 'deformada', altura: 'topo', evolucao: 'de_uma_vez', bicho: 'nenhum', raiz: 'normal' } },
-  { id: 'herb_contato', estadio: 'V5', resp: { onde: 'folha_mancha', terreno: 'faixas', recente: 'produto', mancha: 'queimado', face_baixo: 'igual', evolucao: 'de_uma_vez' } },
-  { id: 'calda', estadio: 'R2', resp: { onde: 'folha_mancha', terreno: 'uniforme', recente: 'calda', mancha: 'queimado', face_baixo: 'igual', evolucao: 'de_uma_vez' } },
-  { id: 'adubo_queima', estadio: 'V6', resp: { onde: 'folha_mancha', terreno: 'faixas', recente: 'adubo', mancha: 'queimado', face_baixo: 'igual', evolucao: 'de_uma_vez' } },
   { id: 'def_k', estadio: 'R3', resp: { onde: 'folha_cor', terreno: 'uniforme', recente: 'seco', cor_amarelo: 'bordas', altura: 'baixo', evolucao: 'espalhando', bicho: 'nenhum', raiz: 'normal' } },
   { id: 'def_mg', estadio: 'R1', resp: { onde: 'folha_cor', terreno: 'reboleira', recente: 'nada', cor_amarelo: 'entre_nervuras', altura: 'baixo', evolucao: 'parado', bicho: 'nenhum', raiz: 'normal' } },
   { id: 'def_mn', estadio: 'V6', resp: { onde: 'folha_cor', terreno: 'reboleira', recente: 'produto', cor_amarelo: 'entre_nervuras', altura: 'topo', evolucao: 'parado', bicho: 'nenhum', raiz: 'normal' } },
@@ -25,7 +27,7 @@ const OURO: Caso[] = [
   { id: 'anticarsia', estadio: 'R1', resp: { onde: 'folha_comida', terreno: 'uniforme', recente: 'nada', bicho: 'lagarta', patas_barriga: 'varias', tamanho: 'grande', cor_bicho: 'listrado', andar: 'normal', local_bicho: 'folha_cima', dano: 'rendilhada', evolucao: 'espalhando' } },
   { id: 'lagarta', estadio: 'R1', resp: { onde: 'folha_comida', terreno: 'uniforme', recente: 'nada', bicho: 'lagarta', patas_barriga: 'poucas', tamanho: 'medio', cor_bicho: 'verde', andar: 'mede_palmo', local_bicho: 'folha_baixo', dano: 'rendilhada', evolucao: 'espalhando' } },
   { id: 'vaquinha', estadio: 'V6', resp: { onde: 'folha_comida', terreno: 'uniforme', recente: 'nada', bicho: 'besouro', besouro_tipo: 'manchas_pretas', sacudir: 'voa', tamanho: 'pequeno', cor_bicho: 'verde', local_bicho: 'folha_baixo', dano: 'furos', evolucao: 'espalhando' } },
-  { id: 'acaro', estadio: 'R2', resp: { onde: 'folha_cor', terreno: 'reboleira', recente: 'seco', bicho: 'acaro', teia: 'sim', tamanho: 'minusculo', altura: 'toda', cor_amarelo: 'uniforme', evolucao: 'espalhando' } },
+  { id: 'acaro', estadio: 'R2', resp: { onde: 'folha_cor', terreno: 'reboleira', recente: 'seco', bicho: 'acaro', tamanho: 'minusculo', cor_bicho: 'branco', altura: 'toda', cor_amarelo: 'uniforme', evolucao: 'espalhando' } },
   { id: 'granizo', estadio: 'R2', resp: { onde: 'folha_comida', terreno: 'uniforme', recente: 'chuva_forte', dano: 'rasgada', evolucao: 'de_uma_vez', bicho: 'nenhum' } },
   { id: 'estresse', estadio: 'R3', resp: { onde: 'murcha', terreno: 'uniforme', recente: 'seco', raiz: 'normal', mofo: 'nada', altura: 'toda', evolucao: 'de_uma_vez' } },
 ]
@@ -77,6 +79,9 @@ describe('mutação: um erro do leigo não tira a causa certa do top-3', () => {
         const pergunta = PERGUNTAS.find((p) => p.id === q)!
         for (const o of pergunta.opcoes) {
           if (o.id === c.resp[q]) continue
+          if (o.id === 'nao_sei') continue // "não sei" tira informação, não é resposta errada
+          // Quem aplicou algo pode confundir herbicida, fungicida e adubo; já "não apliquei nada" é outra história.
+          if (q === 'recente' && APLICACAO_RECENTE.includes(c.resp[q] ?? '') && !APLICACAO_RECENTE.includes(o.id)) continue
           // "Incompatível" é exclusão por definição (ex.: mofo branco na raiz não é galha): não é erro plausível de leigo.
           if (CANDIDATOS.find((x) => x.id === c.id)!.perfil[q]?.[o.id] === 'incompativel') continue
           const r = simular({ ...c.resp, [q]: o.id }, c.estadio, c.id)
@@ -89,11 +94,11 @@ describe('mutação: um erro do leigo não tira a causa certa do top-3', () => {
 
 describe('estrutura do fluxo', () => {
   it('a triagem vem sempre primeiro, na mesma ordem, antes de qualquer detalhe', () => {
-    const r = simular(OURO[0]!.resp, 'R3', null)
+    const r = simular(OURO.find((c) => c.id === 'ferrugem')!.resp, 'R3', null)
     expect(r.perguntas.slice(0, 3)).toEqual([...TRIAGEM])
   })
   it('depois da triagem só entram perguntas do ramo escolhido', () => {
-    const r = simular(OURO[0]!.resp, 'R3', null) // folha_mancha
+    const r = simular(OURO.find((c) => c.id === 'ferrugem')!.resp, 'R3', null) // folha_mancha
     for (const id of r.perguntas.slice(3)) {
       const p = PERGUNTAS.find((x) => x.id === id)!
       expect(p.ramos, id).toContain('folha_mancha')
@@ -245,11 +250,11 @@ describe('cada tipo de bicho segue a sua própria linha de perguntas', () => {
 
   it('lagarta: pergunta como anda e as patinhas, não asas nem antenas', () => {
     expect(ids('lagarta')).toEqual(expect.arrayContaining(['andar', 'patas_barriga', 'tamanho', 'cor_bicho', 'local_bicho']))
-    for (const q of ['asas', 'antenas', 'patas', 'besouro_tipo', 'sacudir', 'faixa_costas', 'teia', 'larva_dano']) expect(ids('lagarta')).not.toContain(q)
+    for (const q of ['asas', 'antenas', 'patas', 'besouro_tipo', 'sacudir', 'faixa_costas', 'larva_dano']) expect(ids('lagarta')).not.toContain(q)
   })
   it('besouro: pergunta o desenho e o que acontece ao balançar, não como anda', () => {
     expect(ids('besouro')).toEqual(expect.arrayContaining(['besouro_tipo', 'sacudir', 'tamanho', 'cor_bicho']))
-    for (const q of ['andar', 'patas_barriga', 'asas', 'antenas', 'faixa_costas', 'teia']) expect(ids('besouro')).not.toContain(q)
+    for (const q of ['andar', 'patas_barriga', 'asas', 'antenas', 'faixa_costas']) expect(ids('besouro')).not.toContain(q)
   })
   it('larva: pergunta o que fez na planta, não asas nem cor de lagarta', () => {
     expect(ids('larva')).toEqual(expect.arrayContaining(['larva_dano', 'tamanho', 'local_bicho']))
@@ -257,22 +262,25 @@ describe('cada tipo de bicho segue a sua própria linha de perguntas', () => {
   })
   it('bicho em escudo (percevejo): pergunta a faixa nas costas', () => {
     expect(ids('percevejo')).toEqual(expect.arrayContaining(['faixa_costas', 'tamanho', 'cor_bicho']))
-    for (const q of ['andar', 'patas_barriga', 'besouro_tipo', 'sacudir', 'teia']) expect(ids('percevejo')).not.toContain(q)
+    for (const q of ['andar', 'patas_barriga', 'besouro_tipo', 'sacudir']) expect(ids('percevejo')).not.toContain(q)
   })
   it('mosquinha ou pulgão: pergunta o que acontece ao balançar', () => {
     expect(ids('mosca_branca')).toEqual(expect.arrayContaining(['sacudir', 'tamanho', 'cor_bicho']))
-    for (const q of ['andar', 'patas_barriga', 'faixa_costas', 'teia']) expect(ids('mosca_branca')).not.toContain(q)
+    for (const q of ['andar', 'patas_barriga', 'faixa_costas']) expect(ids('mosca_branca')).not.toContain(q)
   })
-  it('minúsculo (ácaro): pergunta a teia', () => {
-    expect(ids('acaro')).toContain('teia')
+  it('minúsculo (ácaro): não pergunta nada de lagarta, besouro nem percevejo', () => {
     for (const q of ['andar', 'patas_barriga', 'besouro_tipo', 'faixa_costas']) expect(ids('acaro')).not.toContain(q)
   })
   it('"não consigo identificar": pergunta a anatomia geral (asas, antenas, patas)', () => {
     expect(ids('nao_sei')).toEqual(expect.arrayContaining(['asas', 'antenas', 'patas', 'tamanho', 'cor_bicho', 'local_bicho']))
   })
-  it('pergunta pulada ("não sei") se comporta como "não consigo identificar"', () => {
-    const asas = PERGUNTAS.find((p) => p.id === 'asas')!
-    expect(dispensada(asas, { onde: 'bicho' })).toBe(false)
+  it('pular "a que o bicho se parece" depois de dizer que viu um bicho vale como "não consigo identificar"', () => {
+    const r = simular({ onde: 'bicho', terreno: 'isoladas', recente: 'nada' }, 'R4', null)
+    expect(r.perguntas).toEqual(expect.arrayContaining(['asas', 'antenas', 'patas']))
+  })
+  it('pular "viu algum bicho?" num problema de folha não puxa perguntas de anatomia', () => {
+    const r = simular({ onde: 'folha_cor', terreno: 'uniforme', recente: 'nada' }, 'R3', null)
+    for (const q of ['asas', 'antenas', 'patas', 'tamanho', 'cor_bicho', 'local_bicho', 'sacudir']) expect(r.perguntas).not.toContain(q)
   })
   for (const b of ['lagarta', 'besouro', 'larva', 'percevejo', 'mosca_branca', 'acaro', 'nao_sei']) {
     it(`caminho "${b}": toda dupla de causas possíveis é separável pelas perguntas desse caminho`, () => {
@@ -291,4 +299,157 @@ describe('cada tipo de bicho segue a sua própria linha de perguntas', () => {
       expect(ruins).toEqual([])
     })
   }
+})
+
+describe('nicho de aplicação: quem aplicou algo recebe perguntas sobre o produto', () => {
+  const livro = (id: string) => OURO.find((c) => c.id === id)!.resp
+  const sequencia = (resp: Record<string, string>, estadio = 'V5') => simular(resp, estadio, null).perguntas.slice(3)
+  const DOENCA_PRAGA = ['face_baixo', 'bicho', 'mofo', 'grao', 'dentro_haste', 'asas', 'antenas', 'patas', 'tamanho', 'cor_bicho', 'local_bicho', 'andar', 'sacudir', 'dano']
+
+  const NICHO = (q: string) => PERGUNTAS.find((p) => p.id === q)!.nichos?.includes('aplicacao') ?? false
+  const comecaPeloNicho = (resp: Record<string, string>) => {
+    // Quem não sabe responder nada: ainda assim as primeiras perguntas são as do nicho.
+    const { onde, terreno, recente } = resp
+    return simular({ onde: onde!, terreno: terreno!, recente: recente! }, 'V5', null).perguntas.slice(3, 8)
+  }
+
+  it('herbicida: as perguntas são sobre o produto; nada de doença nem de bicho', () => {
+    const seq = sequencia(livro('herb_hormonal'))
+    expect(seq).toContain('herb_grupo')
+    for (const q of DOENCA_PRAGA) expect(seq, q).not.toContain(q)
+    const seco = comecaPeloNicho(livro('herb_hormonal'))
+    expect(seco).toEqual(expect.arrayContaining(['herb_grupo', 'tempo_apos', 'folhas_novas']))
+    for (const q of seco) expect(NICHO(q), q).toBe(true)
+  })
+  it('herbicida numa mancha de folha também não pergunta o que há embaixo da folha', () => {
+    const seq = sequencia(livro('herb_contato'))
+    expect(seq).not.toContain('face_baixo')
+    for (const q of comecaPeloNicho(livro('herb_contato'))) expect(NICHO(q), q).toBe(true)
+  })
+  it('fungicida, inseticida ou mistura: pergunta a mistura, não o tipo de herbicida', () => {
+    const seq = sequencia(livro('calda'))
+    expect(seq).not.toContain('herb_grupo')
+    for (const q of DOENCA_PRAGA) expect(seq, q).not.toContain(q)
+    const seco = comecaPeloNicho(livro('calda'))
+    expect(seco).toEqual(expect.arrayContaining(['tempo_apos', 'folhas_novas']))
+    expect(seco).not.toContain('herb_grupo')
+    const mistura = PERGUNTAS.find((p) => p.id === 'mistura')!
+    expect(dispensada(mistura, { onde: 'folha_mancha', recente: 'calda' })).toBe(false) // a pergunta da mistura só vale para calda
+    expect(dispensada(mistura, { onde: 'folha_mancha', recente: 'produto' })).toBe(true)
+    expect(dispensada(mistura, { onde: 'folha_mancha', recente: 'adubo' })).toBe(true)
+  })
+  it('adubo: pergunta o tempo e as folhas novas, não o herbicida nem a mistura', () => {
+    const resp = { ...livro('adubo_queima'), onde: 'folha_cor', cor_amarelo: 'bordas', altura: 'baixo' }
+    const seq = sequencia(resp)
+    for (const q of ['herb_grupo', 'mistura', 'condicao_aplic', ...DOENCA_PRAGA]) expect(seq, q).not.toContain(q)
+    const seco = comecaPeloNicho(resp)
+    expect(seco).toEqual(expect.arrayContaining(['tempo_apos', 'folhas_novas']))
+    expect(seco).not.toContain('herb_grupo')
+  })
+  it('sem aplicação recente, as perguntas de produto nunca aparecem', () => {
+    for (const rec of ['nada', 'seco', 'umido', 'chuva_forte']) {
+      const seq = sequencia({ onde: 'folha_cor', terreno: 'uniforme', recente: rec })
+      for (const q of ['herb_grupo', 'tempo_apos', 'folhas_novas', 'desenho_aplic', 'condicao_aplic', 'mistura']) expect(seq, `${rec}/${q}`).not.toContain(q)
+    }
+  })
+  it('se o problema é um bicho, a aplicação não esconde as perguntas do bicho', () => {
+    const r = simular({ onde: 'bicho', terreno: 'isoladas', recente: 'produto', bicho: 'lagarta' }, 'R3', null)
+    expect(r.perguntas).toEqual(expect.arrayContaining(['andar', 'patas_barriga']))
+    expect(r.perguntas).not.toContain('herb_grupo')
+  })
+  it('no nicho, toda dupla de causas plausíveis pode ser separada pelas perguntas do nicho', () => {
+    for (const [ramo, rec] of [['folha_cor', 'produto'], ['folha_mancha', 'produto'], ['folha_mancha', 'calda'], ['folha_cor', 'adubo'], ['folha_mancha', 'adubo']] as const) {
+      const resp = { onde: ramo, recente: rec }
+      const qs = PERGUNTAS.filter((p) => p.id !== 'onde' && p.nichos?.includes('aplicacao') && !dispensada(p, resp) && (!p.ramos || p.ramos.includes(ramo)))
+      const triagem = PERGUNTAS.filter((p) => p.id === 'terreno')
+      const cands = CANDIDATOS.filter((c) => c.tipo === 'abiotico' && ['tipico', 'comum', 'possivel'].includes(c.perfil['onde']?.[ramo] ?? '') && ['tipico', 'comum', 'possivel'].includes(c.perfil['recente']?.[rec] ?? ''))
+      const ruins: string[] = []
+      for (let i = 0; i < cands.length; i++) for (let j = i + 1; j < cands.length; j++) {
+        const a = cands[i]!, b = cands[j]!
+        const separa = [...qs, ...triagem].some((p) => p.opcoes.some((o) => {
+          const x = VEROSSIMILHANCA[a.perfil[p.id]?.[o.id] ?? 'possivel']
+          const y = VEROSSIMILHANCA[b.perfil[p.id]?.[o.id] ?? 'possivel']
+          return Math.max(x, y) / Math.min(x, y) >= 3
+        }))
+        if (!separa) ruins.push(`${a.id} × ${b.id}`)
+      }
+      expect(ruins, `${ramo}/${rec}`).toEqual([])
+    }
+  })
+})
+
+describe('ancoragem: toda pergunta nasce de uma resposta anterior e faz sentido onde aparece', () => {
+  const triagem = TRIAGEM as readonly string[]
+  const porId = (id: string) => PERGUNTAS.find((p) => p.id === id)!
+
+  it('toda pergunta fora da triagem declara em quais ramos vale', () => {
+    for (const p of PERGUNTAS.filter((q) => !triagem.includes(q.id) && q.id !== 'onde')) expect(p.ramos?.length, p.id).toBeGreaterThan(0)
+  })
+  it('pergunta ancorada em outra (requer/so) só vale nos ramos em que a âncora também é feita', () => {
+    for (const p of PERGUNTAS) {
+      const ancoras = [...(p.requer ?? []), ...Object.keys(p.so ?? {})]
+      for (const a of ancoras) {
+        const ramosAncora = porId(a).ramos
+        if (!ramosAncora) continue
+        for (const r of p.ramos ?? []) expect(ramosAncora, `${p.id} vale em "${r}", mas a âncora "${a}" não é feita lá`).toContain(r)
+      }
+    }
+  })
+  it('perguntas do nicho de aplicação só valem nos ramos do nicho', () => {
+    for (const p of PERGUNTAS.filter((q) => q.nichos?.includes('aplicacao') && Object.keys(q.so ?? {}).includes('recente'))) {
+      for (const r of p.ramos ?? []) expect(RAMOS_DO_NICHO_APLICACAO, `${p.id}/${r}`).toContain(r)
+    }
+  })
+  it('opções que não fazem sentido no ramo não são oferecidas', () => {
+    expect(paraRamo(porId('bicho'), 'bicho').opcoes.map((o) => o.id)).not.toContain('nenhum')
+    expect(paraRamo(porId('bicho'), 'folha_cor').opcoes.map((o) => o.id)).toContain('nenhum')
+    for (const r of ['bicho', 'folha_comida', 'vagem'] as const) expect(paraRamo(porId('recente'), r).opcoes.map((o) => o.id)).not.toEqual(expect.arrayContaining(['produto']))
+    expect(paraRamo(porId('recente'), 'folha_cor').opcoes.map((o) => o.id)).toEqual(expect.arrayContaining(['produto', 'calda', 'adubo']))
+  })
+
+  /** Caminhos aleatórios (semente fixa): responde qualquer opção oferecida, às vezes pula, e confere o sentido de cada pergunta. */
+  it('em milhares de caminhos aleatórios, nenhuma pergunta aparece fora de lugar', () => {
+    let seed = 20261111
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296 }
+    const vistas = new Set<string>()
+    for (let w = 0; w < 1500; w++) {
+      const respostas: Record<string, string> = {}
+      const puladas = new Set<string>()
+      const fotos: EscolhaFoto[] = []
+      const feitas: string[] = []
+      for (let i = 0; i < 30; i++) {
+        const passo = proximoPasso(PERGUNTAS, CANDIDATOS, { respostas, puladas, fotos }, { estadio: 'R3' })
+        if (passo.tipo === 'resultado') break
+        if (passo.tipo === 'fotos') { fotos.push({ mostrados: passo.candidatos.map((c) => c.id), escolhido: 'nao_sei' }); continue }
+        const q = passo.pergunta
+        const ctx = `${q.id} depois de ${JSON.stringify(respostas)}`
+        const ramo = ramoDe(respostas)
+        vistas.add(q.id)
+        expect(feitas, `repetida: ${ctx}`).not.toContain(q.id)
+        feitas.push(q.id)
+        // ramo certo
+        if (ramo && q.ramos) expect(q.ramos, `ramo: ${ctx}`).toContain(ramo)
+        // âncoras satisfeitas
+        for (const a of q.requer ?? []) expect(a in respostas || puladas.has(a), `âncora ${a}: ${ctx}`).toBe(true)
+        for (const [a, ops] of Object.entries(q.so ?? {})) {
+          const r = respostas[a] ?? (puladas.has('bicho') && respostas['onde'] === 'bicho' && a === 'bicho' ? 'nao_sei' : undefined)
+          expect(r !== undefined && ops.includes(r), `so ${a}: ${ctx}`).toBe(true)
+        }
+        // não repete o que a resposta anterior já disse
+        if (q.id === 'face_baixo') expect(respostas['mancha'], ctx).not.toBe('pustula')
+        // nenhuma opção contraditória com o que já foi dito
+        const ids = q.opcoes.map((o) => o.id)
+        if (q.id === 'bicho' && ramo === 'bicho') expect(ids, ctx).not.toContain('nenhum')
+        if (q.id === 'recente' && ramo && ['bicho', 'folha_comida', 'vagem'].includes(ramo)) for (const o of ['produto', 'adubo']) expect(ids, ctx).not.toContain(o)
+        // perguntas de produto só com aplicação, no ramo do nicho
+        if (q.nichos?.includes('aplicacao') && Object.keys(q.so ?? {}).includes('recente')) expect(nichoDe(respostas), ctx).toBe('aplicacao')
+        if (rnd() < 0.08) puladas.add(q.id)
+        else respostas[q.id] = ids[Math.floor(rnd() * ids.length)]!
+      }
+      expect(feitas.filter((q) => !triagem.includes(q)).length, 'detalhes').toBeLessThanOrEqual(MAX_DETALHES_INCERTO)
+    }
+    // toda pergunta é alcançável: não sobra pergunta órfã
+    const orfas = PERGUNTAS.map((p) => p.id).filter((id) => !vistas.has(id))
+    expect(orfas).toEqual([])
+  }, 60_000)
 })

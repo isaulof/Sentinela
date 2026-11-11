@@ -5,7 +5,7 @@ import { LISTA_ALVOS } from '@/knowledge/alvos'
 import { PERGUNTAS } from '@/knowledge/diagnostico'
 import { FONTES } from '@/knowledge/fontes'
 import { slugDe, slugDeNome } from '../pages/slug'
-import { fotosDoCandidato } from './fotosDiagnostico'
+import { FOTO_CLASSE, fotosDoCandidato } from './fotosDiagnostico'
 import { FotoRef } from './FotoRef'
 import { Icon } from './Icon'
 import { Badge, Button, Card, type Tom } from './kit'
@@ -123,7 +123,7 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
           {top.cientifico && <p className="italic text-text-2">{top.cientifico}</p>}
         </div>
         <p className="text-[1.0625rem] leading-relaxed">{top.resumo}</p>
-        <FotoRef arquivo={fotosDoCandidato(top)} alt={`Foto de referência: ${top.nome}`} className="aspect-video w-full rounded-xl object-cover ring-1 ring-line" />
+        <FotoRef arquivo={fotosDoCandidato(top)} alt={`Foto de referência: ${top.nome}`} className={`${FOTO_CLASSE} rounded-xl ring-1 ring-line`} />
         {incerto && <p className="rounded-xl bg-warn-soft p-3 text-sm text-warn">O que você viu combina com mais de uma causa. Confira os passos abaixo e leve as fotos ao agrônomo.</p>}
       </Card>
       )}

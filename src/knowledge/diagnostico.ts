@@ -37,6 +37,8 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'mancha',
+    etapa: 1,
+    nichos: ['aplicacao'],
     ramos: ['folha_mancha'],
     confiabilidade: 0.8,
     texto: 'Olhe a folha de perto. Como são as marcas?',
@@ -53,6 +55,8 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'altura',
+    etapa: 1,
+    nichos: ['aplicacao'],
     ramos: ['folha_mancha', 'folha_cor', 'murcha'],
     confiabilidade: 0.8,
     texto: 'Em que altura da planta o problema aparece?',
@@ -66,10 +70,12 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'bicho',
-    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem'],
+    etapa: 2,
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
+    semOpcoes: { bicho: ['nenhum'] }, // quem disse "vi um bicho" não responde "nenhum bicho"
     confiabilidade: 0.7, // é só o "jeitão": as perguntas de anatomia (patas, antenas, asas) confirmam
-    texto: 'O bicho se parece mais com qual destes?',
-    dica: 'Não precisa saber o nome. Escolha o que mais se parece com o que você viu. Se não souber, toque em "Não consigo identificar".',
+    texto: 'Você viu algum bicho? A que ele se parece mais?',
+    dica: 'Pode ser na folha, na vagem, na haste ou no solo, perto da raiz. Não precisa saber o nome: escolha o que mais se parece. Se não viu bicho nenhum, escolha "Nenhum bicho".',
     opcoes: [
       { id: 'lagarta', rotulo: 'Lagarta', detalhe: 'Corpo mole e comprido, com patinhas, anda se arrastando', icone: 'lagarta' },
       { id: 'besouro', rotulo: 'Besouro', detalhe: 'Casca dura nas costas, pequeno, voa ao balançar a planta', icone: 'besouro' },
@@ -83,6 +89,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'mofo',
+    etapa: 1,
     ramos: ['haste_raiz', 'murcha', 'vagem'],
     confiabilidade: 0.9,
     texto: 'Há algo branco, preto ou escuro na haste, nos galhos ou nas vagens?',
@@ -95,6 +102,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'grao',
+    etapa: 1,
     ramos: ['vagem'],
     confiabilidade: 0.85,
     texto: 'Como estão as vagens e os grãos?',
@@ -108,6 +116,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'raiz',
+    etapa: 2,
     ramos: ['haste_raiz', 'murcha', 'folha_cor'],
     confiabilidade: 0.9,
     texto: 'Arranque uma planta com cuidado. Como estão a raiz e a haste perto do chão?',
@@ -132,6 +141,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'recente',
+    semOpcoes: { bicho: ['produto', 'adubo'], folha_comida: ['produto', 'adubo'], vagem: ['produto', 'adubo'] }, // herbicida e adubo não explicam bicho, folha comida nem vagem
     confiabilidade: 0.9,
     texto: 'O que aconteceu na lavoura nos últimos dias?',
     dica: 'O tempo e o manejo recentes ajudam a separar doença, praga e problema de produto ou de clima.',
@@ -147,6 +157,8 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'evolucao',
+    etapa: 3,
+    nichos: ['aplicacao'],
     texto: 'Como o problema andou nos últimos dias?',
     dica: 'Doença e praga costumam avançar de uma planta para as vizinhas. Problema de produto, adubo ou clima costuma aparecer de uma vez e depois parar.',
     ramos: ['folha_mancha', 'folha_cor', 'folha_comida', 'murcha', 'haste_raiz', 'vagem'],
@@ -159,6 +171,8 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'face_baixo',
+    etapa: 1,
+    exceto: { mancha: ['pustula'] }, // quem já disse "pústulas por baixo" não precisa virar a folha de novo
     texto: 'Vire a folha. O que tem na parte de baixo?',
     dica: 'Use o zoom do celular ou uma lupa. Olhe a face de baixo de folhas do baixeiro.',
     ramos: ['folha_mancha'],
@@ -172,6 +186,8 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'cor_amarelo',
+    etapa: 1,
+    nichos: ['aplicacao'],
     texto: 'Como é o amarelecimento ou a deformação?',
     dica: 'Compare com uma folha sadia. A posição do amarelo na folha ajuda a separar falta de nutriente, produto e doença.',
     ramos: ['folha_cor'],
@@ -186,6 +202,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'dano',
+    etapa: 1,
     texto: 'Como é o estrago na folha?',
     dica: 'Olhe uma folha atacada de perto e vire para ver o outro lado.',
     ramos: ['folha_comida'],
@@ -203,7 +220,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
     so: { bicho: ['nao_sei'] }, // anatomia geral: só para quem não soube dizer a que o bicho se parece
     texto: 'O bicho tem asas? Como são as costas dele?',
     dica: 'Se der, pegue um com cuidado e olhe de perto (celular com zoom ajuda).',
-    ramos: ['bicho', 'folha_comida', 'vagem'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.85,
     opcoes: [
       { id: 'escudo', rotulo: 'Costas achatadas, em escudo', detalhe: 'Parte de trás mais fina, como losango', icone: 'percevejo' },
@@ -218,7 +235,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
     so: { bicho: ['nao_sei'] }, // anatomia geral: só para quem não soube dizer a que o bicho se parece
     texto: 'O bicho tem antenas?',
     dica: 'Antenas são os fios finos na cabeça. Em bicho pequeno, use o zoom do celular.',
-    ramos: ['bicho', 'folha_comida', 'vagem'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.75,
     opcoes: [
       { id: 'longas', rotulo: 'Sim, longas', detalhe: 'Quase do tamanho do corpo', icone: 'besouro' },
@@ -232,7 +249,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
     so: { bicho: ['nao_sei'] }, // anatomia geral: só para quem não soube dizer a que o bicho se parece
     texto: 'Olhe as patas do bicho de perto. Quantas tem?',
     dica: 'Use o zoom do celular. Se não conseguir contar, toque em "Não consigo ver isso".',
-    ramos: ['bicho', 'folha_comida', 'vagem'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.8,
     opcoes: [
       { id: 'seis', rotulo: '3 pares de patas (6 patas)', detalhe: 'Só as patas da frente, nada na barriga', icone: 'besouro' },
@@ -243,10 +260,10 @@ export const PERGUNTAS: PerguntaFunil[] = [
   {
     id: 'tamanho',
     requer: ['bicho'],
-    exceto: { bicho: ['nenhum'] },
+    so: { bicho: ['lagarta', 'besouro', 'larva', 'percevejo', 'mosca_branca', 'acaro', 'nao_sei'] },
     texto: 'Qual o tamanho do bicho?',
     dica: 'Compare com algo que você conhece: um grão de arroz, a unha do dedo.',
-    ramos: ['bicho', 'folha_comida', 'vagem', 'folha_cor'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.75,
     opcoes: [
       { id: 'minusculo', rotulo: 'Menor que 2 mm', detalhe: 'Ponto que anda, quase não se vê', icone: 'regua' },
@@ -258,9 +275,9 @@ export const PERGUNTAS: PerguntaFunil[] = [
   {
     id: 'cor_bicho',
     requer: ['bicho'],
-    exceto: { bicho: ['nenhum'] },
+    so: { bicho: ['lagarta', 'besouro', 'larva', 'percevejo', 'mosca_branca', 'acaro', 'nao_sei'] },
     texto: 'Qual a cor do bicho?',
-    ramos: ['bicho', 'folha_comida', 'vagem'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.8,
     opcoes: [
       { id: 'marrom', rotulo: 'Marrom', cor: '#8a5a2b' },
@@ -276,7 +293,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
     so: { bicho: ['lagarta', 'nao_sei'] },
     texto: 'Se for lagarta: como ela anda?',
     dica: 'Observe uma lagarta andando na folha por alguns segundos.',
-    ramos: ['bicho', 'folha_comida', 'vagem'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.75,
     opcoes: [
       { id: 'mede_palmo', rotulo: 'Arqueia o corpo, como medindo palmo', detalhe: 'Dobra no meio ao andar', icone: 'lagarta' },
@@ -287,9 +304,9 @@ export const PERGUNTAS: PerguntaFunil[] = [
   {
     id: 'local_bicho',
     requer: ['bicho'],
-    exceto: { bicho: ['nenhum'] },
+    so: { bicho: ['lagarta', 'besouro', 'larva', 'percevejo', 'mosca_branca', 'acaro', 'nao_sei'] },
     texto: 'Onde o bicho estava?',
-    ramos: ['bicho', 'folha_comida', 'vagem'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.9,
     opcoes: [
       { id: 'folha_baixo', rotulo: 'Na face de baixo da folha', icone: 'baixo' },
@@ -301,6 +318,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
   },
   {
     id: 'dentro_haste',
+    etapa: 2,
     texto: 'Corte a haste ao meio. Como está por dentro?',
     dica: 'Use uma faca ou canivete e abra a haste perto do chão.',
     ramos: ['haste_raiz', 'murcha'],
@@ -318,7 +336,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
     so: { bicho: ['lagarta'] },
     texto: 'Olhe a barriga da lagarta: as patinhas carnudas.',
     dica: 'Vire a lagarta com cuidado e olhe de lado. Contar a olho nu é difícil; se não der, toque em "Não consigo ver isso".',
-    ramos: ['bicho', 'folha_comida', 'vagem'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.7,
     opcoes: [
       { id: 'poucas', rotulo: 'Poucas, só no fim do corpo', detalhe: 'O meio da barriga é liso; ela arqueia ao andar', icone: 'menos' },
@@ -331,7 +349,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
     so: { bicho: ['besouro'] },
     texto: 'Como é o besouro?',
     dica: 'Olhe de perto, com o zoom do celular.',
-    ramos: ['bicho', 'folha_comida', 'vagem'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.8,
     opcoes: [
       { id: 'manchas_pretas', rotulo: 'Verde-amarelado, com manchas pretas', detalhe: 'Como uma joaninha comprida', icone: 'pontos' },
@@ -345,7 +363,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
     so: { bicho: ['besouro', 'mosca_branca', 'nao_sei'] },
     texto: 'O que acontece quando você balança a planta?',
     dica: 'Balance uma planta com o bicho sobre um pano branco ou uma folha de papel.',
-    ramos: ['bicho', 'folha_comida', 'vagem', 'folha_cor'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.85,
     opcoes: [
       { id: 'voa', rotulo: 'Sai voando', detalhe: 'Uma nuvem de bichinhos levanta', icone: 'mosquinha' },
@@ -358,7 +376,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
     requer: ['bicho'],
     so: { bicho: ['larva'] },
     texto: 'O que a larva fez na planta?',
-    ramos: ['bicho', 'haste_raiz', 'murcha', 'folha_comida'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.85,
     opcoes: [
       { id: 'raiz_comida', rotulo: 'Comeu as raízes', detalhe: 'A planta se arranca fácil, sem raiz', icone: 'raiz' },
@@ -372,7 +390,7 @@ export const PERGUNTAS: PerguntaFunil[] = [
     so: { bicho: ['percevejo'] },
     texto: 'O percevejo tem uma faixa clara atravessando as costas?',
     dica: 'Olhe o bicho de cima, de perto.',
-    ramos: ['bicho', 'vagem', 'folha_comida'],
+    ramos: ['bicho', 'folha_comida', 'folha_cor', 'vagem', 'haste_raiz', 'murcha'],
     confiabilidade: 0.75,
     opcoes: [
       { id: 'com_faixa', rotulo: 'Sim, uma faixa clara ou avermelhada', icone: 'faixas' },
@@ -380,16 +398,91 @@ export const PERGUNTAS: PerguntaFunil[] = [
     ],
   },
   {
-    id: 'teia',
-    requer: ['bicho'],
-    so: { bicho: ['acaro'] },
-    texto: 'Há teia muito fina na face de baixo da folha?',
-    dica: 'Use lupa ou o zoom do celular. É comum em tempo seco e quente.',
-    ramos: ['bicho', 'folha_cor', 'folha_mancha', 'folha_comida'],
+    id: 'herb_grupo',
+    etapa: 0,
+    nichos: ['aplicacao'],
+    so: { recente: ['produto'] },
+    texto: 'Que tipo de herbicida foi?',
+    dica: 'Olhe o caderno de operações ou pergunte a quem aplicou. Se foi o vizinho, escolha a opção do que você sabe.',
+    ramos: ['folha_mancha', 'folha_cor', 'murcha', 'haste_raiz'],
     confiabilidade: 0.8,
     opcoes: [
-      { id: 'sim', rotulo: 'Sim, com bichinhos minúsculos', icone: 'lupa' },
-      { id: 'nao', rotulo: 'Não vejo teia', icone: 'cruzar' },
+      { id: 'dessecacao', rotulo: 'Dessecação antes de plantar', detalhe: 'Produto de limpeza da área, como o glifosato', icone: 'gota' },
+      { id: 'pos_soja', rotulo: 'Aplicado na soja já nascida', detalhe: 'Controle de mato com a soja no campo', icone: 'folha' },
+      { id: 'hormonal', rotulo: 'Hormonal (tipo 2,4-D), da área ou do vizinho', detalhe: 'Muito usado em outras culturas e pastos', icone: 'nuvem' },
+      { id: 'safra_anterior', rotulo: 'Foi usado na safra anterior', detalhe: 'O que pode ter ficado no solo', icone: 'raiz' },
+    ],
+  },
+  {
+    id: 'tempo_apos',
+    etapa: 0,
+    nichos: ['aplicacao'],
+    so: { recente: ['produto', 'calda', 'adubo'] },
+    texto: 'Quanto tempo depois da aplicação o problema apareceu?',
+    ramos: ['folha_mancha', 'folha_cor', 'murcha', 'haste_raiz'],
+    confiabilidade: 0.85,
+    opcoes: [
+      { id: 'dias_1_3', rotulo: 'De 1 a 3 dias', detalhe: 'Quase na hora', icone: 'fogo' },
+      { id: 'dias_4_10', rotulo: 'De 4 a 10 dias', icone: 'faixas' },
+      { id: 'mais_10', rotulo: 'Mais de 10 dias', icone: 'baixo' },
+      { id: 'desde_inicio', rotulo: 'Desde que a soja nasceu', detalhe: 'Já saiu fraca', icone: 'broto' },
+    ],
+  },
+  {
+    id: 'folhas_novas',
+    etapa: 0,
+    nichos: ['aplicacao'],
+    so: { recente: ['produto', 'calda', 'adubo'] },
+    texto: 'As folhas que nasceram depois da aplicação estão como?',
+    dica: 'Olhe o ponteiro: as folhas novinhas, que ainda nem existiam quando o produto foi aplicado.',
+    ramos: ['folha_mancha', 'folha_cor', 'murcha', 'haste_raiz'],
+    confiabilidade: 0.9,
+    opcoes: [
+      { id: 'sadias', rotulo: 'Sadias, normais', detalhe: 'O dano ficou só nas folhas mais velhas', icone: 'folha' },
+      { id: 'tambem', rotulo: 'Também saem com problema', detalhe: 'Amarelas, deformadas ou fracas', icone: 'murcha' },
+    ],
+  },
+  {
+    id: 'desenho_aplic',
+    etapa: 1,
+    nichos: ['aplicacao'],
+    so: { recente: ['produto', 'calda', 'adubo'] },
+    texto: 'O dano segue o desenho da aplicação?',
+    dica: 'Se der, suba num ponto alto ou veja fotos de drone.',
+    ramos: ['folha_mancha', 'folha_cor', 'murcha', 'haste_raiz'],
+    confiabilidade: 0.8,
+    opcoes: [
+      { id: 'borda_vento', rotulo: 'Pior na borda, do lado de onde veio o vento', icone: 'nuvem' },
+      { id: 'faixas_barra', rotulo: 'Em faixas, como a passada da máquina', detalhe: 'Pulverizador ou adubadora', icone: 'faixas' },
+      { id: 'manchas', rotulo: 'Em manchas, onde o produto pode ter empoçado', icone: 'circulo' },
+      { id: 'sem_desenho', rotulo: 'Sem desenho, na área toda', icone: 'grade' },
+    ],
+  },
+  {
+    id: 'condicao_aplic',
+    etapa: 1,
+    nichos: ['aplicacao'],
+    so: { recente: ['produto', 'calda'] },
+    texto: 'Como estava o tempo na hora da aplicação?',
+    ramos: ['folha_mancha', 'folha_cor', 'murcha', 'haste_raiz'],
+    confiabilidade: 0.75,
+    opcoes: [
+      { id: 'quente', rotulo: 'Quente, com sol forte', icone: 'sol' },
+      { id: 'vento', rotulo: 'Com vento', icone: 'nuvem' },
+      { id: 'normal', rotulo: 'Normal, sem calor nem vento fortes', icone: 'ok' },
+    ],
+  },
+  {
+    id: 'mistura',
+    etapa: 0,
+    nichos: ['aplicacao'],
+    so: { recente: ['calda'] },
+    texto: 'Foi mistura de mais de um produto, ou com óleo ou adjuvante?',
+    ramos: ['folha_mancha', 'folha_cor', 'murcha', 'haste_raiz'],
+    confiabilidade: 0.85,
+    opcoes: [
+      { id: 'sim', rotulo: 'Sim, mistura ou com óleo/adjuvante', icone: 'gota' },
+      { id: 'nao', rotulo: 'Não, um produto só', icone: 'ok' },
     ],
   },
 ]
@@ -1116,7 +1209,6 @@ const EXTRAS_BICHOS: Record<string, Perfil> = {
     local_bicho: { folha_baixo: C, folha_cima: C, vagem: P, haste: R, solo: P },
   },
   acaro: {
-    teia: { sim: T, nao: P },
     asas: { sem: T, escudo: N, casca_dura: N, brancas: N }, antenas: { nao: T, curtas: N, longas: N }, patas: { oito: T, seis: R, seis_carnudas: N },
     tamanho: { minusculo: T, pequeno: R, medio: N, grande: N }, cor_bicho: { branco: C, verde: C, escuro: P, marrom: P, listrado: N },
     local_bicho: { folha_baixo: T, folha_cima: P, vagem: N, haste: N, solo: N },
@@ -1125,6 +1217,31 @@ const EXTRAS_BICHOS: Record<string, Perfil> = {
     local_bicho: { solo: T, haste: R, folha_baixo: N, folha_cima: N, vagem: N },
     dentro_haste: { sadia: T, escura: R, pontos_pretos: N, oca: N },
   },
+}
+
+/** Perguntas do nicho de aplicação (produto): perfil por causa. Quem não é descrito aqui recebe um padrão por tipo. */
+const EXTRAS_APLICACAO: Record<string, Perfil> = {
+  herb_hormonal: { herb_grupo: { hormonal: T, dessecacao: P, pos_soja: R, safra_anterior: N }, tempo_apos: { dias_4_10: T, dias_1_3: C, mais_10: C, desde_inicio: R }, folhas_novas: { tambem: T, sadias: P }, desenho_aplic: { borda_vento: T, faixas_barra: C, manchas: P, sem_desenho: P }, condicao_aplic: { vento: T, quente: C, normal: R } },
+  herb_contato: { herb_grupo: { pos_soja: T, dessecacao: C, hormonal: N, safra_anterior: N }, tempo_apos: { dias_1_3: T, dias_4_10: C, mais_10: R, desde_inicio: N }, folhas_novas: { sadias: T, tambem: R }, desenho_aplic: { faixas_barra: T, manchas: C, sem_desenho: C, borda_vento: P }, condicao_aplic: { quente: T, normal: P, vento: R }, mistura: { sim: P, nao: C } },
+  herb_als: { herb_grupo: { safra_anterior: T, pos_soja: P, dessecacao: N, hormonal: N }, tempo_apos: { desde_inicio: T, mais_10: C, dias_4_10: P, dias_1_3: R }, folhas_novas: { tambem: T, sadias: P }, desenho_aplic: { faixas_barra: C, manchas: C, sem_desenho: C, borda_vento: R }, condicao_aplic: { normal: C, quente: P, vento: P } },
+  calda: { tempo_apos: { dias_1_3: T, dias_4_10: C, mais_10: R, desde_inicio: N }, folhas_novas: { sadias: T, tambem: R }, desenho_aplic: { faixas_barra: C, manchas: C, sem_desenho: C, borda_vento: R }, condicao_aplic: { quente: T, vento: R, normal: P }, mistura: { sim: T, nao: R } },
+  adubo_queima: { tempo_apos: { dias_1_3: T, dias_4_10: C, mais_10: R, desde_inicio: N }, folhas_novas: { sadias: T, tambem: R }, desenho_aplic: { faixas_barra: T, manchas: P, sem_desenho: C, borda_vento: R } },
+  def_mn: { herb_grupo: { dessecacao: C, pos_soja: P, hormonal: R, safra_anterior: R }, tempo_apos: { dias_4_10: C, mais_10: C, dias_1_3: P, desde_inicio: P }, folhas_novas: { tambem: T, sadias: R }, desenho_aplic: { sem_desenho: C, manchas: C, faixas_barra: P, borda_vento: R } },
+  def_k: { tempo_apos: { mais_10: C, desde_inicio: C, dias_4_10: P, dias_1_3: R }, folhas_novas: { tambem: C, sadias: P }, desenho_aplic: { sem_desenho: C, manchas: C, faixas_barra: P, borda_vento: R } },
+  def_mg: { tempo_apos: { mais_10: C, desde_inicio: C, dias_4_10: P, dias_1_3: R }, folhas_novas: { tambem: C, sadias: P }, desenho_aplic: { sem_desenho: C, manchas: C, faixas_barra: P, borda_vento: R } },
+  def_n: { tempo_apos: { mais_10: C, desde_inicio: C, dias_4_10: P, dias_1_3: R }, folhas_novas: { tambem: C, sadias: P }, desenho_aplic: { sem_desenho: C, manchas: C, faixas_barra: P, borda_vento: R } },
+  granizo: { tempo_apos: { dias_1_3: T, dias_4_10: C, mais_10: R, desde_inicio: N }, folhas_novas: { sadias: T, tambem: R }, desenho_aplic: { sem_desenho: C, manchas: C, faixas_barra: R, borda_vento: P } },
+  estresse: { tempo_apos: { dias_4_10: C, mais_10: C, dias_1_3: P, desde_inicio: P }, folhas_novas: { sadias: C, tambem: C }, desenho_aplic: { sem_desenho: C, manchas: C, faixas_barra: R, borda_vento: R } },
+}
+const TODAS_POSSIVEIS = (...ids: string[]): Record<string, Frequencia> => Object.fromEntries(ids.map((i) => [i, P]))
+/** Doença ou praga que apareceu perto de uma aplicação: nada nas respostas de produto a separa de outra causa, e as folhas novas também adoecem. */
+const PADRAO_APLICACAO: Perfil = {
+  herb_grupo: TODAS_POSSIVEIS('dessecacao', 'pos_soja', 'hormonal', 'safra_anterior'),
+  tempo_apos: TODAS_POSSIVEIS('dias_1_3', 'dias_4_10', 'mais_10', 'desde_inicio'),
+  folhas_novas: { tambem: C, sadias: P },
+  desenho_aplic: { sem_desenho: C, manchas: P, faixas_barra: R, borda_vento: R },
+  condicao_aplic: { quente: P, vento: P, normal: C },
+  mistura: { sim: R, nao: C },
 }
 
 /**
@@ -1147,7 +1264,8 @@ const EVOLUCAO_PADRAO: Record<string, Frequencia> = { espalhando: C, de_uma_vez:
 function montar(): Candidato[] {
   return [...BASE, ...NOVOS, ...BICHOS_EXTRA, ...PERCEVEJOS_VERDES].map((c) => {
     const perfil: Perfil = Object.fromEntries(Object.entries(c.perfil).map(([q, o]) => [q, { ...o }]))
-    for (const [q, o] of Object.entries({ ...EXTRAS[c.id], ...EXTRAS_BICHOS[c.id] })) perfil[q] = { ...perfil[q], ...o }
+    for (const [q, o] of Object.entries({ ...EXTRAS[c.id], ...EXTRAS_BICHOS[c.id], ...EXTRAS_APLICACAO[c.id] })) perfil[q] = { ...perfil[q], ...o }
+    for (const [q, o] of Object.entries(PADRAO_APLICACAO)) if (!perfil[q]) perfil[q] = { ...o }
     for (const n of PADRAO_NOVAS) if (perfil[n.pergunta] && !(n.opcao in perfil[n.pergunta]!)) perfil[n.pergunta]![n.opcao] = n.por(c)
     if (c.tipo !== 'abiotico' && !perfil['evolucao']) perfil['evolucao'] = { ...EVOLUCAO_PADRAO }
     // Quem não é lagarta não anda como lagarta. Sem isto ficaria "neutro" e levaria vantagem sobre quem foi descartado.

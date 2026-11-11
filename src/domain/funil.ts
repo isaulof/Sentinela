@@ -29,7 +29,22 @@ export interface OpcaoFunil {
 /** Ramo do diagnóstico: onde o problema aparece. Vem da resposta de triagem "onde está o problema?". */
 export type Ramo = 'folha_mancha' | 'folha_cor' | 'folha_comida' | 'vagem' | 'haste_raiz' | 'murcha' | 'bicho'
 export const RAMOS: readonly Ramo[] = ['folha_mancha', 'folha_cor', 'folha_comida', 'vagem', 'haste_raiz', 'murcha', 'bicho']
-export const ramoDe = (respostas: Respostas): Ramo | undefined => RAMOS.find((r) => r === respostas['onde'])
+/** Nicho: um assunto que pede a sua própria linha de perguntas, definido por mais de uma resposta. */
+export type Nicho = 'aplicacao'
+export const APLICACAO_RECENTE: readonly string[] = ['produto', 'calda', 'adubo']
+export const RAMOS_DO_NICHO_APLICACAO: readonly Ramo[] = ['folha_mancha', 'folha_cor', 'murcha', 'haste_raiz']
+/**
+ * Aplicação: o problema é na planta (folha, haste, raiz) e aconteceu depois de herbicida, fungicida/inseticida/mistura ou adubo.
+ * Daí a linha de perguntas é sobre o produto (qual, quando apareceu, folhas novas, desenho da aplicação), não sobre doença.
+ */
+export const nichoDe = (respostas: Respostas): Nicho | undefined => {
+  const ramo = ramoDe(respostas)
+  const rec = respostas['recente']
+  // Sem ramo (a pessoa pulou "onde está o problema"), a aplicação recente ainda é o que há de mais específico.
+  return rec && APLICACAO_RECENTE.includes(rec) && (!ramo || RAMOS_DO_NICHO_APLICACAO.includes(ramo)) ? 'aplicacao' : undefined
+}
+
+export function ramoDe(respostas: Respostas): Ramo | undefined { return RAMOS.find((r) => r === respostas['onde']) }
 
 export interface PerguntaFunil {
   id: string
@@ -50,10 +65,23 @@ export interface PerguntaFunil {
    */
   exceto?: Readonly<Record<string, readonly string[]>>
   /**
-   * A pergunta só vale para estas respostas anteriores (pergunta → opções que a ativam). Pergunta pulada vale como "nao_sei".
+   * A pergunta só vale para estas respostas anteriores (pergunta → opções que a ativam). Se a anterior foi pulada, a pergunta é dispensada.
    * É o que faz cada caminho seguir a sua linha: quem escolheu "lagarta" recebe perguntas de lagarta, não de besouro.
    */
   so?: Readonly<Record<string, readonly string[]>>
+  /**
+   * Opções que não fazem sentido em certos ramos e por isso não são oferecidas (ramo → opções).
+   * Ex.: "Nenhum bicho" quando a pessoa já disse que viu um bicho; "apliquei herbicida" num problema de bicho.
+   */
+  semOpcoes?: Partial<Record<Ramo, readonly string[]>>
+  /**
+   * Ordem natural da conversa (menor primeiro): 0 = decorre direto da resposta anterior (ex.: "que herbicida?" depois de
+   * "apliquei herbicida"); 1 = descrever o que se vê no sintoma; 2 = investigar a causa (bicho, raiz, haste por dentro);
+   * 3 = contexto (como evoluiu). Dentro da mesma etapa vale a pergunta que mais separa as causas. Sem valor = 2.
+   */
+  etapa?: 0 | 1 | 2 | 3
+  /** Nichos para os quais a pergunta é central. Com um nicho ativo, a linha de perguntas começa por estas e só amplia se ainda faltar base. */
+  nichos?: readonly Nicho[]
   /** Só entra depois que estas perguntas foram respondidas ou puladas (ex.: o corpo do bicho só depois de "viu algum bicho?"). */
   requer?: readonly string[]
 }
@@ -233,10 +261,17 @@ export function porGrupo(ranking: readonly Classificado[], evidencias: number): 
   return { viva: v, naoViva: 100 - v }
 }
 
+/** A pergunta como será feita no ramo: sem as opções que não fazem sentido ali. */
+export function paraRamo(p: PerguntaFunil, ramo: Ramo | undefined): PerguntaFunil {
+  const ocultas = ramo ? p.semOpcoes?.[ramo] : undefined
+  return ocultas?.length ? { ...p, opcoes: p.opcoes.filter((o) => !ocultas.includes(o.id)) } : p
+}
+
 /** Dispensada por uma resposta anterior (ver `exceto`)? */
 export const dispensada = (p: PerguntaFunil, respostas: Respostas): boolean =>
   Object.entries(p.exceto ?? {}).some(([q, ops]) => { const r = respostas[q]; return r !== undefined && ops.includes(r) }) ||
-  Object.entries(p.so ?? {}).some(([q, ops]) => !ops.includes(respostas[q] ?? 'nao_sei'))
+  // Sem resposta (pulada), a pergunta que dependia dela não faz sentido. A exceção "vi um bicho mas não sei qual" é tratada no fluxo.
+  Object.entries(p.so ?? {}).some(([q, ops]) => { const r = respostas[q]; return r === undefined || !ops.includes(r) })
 
 export type Veredito = 'definido' | 'provavel' | 'inconclusivo'
 
@@ -311,6 +346,12 @@ export function validarBase(perguntas: readonly PerguntaFunil[], candidatos: rea
     if (p.opcoes.length < 2) erros.push(`pergunta "${p.id}" com menos de 2 opções`)
     if (p.confiabilidade !== undefined && !(p.confiabilidade > 0 && p.confiabilidade <= 1)) erros.push(`pergunta "${p.id}": confiabilidade fora de (0, 1]`)
     for (const r of p.ramos ?? []) if (!RAMOS.includes(r)) erros.push(`pergunta "${p.id}": ramo "${r}" inexistente`)
+    for (const n of p.nichos ?? []) if (n !== 'aplicacao') erros.push(`pergunta "${p.id}": nicho "${n}" inexistente`)
+    for (const [r, ids] of Object.entries(p.semOpcoes ?? {})) {
+      if (!RAMOS.includes(r as Ramo)) erros.push(`pergunta "${p.id}": semOpcoes cita ramo "${r}" inexistente`)
+      for (const id of ids ?? []) if (!p.opcoes.some((o) => o.id === id)) erros.push(`pergunta "${p.id}": semOpcoes cita opção "${id}" inexistente`)
+      if (p.opcoes.filter((o) => !(ids ?? []).includes(o.id)).length < 2) erros.push(`pergunta "${p.id}": no ramo "${r}" sobram menos de 2 opções`)
+    }
     for (const q of p.requer ?? []) if (!perguntas.some((x) => x.id === q)) erros.push(`pergunta "${p.id}": requer pergunta "${q}" inexistente`)
     for (const [campo, mapa] of [['exceto', p.exceto], ['so', p.so]] as const) {
       for (const [q, ops] of Object.entries(mapa ?? {})) {

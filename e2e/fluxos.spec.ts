@@ -6,7 +6,7 @@ async function responderFunilFerrugem(page: Page) {
   const RESP: [RegExp, RegExp][] = [
     [/Onde está o problema/, /Manchas ou pontos nas folhas/],
     [/aparece no terreno/, /manchas redondas/],
-    [/últimos dias/, /Muita chuva ou dias nublados/],
+    [/O que aconteceu na lavoura/, /Muita chuva ou dias nublados/],
     [/Como são as marcas/, /Pontinhos ou pústulas por baixo/],
     [/Em que altura/, /Folhas de baixo/],
     [/Vire a folha/, /Pontinhos em relevo/],
@@ -181,6 +181,42 @@ test.describe('fluxos de negócio', () => {
     const besouro = await seguir(/^Besouro/)
     expect(besouro).toMatch(/Como é o besouro|balança a planta/)
     expect(besouro).not.toMatch(/como ela anda|patinhas|antenas/)
+  })
+
+  test('quem aplicou herbicida recebe perguntas sobre o produto, não sobre doença nem bicho', async ({ page }) => {
+    await page.goto('/#/diagnostico')
+    await page.getByRole('button', { name: 'Começar' }).click()
+    await page.getByRole('button', { name: /Folhas amarelas, pálidas ou deformadas/ }).click()
+    await page.getByRole('button', { name: /Em faixas retas/ }).click()
+    await page.getByRole('button', { name: /Apliquei herbicida/ }).click()
+    const vistas: string[] = []
+    for (let i = 0; i < 5; i++) {
+      const titulo = (await page.getByRole('heading', { level: 2 }).first().textContent()) ?? ''
+      if (/Qual foto mais se parece|Ainda não dá/.test(titulo)) break
+      vistas.push(titulo)
+      await page.getByRole('button', { name: 'Não consigo ver isso' }).click()
+      await page.waitForTimeout(120)
+    }
+    const todas = vistas.join('|')
+    expect(todas).toMatch(/herbicida foi|depois da aplicação|nasceram depois/)
+    expect(todas).not.toMatch(/embaixo|bicho|raiz e a haste|vagens/i)
+  })
+
+  test('quem não aplicou nada não recebe perguntas de aplicação', async ({ page }) => {
+    await page.goto('/#/diagnostico')
+    await page.getByRole('button', { name: 'Começar' }).click()
+    await page.getByRole('button', { name: /Folhas amarelas, pálidas ou deformadas/ }).click()
+    await page.getByRole('button', { name: /Igual na área toda/ }).click()
+    await page.getByRole('button', { name: /Nada de diferente/ }).click()
+    const vistas: string[] = []
+    for (let i = 0; i < 6; i++) {
+      const titulo = (await page.getByRole('heading', { level: 2 }).first().textContent()) ?? ''
+      if (/Qual foto mais se parece|Ainda não dá/.test(titulo)) break
+      vistas.push(titulo)
+      await page.getByRole('button', { name: 'Não consigo ver isso' }).click()
+      await page.waitForTimeout(120)
+    }
+    expect(vistas.join('|')).not.toMatch(/herbicida foi|depois da aplicação|nasceram depois|desenho da aplicação/)
   })
 
   test('liga o diagnóstico ao ponto: guarda na Coleta, diagnostica e o ponto vira "Diagnosticado"', async ({ page }) => {

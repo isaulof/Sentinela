@@ -7,3 +7,6 @@ export const fotosDoCandidato = (c: Candidato): string[] => {
   const alvo = c.alvo ? LISTA_ALVOS.find((a) => a.id === c.alvo) : undefined
   return [`${c.id}.jpg`, `${alvo ? slugDe(alvo) : slugDeNome(c.nome)}.jpg`]
 }
+
+/** Todas as fotos de referência têm a mesma proporção (4:3) e são cortadas pelo centro, para os cartões ficarem iguais. */
+export const FOTO_CLASSE = 'aspect-[4/3] w-full object-cover object-center'
