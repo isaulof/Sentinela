@@ -32,6 +32,7 @@ test.describe('guia até o ponto (GPS)', () => {
   }
 
   test('mostra distância, direção e sua posição, e avisa quando chega ao ponto', async ({ page, context }) => {
+    test.slow() // mapa por software + gravação de 5 registros: sob carga paralela passa dos 30 s
     await abrirColetaDoT04(page)
     const p1 = await posicaoDoPonto(page, 'T-04', 1)
     await context.setGeolocation(metrosAoNorte(p1, 200)) // 200 m ao norte do ponto: o ponto fica ao sul
@@ -68,6 +69,88 @@ test.describe('guia até o ponto (GPS)', () => {
     await expect(page.getByText(/Ponto 1 · /)).toBeVisible()
     await page.getByRole('button', { name: 'Próximo ponto' }).click()
     await expect(page.getByText(/Ponto 2 · /)).toBeVisible()
+  })
+
+  for (const [largura, altura] of [[360, 640], [390, 844], [412, 915]] as const) {
+    test(`tela cheia em ${largura}×${altura}: mapa ocupa ≥ 60%, distância numa linha e toques ≥ 44 px`, async ({ page, context }) => {
+      await page.setViewportSize({ width: largura, height: altura })
+      await abrirColetaDoT04(page)
+      const p1 = await posicaoDoPonto(page, 'T-04', 1)
+      await context.setGeolocation(metrosAoNorte(p1, 760))
+      await page.getByRole('button', { name: 'Ir até o ponto' }).click()
+      const distancia = page.getByText(/^(750|760|770) m$/)
+      await expect(distancia).toBeVisible()
+
+      // Sem cabeçalho, seletor, barra de progresso nem legenda: só mapa, faixa e ação.
+      await expect(page.getByRole('progressbar')).toHaveCount(0)
+      await expect(page.getByLabel('Talhão', { exact: true })).toHaveCount(0)
+      await expect(page.getByRole('list', { name: 'Legenda do mapa' })).toHaveCount(0)
+      // A tela de navegação cobre a viewport inteira (a barra de abas fica por baixo, sem receber toque).
+      const tela = (await page.getByRole('region', { name: /Guia até o ponto 1/ }).boundingBox())!
+      expect(tela).toMatchObject({ x: 0, y: 0, width: largura, height: altura })
+
+      const mapa = (await page.locator('.maplibregl-map').boundingBox())!
+      expect(mapa.height / altura).toBeGreaterThanOrEqual(0.6)
+
+      // A distância e a precisão não quebram em duas linhas.
+      for (const alvo of [distancia, page.getByText(/^GPS ±\d+ m$/)]) {
+        const linhas = await alvo.evaluate((el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight))
+        expect(Math.round(linhas)).toBe(1)
+      }
+
+      // Alvos de toque de pelo menos 44 px e nada estourando a tela.
+      for (const nome of ['Parar o guia', 'Ponto anterior', 'Próximo ponto', /Cheguei · Registrar/]) {
+        const b = (await page.getByRole('button', { name: nome }).boundingBox())!
+        expect(b.width, String(nome)).toBeGreaterThanOrEqual(44)
+        expect(b.height, String(nome)).toBeGreaterThanOrEqual(44)
+        expect(b.x + b.width).toBeLessThanOrEqual(largura)
+      }
+      const estoura = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
+      expect(estoura).toBe(false)
+    })
+  }
+
+  test('ao chegar, um toque abre o registro e salvar leva ao próximo ponto, com o GPS real', async ({ page, context }) => {
+    test.slow() // mapa por software + gravação de 5 registros: sob carga paralela passa dos 30 s
+    await abrirColetaDoT04(page)
+    const p1 = await posicaoDoPonto(page, 'T-04', 1)
+    await context.setGeolocation(metrosAoNorte(p1, 0))
+    await page.getByRole('button', { name: 'Ir até o ponto' }).click()
+    await expect(page.getByText('Registre o que encontrou.')).toBeVisible()
+
+    await page.getByRole('button', { name: /Cheguei · Registrar/ }).click()
+    const gaveta = page.getByRole('dialog', { name: /Ponto 1: o que você encontrou/ })
+    await expect(gaveta.getByRole('button', { name: 'Sem ocorrência' })).toBeVisible()
+    await expect(gaveta.getByRole('button', { name: 'Registrar achado' })).toBeVisible()
+    await expect(gaveta.getByRole('button', { name: 'Não sei o que é' })).toBeVisible()
+
+    await gaveta.getByRole('button', { name: 'Sem ocorrência' }).click()
+    await page.getByLabel('Seu nome').fill('Ana Teste')
+    await page.getByRole('button', { name: 'Continuar' }).click()
+    // O guia continua ligado e passa a apontar para o próximo ponto (o aviso na tela some sozinho, então o teste olha o estado final).
+    await expect(page.getByText(/Ponto 2 · /)).toBeVisible({ timeout: 20_000 })
+
+    // O registro saiu com a posição do GPS (não a planejada) e com os campos da v2.
+    const lerRegistros = () => page.evaluate(() => new Promise<Record<string, unknown>[]>((ok, erro) => {
+      const abrir = indexedDB.open('sentinela')
+      abrir.onerror = () => erro(abrir.error)
+      abrir.onsuccess = () => {
+        const r = abrir.result.transaction('registros').objectStore('registros').getAll()
+        r.onsuccess = () => ok((r.result as Record<string, unknown>[]).filter((x) => x.amostrador === 'Ana Teste'))
+      }
+    }))
+    await expect.poll(async () => (await lerRegistros()).length, { timeout: 15_000 }).toBe(5) // um zero por alvo
+    const reg = (await lerRegistros())[0]!
+    expect(reg.posicaoSimulada).toBe(false)
+    expect(reg.schema).toBe(2)
+    expect(reg.fusoHorario).toBe('America/Cuiaba')
+    expect(String(reg.metodo).length).toBeGreaterThan(5)
+  })
+
+  test('sem o guia, a Coleta mantém cabeçalho, progresso e legenda', async ({ page }) => {
+    await abrirColetaDoT04(page)
+    await expect(page.getByRole('progressbar', { name: 'Progresso da coleta' })).toBeVisible()
+    await expect(page.getByRole('list', { name: 'Legenda do mapa' })).toBeVisible()
   })
 
   test('faixa do guia não tem violações WCAG 2.1 AA', async ({ page, context }) => {

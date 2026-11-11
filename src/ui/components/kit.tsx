@@ -121,10 +121,11 @@ export function Titulo({ children, sub, acao }: { children: ReactNode; sub?: Rea
 }
 
 /* ─ Folha (dialog nativo): bottom sheet no celular, modal centralizado no desktop ─ */
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 
 export function Folha({ aberta, onFechar, titulo, children }: { aberta: boolean; onFechar: () => void; titulo: string; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const idTitulo = useId()
   useEffect(() => {
     const d = ref.current
     if (!d) return
@@ -134,14 +135,16 @@ export function Folha({ aberta, onFechar, titulo, children }: { aberta: boolean;
   return (
     <dialog
       ref={ref}
-      onClose={onFechar}
+      aria-labelledby={idTitulo}
+      // Só conta como "fechar" quando foi a pessoa (Esc, toque fora, X). Fechamento programático (troca de gaveta) não pode zerar a próxima.
+      onClose={() => { if (aberta) onFechar() }}
       onClick={(e) => { if (e.target === ref.current) onFechar() }}
       className="m-0 mt-auto w-full max-w-none rounded-t-3xl border-0 bg-bg p-0 text-text shadow-lift backdrop:bg-black/55 backdrop:backdrop-blur-[2px] open:animate-[subir_.2s_ease-out] sm:m-auto sm:max-w-xl sm:rounded-3xl"
     >
       <div className="flex max-h-[92dvh] flex-col">
         <div aria-hidden className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-line sm:hidden" />
         <div className="flex items-center justify-between gap-3 px-5 pb-2 pt-3">
-          <h2 className="text-subtitulo">{titulo}</h2>
+          <h2 id={idTitulo} className="text-subtitulo">{titulo}</h2>
           <button type="button" onClick={onFechar} aria-label="Fechar" className="grid size-11 place-items-center rounded-xl text-text-2 hover:bg-surface-2"><Icon name="x" /></button>
         </div>
         <div className="safe-b overflow-y-auto px-5 py-4">{aberta ? children : null}</div>

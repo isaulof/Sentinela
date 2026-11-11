@@ -27,7 +27,7 @@ export interface Registro {
   // 2. Georreferenciamento
   pontoId: string
   posicao: LngLat
-  /** true no modo sala de aula: a posição é a planejada, não a do GPS. */
+  /** true no modo demonstração: a posição é a planejada, não a do GPS. */
   posicaoSimulada: boolean
   precisaoM?: number
   // 3. Alvo e fase

@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 interface Sessao {
   talhaoId: string | null
   amostrador: string
-  /** false = modo sala de aula: a posição do registro é a do ponto planejado. */
+  /** false = modo demonstração: a posição do registro é a do ponto planejado (o guia até o ponto usa sempre o GPS real). */
   gpsReal: boolean
   setTalhao: (id: string | null) => void
   setAmostrador: (nome: string) => void

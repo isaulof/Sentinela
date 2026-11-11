@@ -7,7 +7,7 @@ export type EstadoGps = { estado: 'desligado' } | { estado: 'procurando' } | { e
 
 type Leitura = { fix: Fix } | { erro: string }
 
-/** GPS real. Só liga quando `ativo`; no modo sala de aula fica desligado. */
+/** GPS real. Só liga quando `ativo`; no modo demonstração fica desligado. */
 export function useGps(ativo: boolean): EstadoGps {
   const [leitura, setLeitura] = useState<Leitura | null>(null)
   const temGps = typeof navigator !== 'undefined' && 'geolocation' in navigator

@@ -27,12 +27,12 @@ async function responderFunilFerrugem(page: Page) {
 }
 
 test.describe('fluxos de negócio', () => {
-  test('registra um ponto com foto em modo sala de aula', async ({ page }) => {
+  test('registra um ponto com foto em modo demonstração', async ({ page }) => {
     await carregarDemo(page)
     await page.goto('/#/coleta')
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     const dialogo = page.getByRole('dialog')
-    await expect(dialogo.getByText('Posição simulada (sala de aula)')).toBeVisible()
+    await expect(dialogo.getByText('Posição simulada (demonstração)')).toBeVisible()
     const nome = dialogo.getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) await nome.fill('Aluno Teste')
     await dialogo.getByRole('radio', { name: 'Ninfa' }).click()

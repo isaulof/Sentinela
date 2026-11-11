@@ -33,10 +33,12 @@ interface Props {
   pontoId: string
   registrosTalhao: readonly Registro[]
   gps: Fix | null
+  /** Guia ligado: a posição do registro é a do GPS mesmo que a preferência de demonstração esteja ativa. */
+  forcarGps?: boolean
   onSalvo: () => void
 }
 
-export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onSalvo }: Props) {
+export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGps = false, onSalvo }: Props) {
   const { amostrador, setAmostrador, gpsReal } = useSessao()
   const mostrar = useToast((s) => s.mostrar)
   const ordens = useOrdens()
@@ -62,7 +64,7 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
 
   const alvo = ALVOS[alvoId]
   const ehDoenca = alvo.tipo === 'doenca'
-  const usaGps = gpsReal && gps
+  const usaGps = (gpsReal || forcarGps) && gps
 
   const rascunho: Registro = useMemo(
     () => ({
@@ -125,7 +127,7 @@ export function FormRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onS
       <div className="flex flex-wrap items-center gap-2 text-apoio text-text-2">
         <Badge tom="neutral" icon="campo">Ponto {pontoId}</Badge>
         <span>{talhao.nome}</span>
-        <Badge tom={usaGps ? 'ok' : 'info'}>{usaGps ? `GPS ±${Math.round(gps.precisaoM)} m` : 'Posição simulada (sala de aula)'}</Badge>
+        <Badge tom={usaGps ? 'ok' : 'info'}>{usaGps ? `GPS ±${Math.round(gps.precisaoM)} m` : 'Posição simulada (demonstração)'}</Badge>
       </div>
 
       {ordem && (

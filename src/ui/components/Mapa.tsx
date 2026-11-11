@@ -85,11 +85,13 @@ interface Props {
   guia?: { de: LngLat; ate: LngLat } | null
   /** Com o guia ligado, a câmera acompanha você e o destino até você mexer no mapa. */
   seguir?: boolean
+  /** Desce os botões de zoom/camadas para não ficarem atrás de uma faixa fixa no topo do mapa. */
+  recuoControles?: boolean
   className?: string
 }
 
 /** Base única de mapa (MapLibre) com o talhão sempre ao fundo. */
-export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcadores, pontoSelecionado = null, pontoProximo = null, onPonto, calor = null, caminho = [], desenho = null, onVertice, enquadrar, travar, irPara = null, eu = null, guia = null, seguir = false, className }: Props) {
+export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcadores, pontoSelecionado = null, pontoProximo = null, onPonto, calor = null, caminho = [], desenho = null, onVertice, enquadrar, travar, irPara = null, eu = null, guia = null, seguir = false, recuoControles = false, className }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const mapa = useRef<MLMap | null>(null)
   const [pronto, setPronto] = useState(false)
@@ -273,7 +275,7 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
         <button type="button" onClick={() => { vivo.current.mexeu = false; setSoltou(false); enquadrarGuia(500) }} className="absolute bottom-9 left-2.5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface/95 px-3 text-apoio font-semibold shadow-card ring-1 ring-line active:bg-surface-2"><Icon name="local" size={18} />Seguir meu caminho</button>
       )}
       {!fixo && (
-        <div className="absolute right-2.5 top-2.5 flex flex-col gap-2">
+        <div className={`absolute right-2.5 flex flex-col gap-2 ${recuoControles ? 'top-32' : 'top-2.5'}`}>
           <div className="overflow-hidden rounded-xl bg-surface/95 shadow-card ring-1 ring-line">
             <button type="button" aria-label="Aproximar" disabled={limiteZoom.max} onClick={() => { vivo.current.mexeu = true; if (seguir) setSoltou(true); mapa.current?.zoomIn() }} className="grid size-10 place-items-center text-text hover:bg-surface-2 disabled:opacity-35"><Icon name="mais1" size={20} /></button>
             <button type="button" aria-label="Afastar" disabled={limiteZoom.min} onClick={() => { vivo.current.mexeu = true; if (seguir) setSoltou(true); mapa.current?.zoomOut() }} className="grid size-10 place-items-center border-t border-line text-text hover:bg-surface-2 disabled:opacity-35"><Icon name="menos" size={20} /></button>

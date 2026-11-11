@@ -222,7 +222,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
           <div className="space-y-4" aria-live="polite">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tom={TOM_ESTADO[estados.get(ponto.id) ?? 'a_coletar']}>{ROTULO_ESTADO[estados.get(ponto.id) ?? 'a_coletar']}</Badge>
-              <span className="text-apoio text-text-2">{regsPonto[0]?.posicaoSimulada ? 'Posição simulada (sala de aula)' : regsPonto.length ? 'Posição por GPS' : ''}</span>
+              <span className="text-apoio text-text-2">{regsPonto[0]?.posicaoSimulada ? 'Posição simulada (demonstração)' : regsPonto.length ? 'Posição por GPS' : ''}</span>
             </div>
             {pendPonto.map((p) => (
               <div key={p.id} className="rounded-xl bg-surface-2 p-3">

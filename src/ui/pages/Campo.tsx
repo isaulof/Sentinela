@@ -9,7 +9,7 @@ import { haversineM } from '@/domain/geo'
 import { estadosDosPontos, ROTULO_ESTADO, type EstadoPonto } from '@/domain/ponto'
 import { ALVOS } from '@/knowledge/alvos'
 import { FormPendencia } from '../components/FormPendencia'
-import { FaixaGuia } from '../components/FaixaGuia'
+import { ModoNavegacao } from '../components/ModoNavegacao'
 import { FormRegistro } from '../components/FormRegistro'
 import { Icon } from '../components/Icon'
 import { Badge, Button, Campo as CampoForm, Card, Folha, Input, Select, Titulo, Vazio, type Tom } from '../components/kit'
@@ -23,7 +23,7 @@ const TOM: Record<string, Tom> = { ausente: 'ok', abaixo: 'ok', proximo: 'warn',
 const TOM_ESTADO: Record<EstadoPonto, Tom> = { a_coletar: 'neutral', sem_ocorrencia: 'ok', leve: 'warn', acao: 'danger', doenca: 'info', diagnostico: 'info', diagnosticado: 'ok' }
 const LEGENDA: EstadoPonto[] = ['a_coletar', 'sem_ocorrencia', 'leve', 'acao', 'doenca', 'diagnostico', 'diagnosticado']
 
-type Painel = null | 'achado' | 'pendencia' | 'nome'
+type Painel = null | 'acoes' | 'achado' | 'pendencia' | 'nome'
 
 export function Campo() {
   const talhoes = useTalhoes()
@@ -82,7 +82,7 @@ export function Campo() {
     if (!alvoPonto || !pt || !plano || !talhao) return
     setSalvando(true)
     try {
-      const n = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, gps: gps.estado === 'ok' && gpsReal ? gps.fix : null, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) })
+      const n = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, gps: gps.estado === 'ok' && (gpsReal || navegando) ? gps.fix : null, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) })
       if (n === 0) { mostrar('Não foi possível registrar. Tente de novo.', 'erro'); return }
       mostrar(`Ponto ${pt.order}: sem ocorrência`)
       setPonto(null)
@@ -94,7 +94,45 @@ export function Campo() {
   }
   function pedirSemOcorrencia() {
     if (amostrador.trim().length < 2) { setPainel('nome'); return }
+    setPainel(null)
     void semOcorrencia(amostrador.trim())
+  }
+
+  const folhas = (
+    <>
+      <Folha aberta={painel === 'acoes'} onFechar={() => setPainel(null)} titulo={`Ponto ${pt?.order ?? ''}: o que você encontrou?`}>
+        <div className="grid gap-2.5">
+          <Button block icon="check" disabled={!alvoPonto || salvando} onClick={pedirSemOcorrencia}>{salvando ? 'Registrando…' : 'Sem ocorrência'}</Button>
+          <Button block variant="secondary" icon="lupa" disabled={!alvoPonto} onClick={() => setPainel('achado')}>Registrar achado</Button>
+          <Button block variant="secondary" icon="duvida" disabled={!alvoPonto} onClick={() => setPainel('pendencia')}>Não sei o que é</Button>
+        </div>
+      </Folha>
+      <Folha aberta={painel === 'achado'} onFechar={() => setPainel(null)} titulo="Registrar achado">
+        {alvoPonto && <FormRegistro talhao={talhao} plano={plano} pontoId={alvoPonto} registrosTalhao={registros ?? []} gps={gps.estado === 'ok' ? gps.fix : null} forcarGps={navegando} onSalvo={() => { setPainel(null); setPonto(null) }} />}
+      </Folha>
+      <Folha aberta={painel === 'pendencia'} onFechar={() => setPainel(null)} titulo="Guardar para diagnóstico">
+        {alvoPonto && pt && <FormPendencia talhao={talhao} pontoId={alvoPonto} ordem={pt.order} onSalvo={() => { setPainel(null); setPonto(null) }} />}
+      </Folha>
+      <Folha aberta={painel === 'nome'} onFechar={() => setPainel(null)} titulo="Quem está coletando?">
+        <div className="space-y-4">
+          <CampoForm rotulo="Seu nome" ajuda="Assina os registros que você faz."><Input value={nomeDigitado} onChange={(e) => setNomeDigitado(e.target.value)} placeholder="Nome e sobrenome" autoFocus /></CampoForm>
+          <Button block icon="check" disabled={nomeDigitado.trim().length < 2} onClick={() => { const n = nomeDigitado.trim(); setAmostrador(n); setPainel(null); void semOcorrencia(n) }}>Continuar</Button>
+        </div>
+      </Folha>
+    </>
+  )
+
+  // Guia ligado: tela cheia, só o mapa, a faixa e uma ação. O resto da Coleta volta ao parar o guia.
+  if (navegando && pt) {
+    return (
+      <>
+        <ModoNavegacao
+          talhao={talhao} plano={plano} marcadores={marcadores} ponto={pt} proximo={proximo} gps={gps}
+          onPonto={setPonto} onAnterior={() => irPara(idx - 1)} onProximo={() => irPara(idx + 1)} onParar={() => setNavegando(false)} onRegistrar={() => setPainel('acoes')}
+        />
+        {folhas}
+      </>
+    )
   }
 
   return (
@@ -107,7 +145,6 @@ export function Campo() {
           <div className="h-2.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={Math.round((feitos / pontos.length) * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da coleta">
             <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(feitos / pontos.length) * 100}%` }} />
           </div>
-          {navegando && !gpsReal && <p className="px-1 text-apoio text-text-2">Sala de aula: registros usam a posição planejada. <Link to="/perfil" className="font-semibold text-brand underline">Ativar GPS real</Link></p>}
           <div className="relative">
             <Mapa
               className="h-[calc(100dvh-31rem)] min-h-72 w-full overflow-hidden rounded-card ring-1 ring-line lg:h-[66dvh]"
@@ -117,7 +154,6 @@ export function Campo() {
               eu={gps.estado === 'ok' ? { posicao: gps.fix.posicao, precisaoM: gps.fix.precisaoM, rumo: gps.fix.rumo } : null}
               guia={linhaGuia} seguir={navegando}
             />
-            {navegando && pt && <FaixaGuia gps={gps} alvo={{ id: pt.id, ordem: pt.order, posicao: pt.position }} onParar={() => setNavegando(false)} />}
           </div>
           <ul className="flex flex-wrap gap-x-4 gap-y-1 text-apoio text-text-2" aria-label="Legenda do mapa">
             {LEGENDA.map((e) => (
@@ -142,7 +178,7 @@ export function Campo() {
               {gpsReal ? (
                 <span className="hidden text-apoio text-text-2 lg:inline">{gps.estado === 'ok' ? `${dist} m de você (GPS ±${Math.round(gps.fix.precisaoM)} m)` : gps.estado === 'erro' ? gps.motivo : 'Procurando GPS…'}</span>
               ) : (
-                <span className="hidden text-apoio text-text-2 lg:inline">Posição simulada (sala de aula)</span>
+                <span className="hidden text-apoio text-text-2 lg:inline">Posição simulada (demonstração)</span>
               )}
             </div>
 
@@ -204,18 +240,7 @@ export function Campo() {
         </div>
       </div>
 
-      <Folha aberta={painel === 'achado'} onFechar={() => setPainel(null)} titulo="Registrar achado">
-        {alvoPonto && <FormRegistro talhao={talhao} plano={plano} pontoId={alvoPonto} registrosTalhao={registros ?? []} gps={gps.estado === 'ok' ? gps.fix : null} onSalvo={() => { setPainel(null); setPonto(null) }} />}
-      </Folha>
-      <Folha aberta={painel === 'pendencia'} onFechar={() => setPainel(null)} titulo="Guardar para diagnóstico">
-        {alvoPonto && pt && <FormPendencia talhao={talhao} pontoId={alvoPonto} ordem={pt.order} onSalvo={() => { setPainel(null); setPonto(null) }} />}
-      </Folha>
-      <Folha aberta={painel === 'nome'} onFechar={() => setPainel(null)} titulo="Quem está coletando?">
-        <div className="space-y-4">
-          <CampoForm rotulo="Seu nome" ajuda="Assina os registros que você faz."><Input value={nomeDigitado} onChange={(e) => setNomeDigitado(e.target.value)} placeholder="Nome e sobrenome" autoFocus /></CampoForm>
-          <Button block icon="check" disabled={nomeDigitado.trim().length < 2} onClick={() => { const n = nomeDigitado.trim(); setAmostrador(n); setPainel(null); void semOcorrencia(n) }}>Continuar</Button>
-        </div>
-      </Folha>
+      {folhas}
     </>
   )
 }

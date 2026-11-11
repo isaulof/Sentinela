@@ -43,7 +43,7 @@ export function Perfil() {
           <div className="flex items-start justify-between gap-4 rounded-xl bg-surface-2 p-4">
             <div>
               <p className="font-semibold">Usar GPS real</p>
-              <p className="text-apoio text-text-2">{gpsReal ? 'O registro usa a sua posição e avisa se você estiver longe do talhão.' : 'Modo sala de aula: o registro usa a posição planejada do ponto, como se você estivesse lá.'}</p>
+              <p className="text-apoio text-text-2">{gpsReal ? 'O registro usa a sua posição e avisa se você estiver longe do talhão.' : 'Demonstração: o registro usa a posição planejada do ponto, como se você estivesse lá. O guia até o ponto sempre usa o GPS real.'}</p>
             </div>
             <button type="button" role="switch" aria-checked={gpsReal} aria-label="Usar GPS real" onClick={() => setGpsReal(!gpsReal)} className={`relative h-8 w-14 shrink-0 rounded-full transition ${gpsReal ? 'bg-brand' : 'bg-line'}`}>
               <span className={`absolute top-1 size-6 rounded-full bg-white shadow transition-all ${gpsReal ? 'left-7' : 'left-1'}`} />

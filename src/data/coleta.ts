@@ -8,7 +8,7 @@ export interface ParamsSemOcorrencia {
   plano: PlanoSalvo
   pontoId: string
   amostrador: string
-  /** GPS real, quando houver; senão vale a posição planejada (modo sala de aula). */
+  /** GPS real, quando houver; senão vale a posição planejada (modo demonstração). */
   gps?: { posicao: readonly [number, number]; precisaoM: number } | null
   agora?: Date
   /** Responsável técnico e fuso da fazenda, quando cadastrados. */
