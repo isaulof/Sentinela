@@ -2,11 +2,13 @@
 
 > ## STATUS (atualizado em 11/11/2026) — LEIA PRIMEIRO
 >
-> **Onde paramos:** as fases **F0, F1, F2, F3, F4 e F5 estão implementadas, testadas e commitadas** (6 commits locais). Faltam **F6** (passe final de bugs) e **F7** (revisão com o professor). **Nada disso foi enviado ao GitHub ainda**: `git status -sb` mostra `ahead 6`.
+> **Onde paramos:** as fases **F0, F1, F2, F3, F4 e F5 estão implementadas, testadas e commitadas** (commits locais, ainda não enviados). Faltam **F6** (passe final de bugs) e **F7** (revisão com o professor).
+>
+> **PUSH ADIADO DE PROPÓSITO (decisão do usuário):** os commits ficam só no disco desta máquina e serão enviados ao GitHub **uma única vez, quando tudo estiver pronto** (depois da F6 e da F7). `git status -sb` mostrando `ahead 7` (ou mais) é o esperado. **Não fazer `git push` por conta própria**; esperar o usuário pedir. Até lá o site do Pages continua na versão antiga. Não apagar a pasta do projeto nem trocar de computador antes do push, pois o código só existe aqui.
 >
 > ### Para retomar em outra conversa
 > 1. `cd ~/Documentos/Projetos/app_monitoramento/sentinela && git log --oneline | head -8` (confirme os commits abaixo).
-> 2. Publicar: `git push origin main` (pede usuário e token do GitHub; o workflow `.github/workflows/deploy.yml` roda tipos, lint, testes, build e e2e e publica no Pages). Settings → Pages → Source = **GitHub Actions**.
+> 2. Publicar **só no fim e só quando o usuário pedir**: `git push origin main` (pede usuário e token do GitHub; o workflow `.github/workflows/deploy.yml` roda tipos, lint, testes, build e e2e e publica no Pages). Settings → Pages → Source = **GitHub Actions**.
 > 3. Verificação local: `npm run check` (tipos, lint, unitários, build) e `npx playwright test` (e2e, ~5 min).
 > 4. O token do GitHub fica em `tokengithub.odt` (ignorado pelo git; **nunca versionar**). O Claude não deve abri-lo sem pedido explícito.
 >
