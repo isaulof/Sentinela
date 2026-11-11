@@ -11,6 +11,7 @@ import { amostrasNaData, ateODia, celulasCalor, LIMITE_ACAO, niveisNaData, resum
 import { dataBr, dataHoraBr, diaLocal } from '@/domain/tempo'
 import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
 import { useSessao } from '../state/store'
+import { ExportarTalhao } from './ExportarTalhao'
 import { FichaPonto } from './FichaPonto'
 import { FormPendencia } from './FormPendencia'
 import { SerieTemporal } from './Graficos'
@@ -205,6 +206,8 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
           )}
         </Card>
       </div>
+
+      <ExportarTalhao talhao={talhao} plano={plano} />
 
       <Folha aberta={!!ponto} onFechar={fecharPonto} titulo={vista.tipo === 'achado' ? `Foto no ponto ${ponto?.order ?? ''}` : vista.tipo === 'ficha' ? `Ficha do ponto ${ponto?.order ?? ''}` : `Ponto ${ponto?.order ?? ''}`}>
         {ponto && vista.tipo === 'achado' && (

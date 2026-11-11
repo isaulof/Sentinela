@@ -30,7 +30,7 @@ function AvisoOffline() {
   const on = useOnline()
   if (on) return null
   return (
-    <div role="status" className="safe-t sticky top-0 z-30 flex items-center justify-center gap-2 bg-warn-soft px-4 py-2 text-apoio font-medium text-warn lg:col-span-2">
+    <div role="status" className="safe-t sticky top-0 z-30 print:hidden flex items-center justify-center gap-2 bg-warn-soft px-4 py-2 text-apoio font-medium text-warn lg:col-span-2">
       <Icon name="semwifi" size={16} />Sem internet. Seus dados continuam salvos no aparelho.
     </div>
   )
@@ -59,12 +59,12 @@ export function Shell() {
   }, [pathname])
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_1fr] lg:grid-rows-[auto_1fr]">
-      <button type="button" onClick={() => principal.current?.focus()} className="sr-only z-50 rounded-xl bg-brand px-4 py-3 font-semibold text-on-brand focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Pular para o conteúdo</button>
+    <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_1fr] lg:grid-rows-[auto_1fr] print:block">
+      <button type="button" onClick={() => principal.current?.focus()} className="sr-only z-50 print:hidden rounded-xl bg-brand px-4 py-3 font-semibold text-on-brand focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Pular para o conteúdo</button>
       <AvisoOffline />
 
       {/* Barra lateral (desktop) */}
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-surface p-4 lg:row-span-2 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-surface p-4 lg:row-span-2 lg:flex print:hidden">
         <Marca />
         <nav aria-label="Principal" className="mt-8 flex flex-1 flex-col gap-1">
           {ITENS.map((i) => (
@@ -78,12 +78,12 @@ export function Shell() {
       </aside>
 
       <div className="flex min-h-dvh min-w-0 flex-col">
-        <main id="conteudo" ref={principal} tabIndex={-1} className="safe-t mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 outline-none sm:px-6 lg:px-10 lg:pb-12 lg:pt-8">
+        <main id="conteudo" ref={principal} tabIndex={-1} className="safe-t mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 outline-none sm:px-6 lg:px-10 lg:pb-12 lg:pt-8 print:max-w-none print:p-0">
           <div key={pathname} className="animate-[entrar_.2s_ease-out]"><Outlet /></div>
         </main>
 
         {/* Abas inferiores (celular/tablet) */}
-        <nav aria-label="Principal" className="safe-b fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 backdrop-blur lg:hidden">
+        <nav aria-label="Principal" className="safe-b fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 backdrop-blur lg:hidden print:hidden">
           <ul className="mx-auto grid max-w-xl grid-cols-5">
             {ITENS.map((i) => (
               <li key={i.to}>
