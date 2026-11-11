@@ -24,12 +24,6 @@ function Miniatura({ id, className = 'size-14' }: { id: string; className?: stri
   return <div className={`${className} shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-line`}>{url && <img src={url} alt="Foto do achado" className="size-full object-cover" />}</div>
 }
 
-const COMO_FUNCIONA = [
-  { icone: 'lupa', titulo: 'Responda', texto: 'Três perguntas rápidas e depois só o que importa para o seu caso.' },
-  { icone: 'camera', titulo: 'Compare fotos', texto: 'Escolha a foto que mais se parece com o que você vê.' },
-  { icone: 'diag', titulo: 'Veja o norte', texto: 'Doença, praga ou outra causa, com a certeza e o porquê.' },
-] as const
-
 export function Diagnostico() {
   const talhoes = useTalhoes()
   const planos = usePlanos()
@@ -165,25 +159,25 @@ export function Diagnostico() {
   const abertas = pendencias.filter((p) => !p.resolvida)
   return (
     <>
-      <Titulo sub="Descubra o que está acontecendo na lavoura em poucas perguntas.">Diagnóstico</Titulo>
+      <Titulo sub="Apoio à identificação de doenças, pragas e distúrbios na cultura da soja.">Diagnóstico</Titulo>
       <div className="mx-auto max-w-2xl space-y-6">
         <Card className="space-y-4 bg-brand-soft! ring-brand/20!">
           <div className="flex items-start gap-3.5">
             <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-full bg-brand text-on-brand"><Icon name="diag" size={24} /></span>
             <div>
-              <h2 className="text-lg">Descobrir o que é</h2>
-              <p className="mt-0.5 text-text-2">Descubra se é doença, praga, falta de nutriente ou efeito de produto. Leva cerca de 2 minutos.</p>
+              <h2 className="text-lg">Diagnóstico assistido</h2>
+              <p className="mt-0.5 text-text-2">Informe o que você observa em campo. O app cruza os sintomas, a fase da lavoura e fotos de referência para indicar as causas mais compatíveis: doença, praga, deficiência nutricional ou efeito de manejo.</p>
             </div>
           </div>
           {talhoes.length > 0 && (
-            <Campo rotulo="Em qual talhão você está?" ajuda="A fase da lavoura ajuda o app a acertar mais.">
+            <Campo rotulo="Talhão avaliado" ajuda="O estádio fenológico da cultura aumenta a precisão da indicação.">
               <Select value={escolhaTalhao ?? tid ?? 'nenhum'} onChange={(e) => setEscolhaTalhao(e.target.value)}>
                 {talhoes.map((t) => <option key={t.id} value={t.id}>{t.nome} · fase {t.estadio}</option>)}
                 <option value="nenhum">Outro lugar / não quero informar</option>
               </Select>
             </Campo>
           )}
-          <Button block onClick={() => setIniciado(true)}>Começar</Button>
+          <Button block onClick={() => setIniciado(true)}>Iniciar diagnóstico</Button>
         </Card>
 
         {abertas.length > 0 && (
@@ -210,19 +204,7 @@ export function Diagnostico() {
           </section>
         )}
 
-        <section aria-labelledby="como" className="space-y-3">
-          <h2 id="como" className="text-lg">Como funciona</h2>
-          <ol className="grid gap-2.5 sm:grid-cols-3">
-            {COMO_FUNCIONA.map((c, i) => (
-              <li key={c.titulo} className="flex gap-3 rounded-card bg-surface p-3.5 ring-1 ring-line sm:flex-col">
-                <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand"><Icon name={c.icone} size={18} /></span>
-                <span><span className="block font-semibold">{i + 1}. {c.titulo}</span><span className="block text-sm text-text-2">{c.texto}</span></span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <p className="text-sm text-text-2">O app dá um norte, não a decisão final. Quem decide se aplica algum produto é o agrônomo.</p>
+        <p className="text-sm text-text-2">Resultado de apoio à decisão, não é laudo. A recomendação de manejo é do agrônomo responsável.</p>
 
         <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface ring-1 ring-line">
           <li><Link to="/biblioteca" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="livro" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Guia de pragas e doenças</span><span className="block text-sm text-text-2">Já sabe o nome? Leia na Biblioteca.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>

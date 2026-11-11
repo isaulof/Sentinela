@@ -61,7 +61,7 @@ test('ficha do ponto aberta não tem violações WCAG 2.1 AA', async ({ page }) 
 test('questionário e resultado do diagnóstico não têm violações WCAG 2.1 AA', async ({ page }) => {
   await carregarDemo(page)
   await page.goto('/#/diagnostico')
-  await page.getByRole('button', { name: 'Começar' }).click()
+  await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
   await page.getByRole('heading', { level: 2, name: 'Onde está o problema?' }).waitFor()
   const pergunta = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
   expect(pergunta.violations.map((v) => `pergunta ${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])

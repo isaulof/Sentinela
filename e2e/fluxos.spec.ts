@@ -106,7 +106,7 @@ test.describe('fluxos de negócio', () => {
 
   test('questionário em etapas: triagem, detalhes, fotos e um resultado com percentual e explicação', async ({ page }) => {
     await page.goto('/#/diagnostico')
-    await page.getByRole('button', { name: 'Começar' }).click()
+    await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
     await expect(page.getByRole('heading', { level: 2, name: 'Onde está o problema?' })).toBeVisible()
     await expect(page.getByText('Triagem · 1 de 3')).toBeVisible()
     await expect(page.getByRole('progressbar', { name: 'Andamento do diagnóstico' })).toBeVisible()
@@ -133,7 +133,7 @@ test.describe('fluxos de negócio', () => {
 
   test('sem base, o app não dá nome ao problema: pergunta as características e termina "ainda não dá para dizer"', async ({ page }) => {
     await page.goto('/#/diagnostico')
-    await page.getByRole('button', { name: 'Começar' }).click()
+    await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
     await page.getByRole('button', { name: /Vi um bicho na planta/ }).click()
     await page.getByRole('button', { name: /Plantas soltas/ }).click()
     await page.getByRole('button', { name: /Nada de diferente/ }).click()
@@ -160,7 +160,7 @@ test.describe('fluxos de negócio', () => {
     const seguir = async (escolha: RegExp) => {
       await page.goto('/#/diagnostico')
       await page.reload() // recomeça do zero (a mudança de hash sozinha manteria o questionário anterior)
-      await page.getByRole('button', { name: 'Começar' }).click()
+      await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
       await page.getByRole('button', { name: /Vi um bicho na planta/ }).click()
       await page.getByRole('button', { name: /Plantas soltas/ }).click()
       await page.getByRole('button', { name: /Nada de diferente/ }).click()
@@ -185,7 +185,7 @@ test.describe('fluxos de negócio', () => {
 
   test('quem aplicou herbicida recebe perguntas sobre o produto, não sobre doença nem bicho', async ({ page }) => {
     await page.goto('/#/diagnostico')
-    await page.getByRole('button', { name: 'Começar' }).click()
+    await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
     await page.getByRole('button', { name: /Folhas amarelas, pálidas ou deformadas/ }).click()
     await page.getByRole('button', { name: /Em faixas retas/ }).click()
     await page.getByRole('button', { name: /Apliquei herbicida/ }).click()
@@ -204,7 +204,7 @@ test.describe('fluxos de negócio', () => {
 
   test('quem não aplicou nada não recebe perguntas de aplicação', async ({ page }) => {
     await page.goto('/#/diagnostico')
-    await page.getByRole('button', { name: 'Começar' }).click()
+    await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
     await page.getByRole('button', { name: /Folhas amarelas, pálidas ou deformadas/ }).click()
     await page.getByRole('button', { name: /Igual na área toda/ }).click()
     await page.getByRole('button', { name: /Nada de diferente/ }).click()
@@ -248,7 +248,7 @@ test.describe('fluxos de negócio', () => {
   test('diagnóstico direto: salva o resultado num ponto escolhido, sem achado guardado', async ({ page }) => {
     await carregarDemo(page)
     await page.goto('/#/diagnostico')
-    await page.getByRole('button', { name: 'Começar' }).click()
+    await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
     await responderFunilFerrugem(page)
     await page.getByRole('button', { name: 'Salvar em um ponto' }).click()
     const folha = page.getByRole('dialog')
@@ -283,7 +283,7 @@ test.describe('fluxos de negócio', () => {
     })
     await carregarDemo(page)
     await page.goto('/#/diagnostico')
-    await page.getByRole('button', { name: 'Começar' }).click()
+    await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
     await responderFunilFerrugem(page)
     await page.getByRole('button', { name: 'Enviar ao agrônomo' }).click()
     const texto = await page.evaluate(() => (window as unknown as { __enviado?: string }).__enviado ?? '')
@@ -497,8 +497,34 @@ test.describe('fluxos de negócio', () => {
     await expect(page.getByRole('link', { name: /Ferrugem-asiática/ })).toBeVisible()
     await expect(page.getByRole('link', { name: /Percevejo/ })).toHaveCount(0)
     await page.getByRole('link', { name: /Ferrugem-asiática/ }).click()
-    await expect(page).toHaveURL(/#\/biblioteca\/ferrugem-asiatica/)
-    await expect(page.getByRole('heading', { name: 'Como coletar' })).toBeVisible()
+    await expect(page).toHaveURL(/#\/biblioteca\/ferrugem/)
+    await expect(page.getByRole('heading', { name: 'Como coletar' })).toBeVisible() // ferrugem é monitorada pelo app
+    await expect(page.getByRole('heading', { name: 'Como reconhecer' })).toBeVisible()
+  })
+
+  test('biblioteca: traz todos os assuntos do diagnóstico, com filtros e texto de cada um', async ({ page }) => {
+    await page.goto('/#/biblioteca')
+    const cards = page.getByRole('main').getByRole('link').filter({ hasText: /Praga|Doença|Falta de nutriente|Produto ou adubo|Clima ou solo/ })
+    expect(await cards.count()).toBeGreaterThanOrEqual(30)
+    await page.getByRole('button', { name: 'Nutrientes' }).click()
+    await expect(page.getByRole('link', { name: /Falta de manganês/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Ferrugem/ })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Produtos e adubo' }).click()
+    await expect(page.getByRole('link', { name: /herbicida hormonal/ })).toBeVisible()
+    await page.getByRole('button', { name: 'Tudo' }).click()
+    await page.getByRole('searchbox', { name: 'Buscar na biblioteca' }).fill('manganês')
+    await page.getByRole('link', { name: /Falta de manganês/ }).click()
+    await expect(page.getByRole('heading', { name: 'Como reconhecer' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'O que fazer' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Como coletar' })).toHaveCount(0) // não é alvo de coleta
+    await expect(page.getByText(/em conferência com agrônomo/)).toBeVisible()
+  })
+
+  test('o resultado do diagnóstico leva ao texto do problema na Biblioteca', async ({ page }) => {
+    await page.goto('/#/biblioteca/def_mn')
+    await expect(page.getByRole('heading', { name: 'Falta de manganês', level: 1 })).toBeVisible()
+    await page.goto('/#/biblioteca/ferrugem-asiatica') // link antigo continua funcionando
+    await expect(page.getByRole('heading', { name: 'Ferrugem-asiática', level: 1 })).toBeVisible()
   })
 
   test('não apresenta recomendação de aplicar defensivo em nenhuma tela', async ({ page }) => {

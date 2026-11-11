@@ -12,6 +12,7 @@ import { Icon } from '../components/Icon'
 import { Mapa } from '../components/Mapa'
 import { MiniTalhao } from '../components/MiniTalhao'
 import { Resultados } from '../components/Resultados'
+import { avaliarCanto, deveRecentrar, nivelGps, PRECISAO_BOA_M, PRECISAO_MAXIMA_CANTO_M } from '@/domain/posicao'
 import { useGps } from '../hooks/useGps'
 import { useSessao } from '../state/store'
 import { useToast } from '../state/toast'
@@ -76,23 +77,33 @@ export function NovoTalhao() {
   const mostrar = useToast((s) => s.mostrar)
   const [vertices, setVertices] = useState<LngLat[]>([])
   const [contorno, setContorno] = useState<LngLat[] | null>(null) // concluído, aguardando os dados
-  const [ir, setIr] = useState<{ ponto: LngLat; n: number } | null>(null)
+  const [ir, setIr] = useState<{ ponto: LngLat; n: number; zoom?: number } | null>(null)
   const existentes = useMemo(() => (talhoes ?? []).flatMap((t) => t.anel), [talhoes])
   // A posição aparece como ponto azul na hora. Na primeira fazenda (sem talhões ainda) o mapa já abre onde a pessoa está.
   const gps = useGps(true)
-  const centrou = useRef(false)
+  const melhorM = useRef<number | null>(null) // melhor precisão já usada para centralizar
   const primeiroTalhao = talhoes !== undefined && talhoes.length === 0
   useEffect(() => {
-    if (gps.estado !== 'ok' || centrou.current || !primeiroTalhao) return
-    centrou.current = true
-    setIr((x) => ({ ponto: gps.fix.posicao, n: (x?.n ?? 0) + 1 }))
-  }, [gps, primeiroTalhao])
+    // Enquanto não há cantos, o mapa segue a melhora do GPS: a primeira leitura costuma ser grosseira.
+    if (gps.estado !== 'ok' || !primeiroTalhao || vertices.length > 0) return
+    if (!deveRecentrar(melhorM.current, gps.fix.precisaoM)) return
+    melhorM.current = gps.fix.precisaoM
+    setIr((x) => ({ ponto: gps.fix.posicao, n: (x?.n ?? 0) + 1, zoom: gps.fix.precisaoM <= PRECISAO_MAXIMA_CANTO_M ? 18 : 16 }))
+  }, [gps, primeiroTalhao, vertices.length])
   if (talhoes === undefined) return null
 
   const sair = () => void navegar({ to: talhoes.length ? '/talhoes' : '/' })
 
+  function marcarCantoAqui() {
+    if (gps.estado !== 'ok') { mostrar(gps.estado === 'erro' ? gps.motivo : 'Procurando sua posição…', gps.estado === 'erro' ? 'erro' : undefined); return }
+    const a = avaliarCanto(gps.fix.precisaoM)
+    if (!a.ok) { mostrar(a.aviso, 'erro'); return }
+    setVertices((d) => [...d, gps.fix.posicao])
+    mostrar(`Canto marcado onde você está (precisão ±${Math.round(gps.fix.precisaoM)} m)`)
+  }
+
   function minhaPosicao() {
-    if (gps.estado === 'ok') setIr((x) => ({ ponto: gps.fix.posicao, n: (x?.n ?? 0) + 1 }))
+    if (gps.estado === 'ok') setIr((x) => ({ ponto: gps.fix.posicao, n: (x?.n ?? 0) + 1, zoom: gps.fix.precisaoM <= PRECISAO_MAXIMA_CANTO_M ? 18 : 16 }))
     else if (gps.estado === 'erro') mostrar(gps.motivo, 'erro')
     else mostrar('Procurando sua posição…')
   }
@@ -103,7 +114,7 @@ export function NovoTalhao() {
         <button type="button" onClick={sair} aria-label="Cancelar e voltar" className="-ml-2 grid size-11 place-items-center rounded-full text-text-2 transition active:bg-surface-2"><Icon name="voltar" size={24} /></button>
         <div className="min-w-0">
           <h1 className="text-xl">Desenhar talhão</h1>
-          <p className="text-sm text-text-2">{vertices.length < 3 ? 'Toque no mapa para marcar os cantos do talhão.' : 'Ajuste os cantos se precisar e conclua o contorno.'}</p>
+          <p className="text-sm text-text-2">{vertices.length < 3 ? 'Toque no mapa ou ande até cada canto e use "Marcar canto aqui".' : 'Ajuste os cantos se precisar e conclua o contorno.'}</p>
         </div>
       </header>
 
@@ -114,7 +125,13 @@ export function NovoTalhao() {
           desenho={vertices} onVertice={(p) => setVertices((d) => [...d, p])} enquadrar={existentes.length ? existentes : null} irPara={ir}
           eu={gps.estado === 'ok' ? { posicao: gps.fix.posicao, precisaoM: gps.fix.precisaoM, rumo: gps.fix.rumo } : null}
         />
-        <button type="button" onClick={minhaPosicao} className="absolute left-2.5 top-2.5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface/95 px-3 text-sm font-semibold shadow-card ring-1 ring-line active:bg-surface-2"><Icon name="local" size={18} />Minha posição</button>
+        <div className="absolute left-2.5 top-2.5 flex flex-col items-start gap-2">
+          <button type="button" onClick={minhaPosicao} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface/95 px-3 text-sm font-semibold shadow-card ring-1 ring-line active:bg-surface-2"><Icon name="local" size={18} />Minha posição</button>
+          <button type="button" onClick={marcarCantoAqui} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand px-3 text-sm font-semibold text-on-brand shadow-card active:bg-brand-strong"><Icon name="mais1" size={18} />Marcar canto aqui</button>
+          <p role="status" className={`rounded-lg bg-surface/95 px-2.5 py-1 text-xs font-semibold shadow-card ring-1 ring-line ${gps.estado === 'ok' ? { boa: 'text-ok', media: 'text-warn', ruim: 'text-danger' }[nivelGps(gps.fix.precisaoM)] : 'text-text-2'}`}>
+            {gps.estado === 'ok' ? `GPS ±${Math.round(gps.fix.precisaoM)} m${gps.fix.precisaoM <= PRECISAO_BOA_M ? ' · bom' : gps.fix.precisaoM <= PRECISAO_MAXIMA_CANTO_M ? ' · aceitável' : ' · fraco'}` : gps.estado === 'erro' ? 'GPS indisponível' : 'Procurando GPS…'}
+          </p>
+        </div>
         <div className="absolute inset-x-2.5 bottom-9 flex items-center gap-2 rounded-2xl bg-surface/95 p-2 shadow-lift ring-1 ring-line backdrop-blur">
           <button type="button" aria-label="Desfazer último canto" onClick={() => setVertices((d) => d.slice(0, -1))} disabled={vertices.length === 0} className="grid size-11 shrink-0 place-items-center rounded-xl text-text-2 transition active:bg-surface-2 disabled:opacity-35"><Icon name="desfazer" size={20} /></button>
           <button type="button" aria-label="Limpar contorno" onClick={() => setVertices([])} disabled={vertices.length === 0} className="grid size-11 shrink-0 place-items-center rounded-xl text-text-2 transition active:bg-surface-2 disabled:opacity-35"><Icon name="lixo" size={20} /></button>

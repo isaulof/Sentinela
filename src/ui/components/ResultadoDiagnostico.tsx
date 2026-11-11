@@ -1,10 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { explicar, percentual, porGrupo, ROTULO_CONFIANCA, type Candidato, type Classificado, type Confianca, type EscolhaFoto, type Respostas, type Veredito } from '@/domain/funil'
-import { LISTA_ALVOS } from '@/knowledge/alvos'
 import { PERGUNTAS } from '@/knowledge/diagnostico'
 import { FONTES } from '@/knowledge/fontes'
-import { slugDe, slugDeNome } from '../pages/slug'
 import { FOTO_CLASSE, fotosDoCandidato } from './fotosDiagnostico'
 import { FotoRef } from './FotoRef'
 import { Icon } from './Icon'
@@ -15,7 +13,6 @@ const TIPO: Record<Candidato['tipo'], { rotulo: string; tom: Tom }> = {
   doenca: { rotulo: 'Doença', tom: 'danger' },
   abiotico: { rotulo: 'Clima, solo ou manejo', tom: 'info' },
 }
-const slugCandidato = (c: Candidato) => (c.alvo ? slugDe(LISTA_ALVOS.find((a) => a.id === c.alvo)!) : slugDeNome(c.nome))
 
 /** Medidor de 3 níveis: palavra + barras, nunca só cor. */
 function Medidor({ nivel, pct }: { nivel: Confianca; pct: number }) {
@@ -182,7 +179,7 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
           {top.comoConfirmar.map((x) => <li key={x} className="flex gap-2.5"><Icon name="check" size={18} className="mt-0.5 shrink-0 text-brand" /><span className="leading-snug">{x}</span></li>)}
         </ul>
         {top.confundeCom.length > 0 && <p className="text-sm text-text-2"><b className="text-text">Pode ser confundido com: </b>{top.confundeCom.join(', ')}.</p>}
-        {top.alvo && <Link to="/biblioteca/$slug" params={{ slug: slugCandidato(top) }} className="inline-flex min-h-11 items-center gap-1 font-semibold text-brand">Ler mais na Biblioteca<Icon name="seta" size={18} /></Link>}
+        <Link to="/biblioteca/$slug" params={{ slug: top.id }} className="inline-flex min-h-11 items-center gap-1 font-semibold text-brand">Ler mais na Biblioteca<Icon name="seta" size={18} /></Link>
       </Secao>
       )}
 
@@ -200,7 +197,7 @@ export function ResultadoDiagnostico({ ranking, confianca, respostas, fotos, evi
                 <div className="space-y-3 border-t border-line px-4 py-3">
                   <p className="leading-relaxed">{c.resumo}</p>
                   <div><p className="mb-1 text-sm font-semibold">Para diferenciar</p><ul className="list-disc space-y-1 pl-5 text-sm text-text-2">{c.comoConfirmar.map((x) => <li key={x}>{x}</li>)}</ul></div>
-                  {c.alvo && <Link to="/biblioteca/$slug" params={{ slug: slugCandidato(c) }} className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-brand">Ler na Biblioteca<Icon name="seta" size={16} /></Link>}
+                  <Link to="/biblioteca/$slug" params={{ slug: c.id }} className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-brand">Ler na Biblioteca<Icon name="seta" size={16} /></Link>
                 </div>
               </details>
             )

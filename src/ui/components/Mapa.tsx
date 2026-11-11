@@ -78,7 +78,7 @@ interface Props {
   /** Miniatura sem gestos. Padrão: livre (um dedo rola a página, dois dedos movem o mapa). */
   travar?: boolean
   /** Leva a câmera até o ponto (use `n` diferente a cada pedido). */
-  irPara?: { ponto: LngLat; n: number } | null
+  irPara?: { ponto: LngLat; n: number; zoom?: number } | null
   /** Sua posição: ponto azul, círculo de imprecisão do GPS e, andando, a direção. */
   eu?: { posicao: LngLat; precisaoM: number; rumo: number | null } | null
   /** Linha do guia, da sua posição até o ponto de destino. */
@@ -245,7 +245,7 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
 
   useEffect(() => {
     if (!pronto || !irPara) return
-    mapa.current?.flyTo({ center: pos(irPara.ponto), zoom: 17, duration: 800 })
+    mapa.current?.flyTo({ center: pos(irPara.ponto), zoom: irPara.zoom ?? 17, duration: 800 })
   }, [pronto, irPara])
 
   useEffect(() => {

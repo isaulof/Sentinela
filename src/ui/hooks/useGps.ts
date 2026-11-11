@@ -17,7 +17,7 @@ export function useGps(ativo: boolean): EstadoGps {
     const id = navigator.geolocation.watchPosition(
       (g) => setLeitura({ fix: { posicao: [g.coords.longitude, g.coords.latitude], precisaoM: g.coords.accuracy, rumo: typeof g.coords.heading === 'number' && Number.isFinite(g.coords.heading) ? g.coords.heading : null } }),
       (e) => setLeitura({ erro: e.code === 1 ? 'Localização bloqueada. Libere nas permissões do navegador para este site.' : 'Não foi possível obter a posição. Vá para um lugar aberto e tente de novo.' }),
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 } // maximumAge 0: nunca uma posição guardada, sempre a leitura de agora,
     )
     return () => navigator.geolocation.clearWatch(id)
   }, [ativo, temGps])

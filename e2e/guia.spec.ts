@@ -91,6 +91,42 @@ test.describe('guia até o ponto (GPS)', () => {
     expect(Math.abs(p.x + p.width / 2 - (m.x + m.width / 2))).toBeLessThan(25)
     expect(Math.abs(p.y + p.height / 2 - (m.y + m.height / 2))).toBeLessThan(25)
   })
+
+  test('desenhar o talhão andando: "Marcar canto aqui" usa a posição exata do GPS em cada canto', async ({ page, context }) => {
+    await context.setGeolocation({ latitude: -15.601, longitude: -56.097, accuracy: 8 })
+    await page.goto('/#/talhoes/novo')
+    await expect(page.getByText(/GPS ±8 m · bom/)).toBeVisible()
+    const cantos = [[-15.601, -56.097], [-15.601, -56.0965], [-15.6015, -56.0965]] as const
+    for (const [latitude, longitude] of cantos) {
+      await context.setGeolocation({ latitude, longitude, accuracy: 8 })
+      await page.waitForTimeout(500) // o aparelho entrega a nova posição
+      await page.getByRole('button', { name: 'Marcar canto aqui' }).click()
+    }
+    await expect(page.getByText(/^3 cantos/)).toBeVisible()
+  })
+
+  test('com GPS fraco, não marca o canto e explica o que fazer', async ({ page, context }) => {
+    await context.setGeolocation({ latitude: -15.601, longitude: -56.097, accuracy: 120 })
+    await page.goto('/#/talhoes/novo')
+    await expect(page.getByText(/GPS ±120 m · fraco/)).toBeVisible()
+    await page.getByRole('button', { name: 'Marcar canto aqui' }).click()
+    await expect(page.getByText(/Precisão do GPS ±120 m/)).toBeVisible()
+    await expect(page.getByText('Nenhum canto')).toBeVisible()
+  })
+
+  test('a primeira leitura grosseira não fixa o mapa: ele recentraliza quando o GPS melhora', async ({ page, context }) => {
+    await context.setGeolocation({ latitude: -14.2, longitude: -55.0, accuracy: 3000 }) // palpite de rede, longe de onde a pessoa está
+    await page.goto('/#/talhoes/novo')
+    await page.waitForTimeout(900)
+    await context.setGeolocation({ latitude: -15.601, longitude: -56.097, accuracy: 9 }) // GPS de verdade
+    const eu = page.getByRole('img', { name: 'Sua posição' })
+    await expect(eu).toBeVisible()
+    await page.waitForTimeout(2200)
+    const m = (await page.locator('.maplibregl-map').boundingBox())!
+    const p = (await eu.boundingBox())!
+    expect(Math.abs(p.x + p.width / 2 - (m.x + m.width / 2))).toBeLessThan(25)
+    expect(Math.abs(p.y + p.height / 2 - (m.y + m.height / 2))).toBeLessThan(25)
+  })
 })
 
 test.describe('guia sem permissão de localização', () => {
