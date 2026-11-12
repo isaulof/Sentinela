@@ -2,13 +2,23 @@
 
 > ## STATUS (atualizado em 11/11/2026) — LEIA PRIMEIRO
 >
-> **Onde paramos:** as fases **F0, F1, F2, F3, F4, F5 e F6 estão implementadas, testadas e commitadas** (commits locais, ainda não enviados). Falta apenas a **F7** (revisão com o professor agrônomo), que depende do usuário.
+> **Onde paramos:** as fases **F0, F1, F2, F3, F4, F5 e F6 estão implementadas, testadas e commitadas** (commitadas e publicadas). Falta apenas a **F7** (revisão com o professor agrônomo), que depende do usuário.
 >
-> **PUSH ADIADO DE PROPÓSITO (decisão do usuário):** os commits ficam só no disco desta máquina e serão enviados ao GitHub **uma única vez, quando tudo estiver pronto** (depois da F6 e da F7). `git status -sb` mostrando `ahead 7` (ou mais) é o esperado. **Não fazer `git push` por conta própria**; esperar o usuário pedir. Até lá o site do Pages continua na versão antiga. Não apagar a pasta do projeto nem trocar de computador antes do push, pois o código só existe aqui.
+> **PUBLICADO (12/11/2026):** o push foi feito e o site no GitHub Pages está na versão nova (F0 a F6), confirmado pelo hash do arquivo servido (`assets/index-DP0X13Ax.js`, igual ao build). Endereço: `https://isaulof.github.io/Sentinela/`. O app é PWA com atualização sob confirmação: quem já abriu o site pode ver a versão antiga em cache; testar em janela anônima.
+>
+> **Como o deploy funciona agora (mudou):** `.github/workflows/deploy.yml` tem 3 trabalhos. `verificar` (tipos, lint, testes unitários, build) → `publicar`. O `e2e` (Playwright, todos os testes de tela) roda **em paralelo e NÃO bloqueia a publicação** (`continue-on-error`). Motivo: o deploy foi barrado 4 vezes por testes de tela que oscilam no computador compartilhado do GitHub, nenhuma por defeito do app. **Consequência: uma tela quebrada pode ir ao ar; olhar sempre o aviso do trabalho `e2e` na aba Actions depois de cada push.**
+>
+> **Lições dos testes de tela (para não repetir):**
+> - No CI os prazos são maiores (`playwright.config.ts`: 90 s por teste, 2 repetições, celular em densidade 1). Localmente ficam em 30 s.
+> - Não comparar medidas de layout com igualdade exata (`>= 44` deu 43,99998): usar tolerância de décimos de pixel.
+> - Não medir contraste (axe) no meio de animação: usar `esperarAnimacoes(page)` de `e2e/ajuda.ts`. Não usar `networkidle` em `/alertas` (consulta o clima).
+> - O `FormRegistro` só monta depois de ler o rascunho do banco: esperar `getByLabel('Estádio fenológico')` antes de olhar o campo de nome (`if (await nome.isVisible())` não espera e causa corrida).
+> - Para simular o CI localmente: `CI=true taskset -c 0,1 npx playwright test --workers=2` (~12 min; 339 passam, 1 pode oscilar).
+> - O token do GitHub ficou escrito numa conversa: **revogar e gerar outro**.
 >
 > ### Para retomar em outra conversa
 > 1. `cd ~/Documentos/Projetos/app_monitoramento/sentinela && git log --oneline | head -8` (confirme os commits abaixo).
-> 2. Publicar **só no fim e só quando o usuário pedir**: `git push origin main` (pede usuário e token do GitHub; o workflow `.github/workflows/deploy.yml` roda tipos, lint, testes, build e e2e e publica no Pages). Settings → Pages → Source = **GitHub Actions**.
+> 2. Para publicar: `git push origin main` (pede usuário e token do GitHub). O workflow roda `verificar` e `publicar`, e o `e2e` ao lado. Settings → Pages → Source = **GitHub Actions**.
 > 3. Verificação local: `npm run check` (tipos, lint, unitários, build) e `npx playwright test` (e2e, ~5 min).
 > 4. O token do GitHub fica em `tokengithub.odt` (ignorado pelo git; **nunca versionar**). O Claude não deve abri-lo sem pedido explícito.
 >
