@@ -65,8 +65,8 @@ test.describe('tela inicial', () => {
       // O botão da próxima ação cabe na tela e tem alvo de toque ≥ 44 px.
       const botao = page.getByRole('region', { name: 'Próxima ação' }).getByRole('button')
       const caixa = (await botao.boundingBox())!
-      expect(caixa.height).toBeGreaterThanOrEqual(44)
-      expect(caixa.x + caixa.width).toBeLessThanOrEqual(largura)
+      expect(caixa.height).toBeGreaterThanOrEqual(43.9) // 44 px com folga para arredondamento do layout
+      expect(caixa.x + caixa.width).toBeLessThanOrEqual(largura + 0.5)
       if (largura < 380) {
         const sec = (await page.getByRole('region', { name: 'Próxima ação' }).boundingBox())!
         expect(caixa.width).toBeGreaterThan(sec.width * 0.8) // botão em largura total, abaixo do texto

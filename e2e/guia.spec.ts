@@ -101,9 +101,9 @@ test.describe('guia até o ponto (GPS)', () => {
       // Alvos de toque de pelo menos 44 px e nada estourando a tela.
       for (const nome of ['Parar o guia', 'Ponto anterior', 'Próximo ponto', /Cheguei · Registrar/]) {
         const b = (await page.getByRole('button', { name: nome }).boundingBox())!
-        expect(b.width, String(nome)).toBeGreaterThanOrEqual(44)
-        expect(b.height, String(nome)).toBeGreaterThanOrEqual(44)
-        expect(b.x + b.width).toBeLessThanOrEqual(largura)
+        expect(b.width, String(nome)).toBeGreaterThanOrEqual(43.9) // 44 px com folga para arredondamento do layout
+        expect(b.height, String(nome)).toBeGreaterThanOrEqual(43.9) // 44 px com folga para arredondamento do layout
+        expect(b.x + b.width).toBeLessThanOrEqual(largura + 0.5)
       }
       const estoura = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
       expect(estoura).toBe(false)
