@@ -13,12 +13,10 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
-# Dois trabalhos independentes:
-#  - "verificar" (portão da publicação): tipos, lint, testes unitários e build. Se passar, o site é publicado.
-#    Os testes unitários cobrem a lógica (datas, cálculos, mapa, exportação, banco).
-#  - "e2e" (aviso): todos os testes de tela (Playwright), ao mesmo tempo. NÃO bloqueia a publicação (continue-on-error):
-#    medidas de layout e mapas desenhados por software oscilam em máquina lenta. Uma falha aqui fica visível na aba Actions
-#    e o relatório é guardado como artefato. Quem fizer uma mudança de tela deve olhar esse aviso.
+# Publicação no GitHub Pages: tipos, lint, testes unitários e build; se passar, publica.
+# Os testes de tela (Playwright, pasta e2e/) NÃO rodam aqui de propósito: eles oscilam no computador compartilhado do GitHub
+# e já barraram a publicação por motivos que não eram defeito do app. Rodar localmente antes de enviar:
+#   npm run check && npx playwright test
 jobs:
   verificar:
     runs-on: ubuntu-latest
@@ -51,23 +49,3 @@ jobs:
     steps:
       - id: deploy
         uses: actions/deploy-pages@v4
-
-  e2e:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
-        env:
-          CI: true
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: relatorio-playwright
-          path: test-results/

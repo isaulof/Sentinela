@@ -6,10 +6,10 @@
 >
 > **PUBLICADO (12/11/2026):** o push foi feito e o site no GitHub Pages está na versão nova (F0 a F6), confirmado pelo hash do arquivo servido (`assets/index-DP0X13Ax.js`, igual ao build). Endereço: `https://isaulof.github.io/Sentinela/`. O app é PWA com atualização sob confirmação: quem já abriu o site pode ver a versão antiga em cache; testar em janela anônima.
 >
-> **Como o deploy funciona agora (mudou):** `.github/workflows/deploy.yml` tem 3 trabalhos. `verificar` (tipos, lint, testes unitários, build) → `publicar`. O `e2e` (Playwright, todos os testes de tela) roda **em paralelo e NÃO bloqueia a publicação** (`continue-on-error`). Motivo: o deploy foi barrado 4 vezes por testes de tela que oscilam no computador compartilhado do GitHub, nenhuma por defeito do app. **Consequência: uma tela quebrada pode ir ao ar; olhar sempre o aviso do trabalho `e2e` na aba Actions depois de cada push.**
+> **Como o deploy funciona agora (mudou, decisão do usuário):** `.github/workflows/deploy.yml` tem só 2 trabalhos: `verificar` (tipos, lint, testes unitários, build) → `publicar`. **O e2e (Playwright) NÃO roda mais no GitHub, nem em paralelo**: o deploy foi barrado 4 vezes por testes de tela que oscilam no computador compartilhado do GitHub (nenhuma por defeito do app) e o usuário pediu para tirar o e2e do meio do caminho da publicação. **Não recolocar o e2e no `deploy.yml`.** Consequência: nada confere as telas no GitHub; **rodar o e2e localmente antes de cada push**: `npm run check && npx playwright test` (~8 min). Se algum dia quiserem e2e no GitHub, fazer num workflow separado, só manual (`workflow_dispatch`).
 >
 > **Lições dos testes de tela (para não repetir):**
-> - No CI os prazos são maiores (`playwright.config.ts`: 90 s por teste, 2 repetições, celular em densidade 1). Localmente ficam em 30 s.
+> - No CI os prazos são maiores (`playwright.config.ts`: 90 s por teste, 2 repetições, celular em densidade 1, quando `CI=true`). Localmente ficam em 30 s. Úteis se o e2e voltar a rodar no GitHub.
 > - Não comparar medidas de layout com igualdade exata (`>= 44` deu 43,99998): usar tolerância de décimos de pixel.
 > - Não medir contraste (axe) no meio de animação: usar `esperarAnimacoes(page)` de `e2e/ajuda.ts`. Não usar `networkidle` em `/alertas` (consulta o clima).
 > - O `FormRegistro` só monta depois de ler o rascunho do banco: esperar `getByLabel('Estádio fenológico')` antes de olhar o campo de nome (`if (await nome.isVisible())` não espera e causa corrida).
@@ -18,7 +18,7 @@
 >
 > ### Para retomar em outra conversa
 > 1. `cd ~/Documentos/Projetos/app_monitoramento/sentinela && git log --oneline | head -8` (confirme os commits abaixo).
-> 2. Para publicar: `git push origin main` (pede usuário e token do GitHub). O workflow roda `verificar` e `publicar`, e o `e2e` ao lado. Settings → Pages → Source = **GitHub Actions**.
+> 2. Para publicar: `git push origin main` (pede usuário e token do GitHub). O workflow roda `verificar` e `publicar` (sem e2e). Settings → Pages → Source = **GitHub Actions**.
 > 3. Verificação local: `npm run check` (tipos, lint, unitários, build) e `npx playwright test` (e2e, ~5 min).
 > 4. O token do GitHub fica em `tokengithub.odt` (ignorado pelo git; **nunca versionar**). O Claude não deve abri-lo sem pedido explícito.
 >
