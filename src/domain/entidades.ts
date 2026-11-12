@@ -19,7 +19,9 @@ export interface Fazenda {
   atualizadaEm: string
 }
 
-export const NOME_FAZENDA_PADRAO = 'Sua fazenda'
+/** A fazenda do projeto. É fixa (decisão do usuário): não há cadastro; só a safra é calculada pela data. */
+export const FAZENDA_DO_PROJETO = { id: 'fazenda' as const, nome: 'Fazenda Santa Aurora', municipio: 'Lucas do Rio Verde', uf: 'MT', fuso: 'America/Cuiaba' }
+export const NOME_FAZENDA_PADRAO = FAZENDA_DO_PROJETO.nome
 
 export interface Talhao {
   id: string

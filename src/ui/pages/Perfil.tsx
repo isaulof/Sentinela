@@ -6,7 +6,6 @@ import { carregarDemonstracao } from '@/data/seed'
 import { calcularKpis } from '@/domain/hibrido'
 import { FONTES } from '@/knowledge/fontes'
 import { Badge, Button, Campo, Card, Folha, Input, Segmentado, Stat, Titulo } from '../components/kit'
-import { FormFazenda } from '../components/FormFazenda'
 import { useTema } from '../hooks/useTema'
 import { useSessao } from '../state/store'
 import { useToast } from '../state/toast'
@@ -33,7 +32,6 @@ export function Perfil() {
     <>
       <Titulo sub="Seu nome, preferências e informações do app.">Perfil</Titulo>
       <div className="grid gap-5 lg:grid-cols-2">
-        <FormFazenda />
         <Card className="space-y-4">
           <h2 className="text-subtitulo">Preferências</h2>
           <Campo rotulo="Seu nome" ajuda="Assina os registros que você faz."><Input value={amostrador} onChange={(e) => setAmostrador(e.target.value)} placeholder="Nome e sobrenome" /></Campo>

@@ -1,4 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useState } from 'react'
+import { FAZENDA_DO_PROJETO, type Fazenda } from '@/domain/entidades'
+import { safraAtual } from '@/domain/tempo'
 import { ativos } from '@/domain/registro'
 import { db } from './db'
 
@@ -20,4 +23,5 @@ export const useRegistrosComHistorico = (talhaoId: string | null | undefined) =>
 export const usePlanos = () => useLiveQuery(() => db.planos.toArray(), [])
 export const useOrdens = () => useLiveQuery(() => db.ordens.orderBy('id').toArray(), [])
 export const useTodasPendencias = () => useLiveQuery(() => db.pendencias.toArray(), [])
-export const useFazenda = () => useLiveQuery(async () => (await db.fazendas.get('fazenda')) ?? null, [])
+/** A fazenda é fixa: a do projeto (Fazenda Santa Aurora). Não vem do banco; só a safra depende da data. */
+export const useFazenda = (): Fazenda => useState<Fazenda>(() => ({ ...FAZENDA_DO_PROJETO, safra: safraAtual(new Date()), atualizadaEm: '' }))[0]

@@ -40,7 +40,7 @@ function fotoDemo(titulo: string): Blob {
 }
 
 export async function carregarDemonstracao(agora = new Date()): Promise<void> {
-  await db.transaction('rw', [db.talhoes, db.planos, db.registros, db.ordens, db.fotos, db.fazendas], async () => {
+  await db.transaction('rw', [db.talhoes, db.planos, db.registros, db.ordens, db.fotos], async () => {
     const talhoes: Talhao[] = []
     const planos: PlanoSalvo[] = []
     const regs: Registro[] = []
@@ -99,10 +99,6 @@ export async function carregarDemonstracao(agora = new Date()): Promise<void> {
         causa: 'Compactação na faixa de tráfego de máquinas; sem sinais de doença.', motivo: 'NDRE baixo em faixa estreita (comparar com operações).' },
     ]
 
-    // A demonstração só cria a fazenda se o aparelho ainda não tem uma cadastrada.
-    if (!(await db.fazendas.get('fazenda'))) {
-      await db.fazendas.put({ id: 'fazenda', nome: 'Fazenda Santa Aurora', municipio: 'Lucas do Rio Verde', uf: 'MT', safra: '25/26', fuso: 'America/Cuiaba', atualizadaEm: agora.toISOString() })
-    }
     await db.talhoes.bulkPut(talhoes)
     await db.planos.bulkPut(planos)
     await db.registros.bulkPut(regs)

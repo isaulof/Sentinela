@@ -79,6 +79,13 @@ export function dataPorExtenso(dia: string): string {
   return `${sem}, ${d} de ${MESES[m - 1]!} de ${a}`
 }
 
+/** 'yyyy-mm-dd' → 'quinta-feira, 12 de novembro' (sem o ano: para cabeçalhos curtos). */
+export function diaDaSemanaEData(dia: string): string {
+  if (!dia) return ''
+  const [a, m, d] = dia.split('-').map(Number) as [number, number, number]
+  return `${SEMANA[new Date(Date.UTC(a, m - 1, d)).getUTCDay()]!}, ${d} de ${MESES[m - 1]!}`
+}
+
 /** Saudação pela hora local. */
 export function saudacao(v: string | number | Date, fuso: string = FUSO_PADRAO): string {
   const h = Number(horaLocal(v, fuso).slice(0, 2))

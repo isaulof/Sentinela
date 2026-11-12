@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dataBr, dataHoraBr, dataPorExtenso, diaLocal, fimDoDia, horaLocal, safraAtual, saudacao, somarDias } from './tempo'
+import { dataBr, dataHoraBr, dataPorExtenso, diaDaSemanaEData, diaLocal, fimDoDia, horaLocal, safraAtual, saudacao, somarDias } from './tempo'
 
 describe('diaLocal (fuso da fazenda)', () => {
   it('21:30 em Cuiabá (01:30 UTC do dia seguinte) continua no mesmo dia', () => {
@@ -56,6 +56,11 @@ describe('texto em português', () => {
   it('data completa e por extenso', () => {
     expect(dataBr('2026-11-11')).toBe('11/11/2026')
     expect(dataPorExtenso('2026-11-11')).toBe('quarta-feira, 11 de novembro de 2026')
+  })
+  it('data curta, sem o ano', () => {
+    expect(diaDaSemanaEData('2026-11-12')).toBe('quinta-feira, 12 de novembro')
+    expect(diaDaSemanaEData('2027-01-01')).toBe('sexta-feira, 1 de janeiro')
+    expect(diaDaSemanaEData('')).toBe('')
   })
   it('saudação por hora local', () => {
     expect(saudacao('2026-11-11T11:00:00Z')).toBe('Bom dia') // 07:00 local
