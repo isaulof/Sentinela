@@ -434,8 +434,12 @@ test.describe('fluxos de negócio', () => {
     await page.waitForTimeout(1500)
     const c = (await mapa.boundingBox())!
     await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2)
-    await page.mouse.wheel(0, 300) // roda sem Ctrl: a página rola e o mapa avisa, sem dar zoom
-    await expect(page.locator('.maplibregl-cooperative-gesture-screen.maplibregl-show')).toHaveCount(1)
+    // Roda sem Ctrl: a página rola e o mapa avisa, sem dar zoom. O aviso dura ~1 s; em máquina lenta o teste pode perdê-lo,
+    // então repete a rolagem até ver o aviso.
+    await expect(async () => {
+      await page.mouse.wheel(0, 300)
+      await expect(page.locator('.maplibregl-cooperative-gesture-screen.maplibregl-show')).toHaveCount(1, { timeout: 1500 })
+    }).toPass({ timeout: 20_000 })
     await page.waitForTimeout(3000)
     const antes = await mapa.screenshot()
     await page.getByRole('button', { name: 'Aproximar' }).click()
