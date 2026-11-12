@@ -7,6 +7,7 @@ import { polygonAreaHa, type LngLat } from '@/domain/geo'
 import { ESTADIOS } from '@/domain/phenology'
 import { DEFAULT_BUFFER_M, generatePlan, MIN_POINTS, recommendedPointCount, type SamplingMethod, type SamplingParams } from '@/domain/sampling'
 import { Badge, Button, Campo, Card, Folha, Input, Segmentado, Select, Titulo, Vazio } from '../components/kit'
+import { ApagarTalhao, EditarTalhao } from '../components/OpcoesDoTalhao'
 import { Croqui } from '../components/Croqui'
 import { Icon } from '../components/Icon'
 import { Mapa } from '../components/Mapa'
@@ -153,6 +154,7 @@ export function TalhaoDetalhe() {
   const { talhaoAba, setTalhaoAba, setTalhao } = useSessao()
   const talhao = talhoes?.find((t) => t.id === id)
   const planos = usePlanos()
+  const [painel, setPainel] = useState<null | 'editar' | 'apagar'>(null)
   if (talhoes === undefined || planos === undefined) return null
   const plano = planos.find((p) => p.talhaoId === id)
   if (!talhao) return <><Titulo>Talhão não encontrado</Titulo><Vazio icone="mapa" titulo="Este talhão não existe mais" texto="Ele pode ter sido apagado deste aparelho." acao={<Link to="/talhoes" className="font-semibold text-brand">Ver talhões</Link>} /></>
@@ -166,6 +168,7 @@ export function TalhaoDetalhe() {
           <h1 className="truncate text-secao">{talhao.nome}</h1>
           <p className="truncate text-apoio text-text-2">{polygonAreaHa(talhao.anel).toFixed(1)} ha · {talhao.cultivar} · {talhao.estadio}</p>
         </div>
+        <button type="button" aria-label="Editar talhão" onClick={() => setPainel('editar')} className="grid size-11 shrink-0 place-items-center rounded-full text-text-2 transition hover:bg-surface-2 active:bg-surface-2"><Icon name="lapis" size={20} /></button>
         {plano && <Link to="/coleta" onClick={() => setTalhao(talhao.id)} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 text-apoio font-semibold text-on-brand transition active:scale-95"><Icon name="campo" size={17} />Coletar</Link>}
       </header>
 
@@ -176,6 +179,13 @@ export function TalhaoDetalhe() {
       </div>
 
       {aba === 'resultados' && plano ? <Resultados talhao={talhao} plano={plano} /> : <PlanoTalhao talhao={talhao} />}
+
+      <Folha aberta={painel === 'editar'} onFechar={() => setPainel(null)} titulo="Editar talhão">
+        <EditarTalhao talhao={talhao} onFechar={() => setPainel(null)} onApagar={() => setPainel('apagar')} />
+      </Folha>
+      <Folha aberta={painel === 'apagar'} onFechar={() => setPainel(null)} titulo="Apagar talhão?">
+        <ApagarTalhao talhao={talhao} onFechar={() => setPainel(null)} />
+      </Folha>
     </>
   )
 }

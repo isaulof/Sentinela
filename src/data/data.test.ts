@@ -216,3 +216,93 @@ describe('trilha de auditoria', () => {
     expect(cadeiaDeVersoes(todas, 'orig').map((r) => r.id)).toEqual(['orig', a.novoId, b.novoId])
   })
 })
+
+describe('editar e apagar talhão', () => {
+  const plano = (talhaoId: string) => ({ talhaoId, params: { method: 'zigzag' as const, bufferM: 30, targetPoints: 2 }, pontos: [{ id: 'P01', order: 1, position: [-55.915, -13.052] as const }], caminho: [], areaHa: 5, geradoEm: '2026-11-01T00:00:00Z' })
+  const outro: Talhao = { ...talhao, id: 'T-09', nome: 'T-09 Outro' }
+  const foto = (id: string) => ({ id, blob: new Blob(['x']), criadoEm: '2026-11-07T14:00:00Z', largura: 1, altura: 1 })
+  const dados = { nome: 'T-02 Baixada Nova', cultivar: 'média', dataPlantio: '2026-09-25', estadio: 'R4', finalidade: 'sementes' as const }
+  const hoje = new Date('2026-11-12T15:00:00Z')
+
+  it('editar muda só os dados do talhão: contorno, plano e registros ficam como estavam', async () => {
+    await repo.salvarTalhao(talhao); await repo.salvarPlano(plano('T-02')); await repo.salvarRegistro(reg({ id: 'a' }), ctx)
+    const r = await repo.atualizarTalhao('T-02', dados, hoje)
+    expect(r.ok).toBe(true)
+    const t = (await repo.obterTalhao('T-02'))!
+    expect(t).toMatchObject({ id: 'T-02', nome: 'T-02 Baixada Nova', cultivar: 'média', dataPlantio: '2026-09-25', estadio: 'R4', finalidade: 'sementes', criadoEm: talhao.criadoEm })
+    expect(t.anel).toEqual(talhao.anel)
+    expect((await repo.obterPlano('T-02'))!.pontos).toHaveLength(1)
+    expect((await repo.listarRegistros('T-02'))[0]).toMatchObject({ id: 'a', estadio: 'R3' }) // o registro guarda o estádio da época
+  })
+  it('nome repetido ou dado inválido não grava nada; o próprio nome pode ser mantido', async () => {
+    await repo.salvarTalhao(talhao); await repo.salvarTalhao(outro)
+    const repetido = await repo.atualizarTalhao('T-02', { ...dados, nome: 't-09  outro' }, hoje)
+    expect(repetido).toMatchObject({ ok: false, erros: { nome: expect.stringMatching(/Já existe/) } })
+    expect((await repo.obterTalhao('T-02'))!.nome).toBe('T-02 Baixada')
+    expect((await repo.atualizarTalhao('T-02', { ...dados, dataPlantio: '2027-01-01' }, hoje)).ok).toBe(false)
+    expect((await repo.atualizarTalhao('T-02', { ...dados, nome: 'T-02 Baixada' }, hoje)).ok).toBe(true) // manter o mesmo nome não é "repetido"
+  })
+  it('cultivar em branco vira "Não informada"; talhão inexistente é recusado', async () => {
+    await repo.salvarTalhao(talhao)
+    await repo.atualizarTalhao('T-02', { ...dados, cultivar: '   ' }, hoje)
+    expect((await repo.obterTalhao('T-02'))!.cultivar).toBe('Não informada')
+    expect((await repo.atualizarTalhao('T-99', dados, hoje)).ok).toBe(false)
+  })
+  async function montarComBanco() {
+    const db = new SentinelaDB(`apagar-${++n}`)
+    const r = criarRepo(db)
+    await r.salvarTalhao(talhao); await r.salvarTalhao(outro)
+    await r.salvarPlano(plano('T-02')); await r.salvarPlano(plano('T-09'))
+    await db.fotos.bulkPut([foto('f-t02'), foto('f-t02-pend'), foto('f-t09')])
+    await r.salvarRegistro(reg({ id: 'a', fotoIds: ['f-t02'] }), ctx)
+    await r.salvarRegistro(reg({ id: 'a2', fotoIds: ['f-t02'], alvo: 'lagarta', fase: 'Lagarta pequena (até 1,5 cm)' }), ctx) // mesma foto em 2 registros
+    await r.salvarRegistro(reg({ id: 'b', talhaoId: 'T-09', fotoIds: ['f-t09'] }), ctx)
+    await r.corrigirRegistro('a', { observacao: 'x' }, { autor: 'Ana', motivo: 'Teste', agora: hoje }) // gera uma versão a mais
+    await r.salvarPendencia({ id: 'PEN-1', talhaoId: 'T-02', pontoId: 'P01', fotoIds: ['f-t02-pend'], nota: '', estadio: 'R3', amostrador: 'A', criadoEm: '2026-11-07T14:00:00Z' })
+    await r.salvarOrdem({ id: 'ORD-1', talhaoId: 'T-02', pontoId: 'P01', origem: 'drone', motivo: 'x', criadaEm: '2026-11-07T14:00:00Z', status: 'aberta' })
+    await r.gravarConfig('rascunho:registro:T-02:P01', { x: 1 })
+    await r.gravarConfig('rascunho:registro:T-09:P01', { x: 2 })
+    await r.gravarConfig('outra-config', { y: 3 })
+    return { db, r }
+  }
+
+  it('o resumo conta pontos, registros (todas as versões), achados e fotos sem repetir', async () => {
+    const { r } = await montarComBanco()
+    expect(await r.resumoDoTalhao('T-02')).toEqual({ pontos: 1, registros: 3, achados: 1, fotos: 2 }) // a, a (versão 2), a2 | foto f-t02 repetida conta 1
+    expect(await r.resumoDoTalhao('T-99')).toEqual({ pontos: 0, registros: 0, achados: 0, fotos: 0 })
+  })
+
+  it('apagar remove tudo do talhão (registros e versões, achados, ordens, plano, fotos, rascunhos) e nada dos outros', async () => {
+    const { db, r } = await montarComBanco()
+    await r.apagarTalhao('T-02')
+    expect(await r.obterTalhao('T-02')).toBeUndefined()
+    expect(await r.obterPlano('T-02')).toBeUndefined()
+    expect(await db.registros.where('talhaoId').equals('T-02').count()).toBe(0)
+    expect(await db.pendencias.where('talhaoId').equals('T-02').count()).toBe(0)
+    expect(await db.ordens.where('talhaoId').equals('T-02').count()).toBe(0)
+    expect((await db.fotos.toArray()).map((f) => f.id)).toEqual(['f-t09']) // as fotos do T-02 saíram; a do outro ficou
+    expect((await db.config.toArray()).map((c) => c.chave).sort()).toEqual(['outra-config', 'rascunho:registro:T-09:P01'])
+    // O outro talhão está intacto.
+    expect((await r.obterTalhao('T-09'))!.nome).toBe('T-09 Outro')
+    expect((await r.obterPlano('T-09'))!.pontos).toHaveLength(1)
+    expect(await r.listarRegistros('T-09')).toHaveLength(1)
+  })
+
+  it('apagar é tudo ou nada: se falhar no meio, nada some', async () => {
+    const { db, r } = await montarComBanco()
+    const falha = () => { throw Object.assign(new Error('falhou'), { name: 'QuotaExceededError' }) }
+    db.talhoes.hook('deleting', falha)
+    await expect(r.apagarTalhao('T-02')).rejects.toBeTruthy()
+    db.talhoes.hook('deleting').unsubscribe(falha)
+    expect(await r.obterTalhao('T-02')).toBeDefined()
+    expect(await db.registros.where('talhaoId').equals('T-02').count()).toBe(3)
+    expect(await db.fotos.count()).toBe(3)
+  })
+
+  it('apagar um talhão que não existe não dá erro nem mexe em nada', async () => {
+    const { db, r } = await montarComBanco()
+    await r.apagarTalhao('T-99')
+    expect(await db.talhoes.count()).toBe(2)
+    expect(await db.fotos.count()).toBe(3)
+  })
+})

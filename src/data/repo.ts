@@ -1,4 +1,6 @@
 import type { Fazenda, OrdemChecagem, Pendencia, PlanoSalvo, Talhao } from '@/domain/entidades'
+import { validarDadosTalhao, type DadosDoTalhao, type ErrosDoTalhao } from '@/domain/talhao'
+import { diaLocal } from '@/domain/tempo'
 import { ativos, estaAtivo, novaVersao, type Correcao, type Registro } from '@/domain/registro'
 import { avaliar } from '@/domain/decision'
 import { mediaHistorica, validarRegistro, type ContextoValidacao, type ResultadoValidacao } from '@/domain/validation'
@@ -18,12 +20,39 @@ export function criarRepo(db: SentinelaDB = dbPadrao) {
     salvarTalhao: (t: Talhao) => db.talhoes.put(t),
     listarTalhoes: () => db.talhoes.orderBy('nome').toArray(),
     obterTalhao: (id: string) => db.talhoes.get(id),
+    /**
+     * Edita os dados do talhão (nome, cultivar, plantio, estádio, finalidade). O contorno, o plano e os registros não mudam:
+     * os registros guardam o próprio estádio e continuam ligados ao talhão pelo id.
+     */
+    async atualizarTalhao(id: string, dados: DadosDoTalhao, agora = new Date()): Promise<{ ok: boolean; erros: ErrosDoTalhao }> {
+      const atual = await db.talhoes.get(id)
+      if (!atual) return { ok: false, erros: { nome: 'Este talhão não existe mais.' } }
+      const outros = (await db.talhoes.toArray()).filter((t) => t.id !== id).map((t) => t.nome)
+      const v = validarDadosTalhao(dados, outros, diaLocal(agora))
+      if (!v.ok) return v
+      await db.talhoes.put({ ...atual, nome: dados.nome.trim(), cultivar: dados.cultivar.trim() || 'Não informada', dataPlantio: dados.dataPlantio, estadio: dados.estadio, finalidade: dados.finalidade })
+      return v
+    },
+    /** O que seria perdido ao apagar o talhão: para a tela de confirmação mostrar números reais. */
+    async resumoDoTalhao(id: string) {
+      const [regs, pend, plano] = await Promise.all([db.registros.where('talhaoId').equals(id).toArray(), db.pendencias.where('talhaoId').equals(id).toArray(), db.planos.get(id)])
+      const fotos = new Set([...regs.flatMap((r) => r.fotoIds), ...pend.flatMap((p) => p.fotoIds)])
+      return { pontos: plano?.pontos.length ?? 0, registros: regs.length, achados: pend.length, fotos: fotos.size }
+    },
+    /**
+     * Apaga o talhão e tudo o que é dele, de uma vez (tudo ou nada): registros (todas as versões), achados, ordens de checagem,
+     * plano, fotos e rascunhos. Não mexe em nada de outros talhões. NÃO dá para desfazer: a tela exige confirmação.
+     */
     async apagarTalhao(id: string) {
-      await db.transaction('rw', [db.talhoes, db.planos, db.registros, db.ordens, db.pendencias], async () => {
+      await db.transaction('rw', [db.talhoes, db.planos, db.registros, db.ordens, db.pendencias, db.fotos, db.config], async () => {
         const regs = await db.registros.where('talhaoId').equals(id).toArray()
+        const pend = await db.pendencias.where('talhaoId').equals(id).toArray()
+        const fotos = new Set([...regs.flatMap((r) => r.fotoIds), ...pend.flatMap((p) => p.fotoIds)])
         await db.registros.bulkDelete(regs.map((r) => r.id))
         await db.ordens.where('talhaoId').equals(id).delete()
         await db.pendencias.where('talhaoId').equals(id).delete()
+        await db.fotos.bulkDelete([...fotos])
+        await db.config.where('chave').startsWith(`rascunho:registro:${id}:`).delete()
         await db.planos.delete(id)
         await db.talhoes.delete(id)
       })
