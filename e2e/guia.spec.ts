@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { carregarDemo } from './ajuda'
+import { carregarDemo, esperarAnimacoes } from './ajuda'
 
 /** Posição planejada de um ponto, lida do IndexedDB (é de onde o app tira o destino do guia). */
 async function posicaoDoPonto(page: Page, talhaoId: string, ordem: number): Promise<{ lat: number; lng: number }> {
@@ -159,6 +159,7 @@ test.describe('guia até o ponto (GPS)', () => {
     await context.setGeolocation(metrosAoNorte(p1, 500))
     await page.getByRole('button', { name: 'Ir até o ponto' }).click()
     await expect(page.getByText(/^(490|500|510) m$/)).toBeVisible()
+    await esperarAnimacoes(page)
     const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-map').analyze()
     expect(r.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
   })

@@ -28,3 +28,14 @@ export async function anexarFoto(page: Page) {
   await page.locator('input[type=file]:not([capture])').setInputFiles({ name: 'folha.png', mimeType: 'image/png', buffer })
   await page.getByRole('button', { name: 'Remover foto' }).first().waitFor()
 }
+
+/**
+ * Espera as animações e transições terminarem (a gaveta, por exemplo, surge em 0,2 s). Medir contraste no meio delas
+ * dá falso positivo, principalmente em máquina lenta como a do CI.
+ */
+export async function esperarAnimacoes(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const finita = (a: Animation) => Number.isFinite(a.effect?.getComputedTiming().endTime as number)
+    for (let i = 0; i < 3; i++) await Promise.all(document.getAnimations().filter(finita).map((a) => a.finished.catch(() => undefined))) // transições novas podem nascer enquanto outras terminam
+  })
+}

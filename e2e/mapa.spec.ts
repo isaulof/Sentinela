@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { carregarDemo } from './ajuda'
+import { carregarDemo, esperarAnimacoes } from './ajuda'
 
 async function abrirMapaT01(page: Page) {
   await carregarDemo(page)
@@ -100,6 +100,7 @@ test.describe('mapa inteligente v2', () => {
     await page.getByRole('radio', { name: 'Mudança' }).click()
     await page.getByRole('button', { name: 'Valores nos pontos' }).click()
     await page.waitForTimeout(500)
+    await esperarAnimacoes(page)
     const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-map').analyze()
     expect(r.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
   })
