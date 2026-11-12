@@ -61,7 +61,8 @@ test.describe('exportação e relatório', () => {
     await page.getByRole('link', { name: 'Relatório (PDF)' }).click()
     await expect(page).toHaveURL(/#\/talhoes\/T-01\/relatorio/)
     await expect(page.getByRole('heading', { level: 1, name: 'T-01 Mirante' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: `Registros (${total})` })).toBeVisible()
+    // Todos os registros aparecem nas fichas dos pontos (o CSV também traz cada versão): mesma contagem.
+    await expect(page.locator('[data-registro]')).toHaveCount(total)
     // última leitura de percevejo em cada ponto, a partir do CSV
     const ult = new Map<string, number>()
     for (const l of linhas.filter((x) => x[i('alvo')] === 'Percevejo-marrom').sort((a, b) => a[i('criado_em_utc')]!.localeCompare(b[i('criado_em_utc')]!))) ult.set(l[i('ponto_id')]!, num(l[i('quantidade')]!))
@@ -89,7 +90,99 @@ test.describe('exportação e relatório', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'T-01 Mirante' })).toBeVisible()
     await page.emulateMedia({ media: 'print' })
     await expect(page.getByRole('navigation', { name: 'Principal' }).first()).toBeHidden()
-    await expect(page.getByRole('button', { name: 'Imprimir / Salvar como PDF' })).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Gerar PDF' })).toBeHidden()
     await expect(page.getByRole('heading', { level: 1, name: 'T-01 Mirante' })).toBeVisible()
+  })
+
+  test('o relatório completo traz capa, croqui numerado, tabela dos pontos e uma ficha por ponto com todos os dados', async ({ page }) => {
+    await carregarDemo(page)
+    await page.goto('/#/talhoes/T-01/relatorio')
+    await expect(page.getByRole('heading', { level: 1, name: 'T-01 Mirante' })).toBeVisible()
+    // Capa: fazenda fixa do projeto, data e hora de geração com o fuso.
+    await expect(page.getByText(/Fazenda Santa Aurora · Lucas do Rio Verde · MT · Safra \d{2}\/\d{2}/)).toBeVisible()
+    await expect(page.getByText(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2} \(horário local, fuso America\/Cuiaba\)/)).toBeVisible()
+    // Croqui com o número de cada ponto.
+    const pontos = page.locator('article[data-ponto]')
+    const n = await pontos.count()
+    expect(n).toBeGreaterThanOrEqual(10)
+    await expect(page.getByRole('img', { name: /Contorno do talhão/ }).locator('text')).toHaveCount(n)
+    // Tabela dos pontos: uma linha por ponto, com coordenada planejada e última leitura com data e hora.
+    const tabela = page.getByRole('region', { name: /Tabela dos pontos/ })
+    await expect(tabela.getByRole('row')).toHaveCount(n + 1)
+    await expect(tabela.getByText(/-13,\d{6} \/ -55,\d{6}/).first()).toBeVisible()
+    await expect(tabela.getByText(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/).first()).toBeVisible()
+    // Cada ficha tem pelo menos um registro com todos os campos pedidos.
+    const ficha = page.locator('article[data-ponto="1"]')
+    await expect(ficha.getByRole('heading', { name: 'Ponto 1' })).toBeVisible()
+    const reg = ficha.locator('[data-registro]').first()
+    for (const rotulo of ['Método', 'Onde olhar', 'Coletado por', 'Responsável técnico', 'Posição', 'Coordenadas (lat / lon)', 'Amostragem', 'Estádio da soja', 'Protocolo', 'Fonte da decisão']) {
+      await expect(reg.getByText(rotulo, { exact: true }), rotulo).toBeVisible()
+    }
+    await expect(reg).toContainText(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/) // data e hora do registro
+    // Na demonstração a posição é simulada (igual à planejada): o ponto planejado não é repetido. A duração vem junto do horário.
+    await expect(reg.getByText('Ponto planejado (lat / lon)', { exact: true })).toHaveCount(0)
+    await expect(reg.getByText('Duração', { exact: true })).toHaveCount(0)
+    await expect(reg.getByText(/\d{2}:\d{2} às \d{2}:\d{2} \(/)).toBeVisible()
+    await expect(reg).toContainText(/Pano de batida/) // método de coleta
+    await expect(page.getByRole('heading', { name: 'Fichas dos pontos' })).toBeVisible()
+  })
+
+  test('as fotos dos registros saem no relatório', async ({ page }) => {
+    await carregarDemo(page)
+    await page.goto('/#/talhoes/T-01/relatorio')
+    await expect(page.getByRole('heading', { level: 1, name: 'T-01 Mirante' })).toBeVisible()
+    const fotos = page.getByRole('img', { name: 'Foto de evidência do ponto' })
+    await expect(fotos.first()).toBeVisible()
+    // Todas carregadas de verdade (não ficam quebradas no PDF).
+    await expect.poll(() => fotos.evaluateAll((els) => els.every((e) => (e as HTMLImageElement).complete && (e as HTMLImageElement).naturalWidth > 0))).toBe(true)
+  })
+
+  test('correção e registro desfeito aparecem no relatório com autor, data e motivo, sem sumir', async ({ page }) => {
+    await carregarDemo(page)
+    await page.goto('/#/coleta')
+    await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
+    await expect(page.getByText('Ponto 1 de 10')).toBeVisible()
+    await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor()
+    const d = page.getByRole('dialog')
+    const nome = d.getByPlaceholder('Nome e sobrenome')
+    if (await nome.isVisible()) await nome.fill('Ana Teste')
+    await d.getByRole('radio', { name: 'Adulto' }).click()
+    await d.getByRole('button', { name: 'Aumentar' }).click()
+    await d.getByRole('button', { name: 'Salvar registro' }).click()
+    await expect(d).toBeHidden()
+    await page.getByRole('region', { name: 'Registro salvo' }).getByRole('button', { name: 'Ver ficha' }).click()
+    const fichaTela = page.getByRole('dialog', { name: /Ficha do ponto 1/ })
+    await fichaTela.getByRole('button', { name: 'Corrigir' }).click()
+    await fichaTela.getByLabel('Observação').fill('contagem refeita')
+    await fichaTela.getByLabel('Motivo da correção').fill('Contei de novo no pano')
+    await fichaTela.getByRole('button', { name: 'Salvar correção' }).click()
+    await expect(fichaTela.locator('[data-estado="corrigida"]')).toBeVisible()
+
+    await page.goto('/#/talhoes/T-04/relatorio')
+    const ponto1 = page.locator('article[data-ponto="1"]')
+    await expect(ponto1.locator('[data-registro]')).toHaveCount(2) // a versão 1 e a 2
+    await expect(ponto1.locator('[data-estado="corrigida"]')).toContainText('substituída por correção')
+    await expect(ponto1.locator('[data-registro]').last()).toContainText('· versão 2') // o título da versão (o protocolo "versão 2026-11" não tem o "· ")
+    await expect(ponto1.getByText(/Corrigido por Ana Teste em \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}: Contei de novo no pano/)).toBeVisible()
+  })
+
+  test('o PDF sai em tema claro mesmo com o app no escuro, e o título vira o nome do arquivo', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' })
+    await carregarDemo(page)
+    await page.goto('/#/talhoes/T-01/relatorio')
+    await expect(page.getByRole('heading', { level: 1, name: 'T-01 Mirante' })).toBeVisible()
+    await page.emulateMedia({ colorScheme: 'dark', media: 'print' })
+    const cores = await page.evaluate(() => {
+      const luz = (css: string) => { const m = css.match(/\d+(\.\d+)?/g)!.map(Number); return (0.2126 * m[0]! + 0.7152 * m[1]! + 0.0722 * m[2]!) / 255 }
+      return { texto: luz(getComputedStyle(document.querySelector('article h1')!).color), fundo: luz(getComputedStyle(document.body).backgroundColor) }
+    })
+    expect(cores.fundo).toBeGreaterThan(0.9) // papel branco
+    expect(cores.texto).toBeLessThan(0.3) // texto escuro: legível no papel
+    // Ao gerar o PDF, o título da página vira o nome sugerido do arquivo.
+    await page.emulateMedia({ colorScheme: 'dark', media: 'screen' })
+    await page.evaluate(() => { (window as unknown as { __titulos: string[] }).__titulos = []; window.print = () => { (window as unknown as { __titulos: string[] }).__titulos.push(document.title) } })
+    await page.getByRole('button', { name: 'Gerar PDF' }).click()
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __titulos: string[] }).__titulos[0] ?? '')).toMatch(/^Relatorio_t-01-mirante_\d{4}-\d{2}-\d{2}$/)
   })
 })

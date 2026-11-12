@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { condicoesDoRegistro, duracaoDoRegistro, estadoDaVersao, linhaDoTempoDoPonto, medidaDoRegistro, posicaoDoRegistro, rastroDaVersao, resumoDoRegistro } from './ficha'
+import { camposDoRegistro, coordenada, resumoPorPonto, condicoesDoRegistro, duracaoDoRegistro, estadoDaVersao, linhaDoTempoDoPonto, medidaDoRegistro, posicaoDoRegistro, rastroDaVersao, resumoDoRegistro } from './ficha'
 import type { Registro } from './registro'
 
 const reg = (o: Partial<Registro> = {}): Registro => ({
@@ -59,5 +59,51 @@ describe('descreverAmostra', () => {
     expect(descreverAmostra('doenca', 1)).toBe('1 folha inspecionada')
     expect(descreverAmostra('doenca', 10)).toBe('10 folhas inspecionadas')
     expect(descreverAmostra('praga', 0)).toBe('1 batida de 1 m')
+  })
+})
+
+describe('campos do registro (ficha e relatório)', () => {
+  const rotulos = (r: Registro, completo: boolean) => camposDoRegistro(r, completo).map((c) => c.rotulo)
+  const v2 = reg({
+    schema: 2, metodo: 'Pano de batida de 1 m', protocoloVersao: '2026-11', parteDaPlanta: 'Plantas da fileira', areaAmostrada: '5 batidas de 1 m', condicoes: { tempo: 'nublado' },
+    responsavel: 'Prof. Resp.', precisaoM: 6.4, distanciaDoPontoM: 3.2, posicaoPlanejada: [-55.9001, -13.0501], inicioEm: '2026-11-11T17:20:00Z', fimEm: '2026-11-11T17:24:00Z', fusoHorario: 'America/Cuiaba', observacao: 'manchas',
+  })
+  it('a ficha na tela traz o essencial', () => {
+    expect(rotulos(v2, false)).toEqual(['Método', 'Amostra', 'Fase', 'Condições', 'Coletado por', 'Responsável técnico', 'Posição', 'Duração', 'Observação'])
+  })
+  it('o relatório completo acrescenta estádio, onde olhar, coordenadas, ponto planejado, horário e protocolo', () => {
+    const r = rotulos(v2, true)
+    for (const k of ['Estádio da soja', 'Onde olhar', 'Coordenadas (lat / lon)', 'Ponto planejado (lat / lon)', 'Amostragem', 'Protocolo']) expect(r).toContain(k)
+    expect(r).not.toContain('Duração') // já vai dentro de Amostragem
+    const val = (chave: string) => camposDoRegistro(v2, true).find((c) => c.chave === chave)!.valor
+    expect(val('coordenadas')).toBe('-13,050000 / -55,900000')
+    expect(val('planejada')).toBe('-13,050100 / -55,900100')
+    expect(val('horario')).toBe('13:20 às 13:24 (4 min)')
+    expect(val('protocolo')).toBe('versão 2026-11')
+    expect(val('posicao')).toBe('GPS ±6 m · a 3 m do ponto')
+  })
+  it('com posição simulada (igual ao ponto planejado) não repete a coordenada; só os textos longos pedem linha inteira', () => {
+    const sim = reg({ posicaoSimulada: true, posicao: [-55.9, -13.05], posicaoPlanejada: [-55.9, -13.05], metodo: 'Pano', observacao: 'x', schema: 2 })
+    const c = camposDoRegistro(sim, true)
+    expect(c.find((x) => x.chave === 'planejada')).toBeUndefined()
+    expect(c.filter((x) => x.largo).map((x) => x.chave)).toEqual(['metodo', 'observacao'])
+  })
+  it('registro antigo mostra "método não informado" e não inventa o que falta', () => {
+    const antigo = reg({ schema: 1 })
+    const c = camposDoRegistro(antigo, true)
+    expect(c.find((x) => x.chave === 'metodo')!.valor).toMatch(/não informado/)
+    for (const k of ['amostra', 'condicoes', 'responsavel', 'planejada', 'horario', 'protocolo', 'duracao', 'observacao']) expect(c.find((x) => x.chave === k), k).toBeUndefined()
+  })
+  it('coordenada com 6 casas e vírgula', () => expect(coordenada(-13.2543879)).toBe('-13,254388'))
+})
+
+describe('resumo por ponto', () => {
+  const plano = { pontos: [{ id: 'P02', order: 2, position: [-55.9, -13.05] as const }, { id: 'P01', order: 1, position: [-55.91, -13.06] as const }] }
+  it('uma linha por ponto, em ordem, com contagem e o registro mais recente', () => {
+    const r = resumoPorPonto(plano, [reg({ id: 'a', pontoId: 'P01', criadoEm: '2026-11-03T13:00:00Z' }), reg({ id: 'b', pontoId: 'P01', criadoEm: '2026-11-08T13:00:00Z' })], new Map([['P01', 'leve' as const]]))
+    expect(r.map((x) => x.ordem)).toEqual([1, 2])
+    expect(r[0]).toMatchObject({ pontoId: 'P01', estado: 'leve', registros: 2 })
+    expect(r[0]!.ultimo!.id).toBe('b')
+    expect(r[1]).toMatchObject({ pontoId: 'P02', estado: 'a_coletar', registros: 0, ultimo: null })
   })
 })

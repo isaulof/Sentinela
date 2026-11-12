@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { celulaCsv, colunasDoCsv, nomeDoArquivo, registrosParaCsv, registrosParaGeoJson } from './exportar'
+import { celulaCsv, colunasDoCsv, nomeDoArquivo, nomeDoRelatorio, registrosParaCsv, registrosParaGeoJson } from './exportar'
 import type { PlanoSalvo, Talhao } from './entidades'
 import type { Registro } from './registro'
 
@@ -82,5 +82,11 @@ describe('nome do arquivo', () => {
   it('sem acento nem espaço e com a data local', () => {
     expect(nomeDoArquivo({ ...talhao, nome: 'T-01 Mirante São José' }, new Date('2026-11-12T01:30:00Z'), 'csv')).toBe('sentinela_t-01-mirante-sao-jose_2026-11-11.csv')
     expect(nomeDoArquivo({ ...talhao, nome: '???' }, new Date('2026-11-11T17:00:00Z'), 'geojson')).toBe('sentinela_talhao_2026-11-11.geojson')
+  })
+})
+
+describe('nome do PDF do relatório', () => {
+  it('começa com Relatorio_, sem extensão, e usa a data local', () => {
+    expect(nomeDoRelatorio({ ...talhao, nome: 'T-01 Mirante São José' }, new Date('2026-11-12T01:30:00Z'))).toBe('Relatorio_t-01-mirante-sao-jose_2026-11-11')
   })
 })

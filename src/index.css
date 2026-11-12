@@ -151,6 +151,19 @@
   button, a, [role='tab'] { user-select: none; -webkit-user-select: none; }
 }
 
+/* Impressão / PDF: sempre tema claro e papel branco, mesmo com o app no escuro (texto claro some no papel). */
+@page { size: A4; margin: 14mm; }
+@media print {
+  :root:root:root {
+    color-scheme: light;
+    --bg: #fff; --surface: #fff; --surface-2: #f1f2ee; --line: #cfd3c8; --text: #101610; --text-2: #4a524a;
+    --brand: #1f5d38; --brand-strong: #174a2c; --on-brand: #fff; --brand-soft: #e1efe0;
+    --ok: #1f5d38; --ok-soft: #e1efe0; --warn: #7a4b00; --warn-soft: #faefc9; --danger: #a8322a; --danger-soft: #fbe4e1; --info: #1f5a9c; --info-soft: #e1ecf7;
+    --shadow: none; --shadow-lift: none;
+  }
+  html, body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

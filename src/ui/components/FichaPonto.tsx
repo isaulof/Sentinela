@@ -6,9 +6,9 @@ import { repo } from '@/data/repo'
 import { avaliarRegistro } from '@/domain/analise'
 import type { Nivel } from '@/domain/decision'
 import type { Talhao } from '@/domain/entidades'
-import { condicoesDoRegistro, duracaoDoRegistro, estadoDaVersao, linhaDoTempoDoPonto, medidaDoRegistro, posicaoDoRegistro, rastroDaVersao } from '@/domain/ficha'
+import { camposDoRegistro, estadoDaVersao, linhaDoTempoDoPonto, medidaDoRegistro, rastroDaVersao } from '@/domain/ficha'
 import { rotuloDiagnostico } from '@/domain/funil'
-import { metodoDoRegistro, type Correcao, type Registro } from '@/domain/registro'
+import type { Correcao, Registro } from '@/domain/registro'
 import { dataHoraBr } from '@/domain/tempo'
 import { ALVOS } from '@/knowledge/alvos'
 import { useSessao } from '../state/store'
@@ -89,8 +89,6 @@ function CartaoRegistro({ r }: { r: Registro }) {
   const estado = estadoDaVersao(r)
   const a = avaliarRegistro(r)
   const rastro = rastroDaVersao(r)
-  const cond = condicoesDoRegistro(r)
-  const dur = duracaoDoRegistro(r)
   return (
     <li className={`rounded-2xl border border-line p-3.5 ${estado === 'ativa' ? 'bg-surface' : 'bg-surface-2 opacity-80'}`} data-estado={estado}>
       <div className="flex items-start justify-between gap-2">
@@ -101,15 +99,7 @@ function CartaoRegistro({ r }: { r: Registro }) {
         {estado === 'ativa' ? <Badge tom={TOM[a.nivel] ?? 'neutral'}>{a.titulo}</Badge> : <Badge tom="neutral">{estado === 'corrigida' ? 'Substituída' : 'Desfeita'}</Badge>}
       </div>
       <dl className="mt-2.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-apoio">
-        <Linha rotulo="Método">{metodoDoRegistro(r)}</Linha>
-        {r.areaAmostrada && <Linha rotulo="Amostra">{r.areaAmostrada}</Linha>}
-        <Linha rotulo="Fase">{r.fase}</Linha>
-        {cond && <Linha rotulo="Condições">{cond}</Linha>}
-        <Linha rotulo="Coletado por">{r.amostrador}</Linha>
-        {r.responsavel && <Linha rotulo="Responsável técnico">{r.responsavel}</Linha>}
-        <Linha rotulo="Posição">{posicaoDoRegistro(r)}</Linha>
-        {dur && <Linha rotulo="Duração">{dur}</Linha>}
-        {r.observacao && <Linha rotulo="Observação">{r.observacao}</Linha>}
+        {camposDoRegistro(r).map((c) => <Linha key={c.chave} rotulo={c.rotulo}>{c.valor}</Linha>)}
       </dl>
       {r.fotoIds.length > 0 && <ul className="mt-2.5 flex flex-wrap gap-2">{r.fotoIds.map((id) => <li key={id}><Miniatura id={id} /></li>)}</ul>}
       {rastro && <p className="mt-2.5 rounded-lg bg-surface-2 px-2.5 py-1.5 text-rotulo text-text-2">{rastro}</p>}

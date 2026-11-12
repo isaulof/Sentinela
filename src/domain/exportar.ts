@@ -112,6 +112,11 @@ export function registrosParaGeoJson(regs: readonly Registro[], talhao: Talhao, 
   return { type: 'FeatureCollection', features: [contorno, ...pontos] }
 }
 
+/** Nome do PDF do relatório, sem extensão (o navegador usa o título da página): "Relatorio_t-01-mirante_2026-11-12". */
+export function nomeDoRelatorio(talhao: Talhao, agora: Date, fuso?: string): string {
+  return nomeDoArquivo(talhao, agora, 'csv', fuso).replace(/^sentinela_/, 'Relatorio_').replace(/\.csv$/, '')
+}
+
 /** Nome de arquivo seguro: "sentinela_t-01-mirante_2026-11-11.csv". */
 export function nomeDoArquivo(talhao: Talhao, agora: Date, extensao: 'csv' | 'geojson', fuso?: string): string {
   const slug = talhao.nome.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'talhao'
