@@ -27,6 +27,10 @@ export interface MarcadorPonto {
   texto?: string
 }
 
+/** Escala do mapa de calor (do menos ao mais): uma só definição para o mapa e para a legenda. */
+export const ESCALA_CALOR = ['#ffe58f', '#f7941d', '#c62d1a'] as const
+export const OPACIDADE_CALOR = 0.72
+
 /** Cores e símbolos da camada "mudança desde a visita anterior". */
 export const COR_MUDANCA: Record<Mudanca, { fundo: string; texto: string; rotulo: string; simbolo: string }> = {
   piorou: { fundo: '#d94a3d', texto: '#ffffff', rotulo: 'Piorou', simbolo: '▲' },

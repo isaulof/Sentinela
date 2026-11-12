@@ -12,13 +12,13 @@ import { serieTemporal } from '@/domain/analise'
 import { dataBr } from '@/domain/tempo'
 import { SINAL_FRACO_M } from '@/domain/navegacao'
 import { ALVOS, type AlvoId } from '@/knowledge/alvos'
-import { COR_MUDANCA } from './estadoPonto'
+import { COR_MUDANCA, ESCALA_CALOR } from './estadoPonto'
 import { Icon } from './Icon'
 import { Card } from './kit'
 
 const ORDEM_MUDANCA: Mudanca[] = ['piorou', 'melhorou', 'igual', 'novo', 'sem_leitura']
 
-const GRADIENTE = 'linear-gradient(90deg,#fff3b0,#f59f3a,#c0391f)'
+const GRADIENTE = `linear-gradient(90deg,${ESCALA_CALOR.join(',')})`
 
 /** Legenda do calor com números: escala fixa de 0 ao teto, marca do nível de ação, cobertura e o porquê de não haver calor. */
 export function LegendaCalor({ escala, unidade, calor }: { escala: EscalaCalor; unidade: string; calor: CalorHonesto }) {

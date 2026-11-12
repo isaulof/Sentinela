@@ -7,7 +7,7 @@ import type { LngLat } from '@/domain/geo'
 import type { PlanPoint } from '@/domain/sampling'
 import type { CelulaCalor } from '@/domain/resultados'
 import { circuloGeo } from '@/domain/navegacao'
-import { COR_ESTADO, type MarcadorPonto } from './estadoPonto'
+import { COR_ESTADO, ESCALA_CALOR, OPACIDADE_CALOR, type MarcadorPonto } from './estadoPonto'
 import { Icon } from './Icon'
 
 type Base = 'satelite' | 'ruas'
@@ -127,7 +127,7 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
     m.on('load', () => {
       for (const id of ['talhoes', 'calor', 'sem-dado', 'caminho', 'eu-precisao', 'guia', 'desenho-linha', 'desenho-vertices']) m.addSource(id, { type: 'geojson', data: vazio() })
       m.addLayer({ id: 'talhoes-fill', type: 'fill', source: 'talhoes', paint: { 'fill-color': ['case', ['get', 'sel'], '#5ee19a', '#7cc7ff'], 'fill-opacity': ['case', ['get', 'sel'], 0.18, 0.08] } })
-      m.addLayer({ id: 'calor', type: 'fill', source: 'calor', paint: { 'fill-antialias': false, 'fill-opacity': 0.62, 'fill-color': ['interpolate', ['linear'], ['get', 't'], 0, '#fff3b0', 0.5, '#f59f3a', 1, '#c0391f'] } })
+      m.addLayer({ id: 'calor', type: 'fill', source: 'calor', paint: { 'fill-antialias': false, 'fill-opacity': OPACIDADE_CALOR, 'fill-color': ['interpolate', ['linear'], ['get', 't'], 0, ESCALA_CALOR[0], 0.5, ESCALA_CALOR[1], 1, ESCALA_CALOR[2]] } })
       m.addImage('hachura', hachura())
       m.addLayer({ id: 'sem-dado', type: 'fill', source: 'sem-dado', paint: { 'fill-pattern': 'hachura', 'fill-opacity': 0.85 } })
       m.addLayer({ id: 'talhoes-line', type: 'line', source: 'talhoes', paint: { 'line-color': ['case', ['get', 'sel'], '#5ee19a', '#7cc7ff'], 'line-width': ['case', ['get', 'sel'], 3, 2] } })

@@ -54,10 +54,10 @@ describe('calor honesto (bug R7: 1 amostra pintava o talhão todo)', () => {
 })
 
 describe('raio de influência', () => {
-  it('é 1,5× a distância média ao vizinho mais próximo', () => {
+  it('é 2× a distância média ao vizinho mais próximo', () => {
     const pts = [ll([0, 0]), ll([100, 0]), ll([200, 0]), ll([300, 0])]
     expect(distanciaVizinhoMediaM(pts)).toBeCloseTo(100, 0)
-    expect(raioDeInfluenciaM(pts)).toBeCloseTo(150, 0)
+    expect(raioDeInfluenciaM(pts)).toBeCloseTo(200, 0)
     expect(distanciaVizinhoMediaM([ll([0, 0])])).toBeNull()
   })
 })
@@ -190,8 +190,8 @@ describe('foco espacial (Moran I)', () => {
     expect(m.classe).toBe('disperso')
     expect(m.I!).toBeLessThan(0)
   })
-  it('xadrez com raio de 150 m: os vizinhos diagonais (141 m) têm o mesmo valor, então não é disperso', () => {
-    // Documenta a escolha do raio: 1,5× a distância ao vizinho mais próximo inclui as diagonais da grade.
+  it('xadrez com raio de 200 m: os vizinhos diagonais (141 m) têm o mesmo valor, então não é disperso', () => {
+    // Documenta a escolha do raio: 2× a distância ao vizinho mais próximo inclui as diagonais da grade.
     expect(moranI(grade((i, j) => ((i + j) % 2 ? 10 : 0))).classe).not.toBe('disperso')
   })
   it('valores sem arranjo (alternância irregular) não passam por foco', () => {
@@ -208,7 +208,7 @@ describe('foco espacial (Moran I)', () => {
   it('informa a conta: n, raio e vizinhos médios', () => {
     const m = moranI(grade((i) => (i < 2 ? 10 : 0)))
     expect(m.n).toBe(25)
-    expect(m.raioM!).toBeCloseTo(150, 0)
+    expect(m.raioM!).toBeCloseTo(200, 0)
     expect(m.vizinhosMedios!).toBeGreaterThan(2)
   })
 })

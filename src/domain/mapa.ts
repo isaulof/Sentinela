@@ -15,8 +15,12 @@ import { dataBr, diaLocal } from './tempo'
 
 /** Abaixo disso não se desenha calor: com 1 ou 2 pontos a "estimativa" seria só um palpite pintado no talhão todo. */
 export const MIN_AMOSTRAS_CALOR = 3
-/** Raio de influência = este fator × a distância média ao vizinho mais próximo. Fora dele a célula fica "sem dado". */
-export const FATOR_RAIO = 1.5
+/**
+ * Raio de influência = este fator × a distância média ao vizinho mais próximo. Fora dele a célula fica "sem dado".
+ * Com 2× os cantos e as bordas do talhão (a bordadura do plano não tem pontos) ficam cobertos: nos talhões de demonstração a
+ * cobertura vai de 89–99% (com 1,5×) para 99–100%. Onde realmente não há ponto por perto continua sem dado.
+ */
+export const FATOR_RAIO = 2
 /** Piso do raio: pontos mais próximos que isto são, na prática, o mesmo lugar (a imprecisão típica do GPS). Evita raio 0 quando há pontos repetidos. */
 export const RAIO_MINIMO_M = 25
 
