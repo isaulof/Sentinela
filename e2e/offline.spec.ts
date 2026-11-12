@@ -16,6 +16,7 @@ test('funciona sem internet depois da primeira visita, com os dados salvos', asy
 
   // E dá para registrar offline.
   await page.getByRole('button', { name: 'Registrar achado' }).click()
+  await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
   await expect(page.getByRole('dialog')).toBeVisible()
   await context.setOffline(false)
 })

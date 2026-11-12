@@ -10,6 +10,7 @@ async function abrirT04(page: Page) {
 
 async function registrarPercevejo(page: Page, quantidade: number) {
   await page.getByRole('button', { name: 'Registrar achado' }).click()
+  await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
   const d = page.getByRole('dialog')
   const nome = d.getByPlaceholder('Nome e sobrenome')
   if (await nome.isVisible()) await nome.fill('Ana Teste')
@@ -51,6 +52,7 @@ test.describe('registro dos achados', () => {
   test('a ficha mostra método, amostra, condições, responsável, posição e hora local', async ({ page }) => {
     await abrirT04(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const d = page.getByRole('dialog')
     const nome = d.getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) await nome.fill('Ana Teste')
@@ -130,6 +132,7 @@ test.describe('rascunho do registro (app fechado no meio)', () => {
 
   async function preencher(page: Page) {
     await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const d = page.getByRole('dialog')
     const nome = d.getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) await nome.fill('Ana Teste')
@@ -146,6 +149,7 @@ test.describe('rascunho do registro (app fechado no meio)', () => {
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
     await expect(page.getByText('Ponto 1 de 10')).toBeVisible()
     await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const d = page.getByRole('dialog')
     await expect(d.getByText('Rascunho recuperado')).toBeVisible()
     await expect(d.getByRole('radio', { name: 'Adulto' })).toHaveAttribute('aria-checked', 'true')
@@ -171,6 +175,7 @@ test.describe('rascunho do registro (app fechado no meio)', () => {
     await page.reload()
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
     await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const d = page.getByRole('dialog')
     await d.getByRole('button', { name: 'Descartar' }).click()
     await expect(d.getByText('Rascunho recuperado')).toHaveCount(0)
@@ -181,6 +186,7 @@ test.describe('rascunho do registro (app fechado no meio)', () => {
   test('um formulário aberto e parado não gera rascunho', async ({ page }) => {
     await abrirT04(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     await page.waitForTimeout(1200)
     expect(await lerRascunho(page)).toBeNull()
   })

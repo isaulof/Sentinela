@@ -31,6 +31,7 @@ test.describe('fluxos de negócio', () => {
     await carregarDemo(page)
     await page.goto('/#/coleta')
     await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const dialogo = page.getByRole('dialog')
     await expect(dialogo.getByText('Posição simulada (demonstração)')).toBeVisible()
     const nome = dialogo.getByPlaceholder('Nome e sobrenome')
@@ -47,6 +48,7 @@ test.describe('fluxos de negócio', () => {
     await carregarDemo(page)
     await page.goto('/#/coleta')
     await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const dialogo = page.getByRole('dialog')
     const nome = dialogo.getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) await nome.fill('Aluno Teste')
@@ -89,6 +91,7 @@ test.describe('fluxos de negócio', () => {
     await page.getByRole('button', { name: 'Ir ao ponto e checar' }).first().click()
     await expect(page).toHaveURL(/#\/coleta/)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
+    await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const dialogo = page.getByRole('dialog')
     await expect(dialogo.getByText(/Ordem de checagem aberta/)).toBeVisible()
     const nome = dialogo.getByPlaceholder('Nome e sobrenome')

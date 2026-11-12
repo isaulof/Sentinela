@@ -28,6 +28,7 @@ test('formulário de registro aberto não tem violações WCAG 2.1 AA', async ({
   await carregarDemo(page)
   await page.goto('/#/coleta')
   await page.getByRole('button', { name: 'Registrar achado' }).click()
+  await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
   await page.getByRole('dialog').waitFor()
   await esperarAnimacoes(page)
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).include('dialog').analyze()
