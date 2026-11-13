@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { LngLat } from './geo'
 import type { Registro } from './registro'
-import { mediaHistorica, validarRegistro, type ContextoValidacao } from './validation'
+import codigoFonte from './validation.ts?raw'
+import { mediaHistorica, REGRAS_VALIDACAO, validarRegistro, type ContextoValidacao } from './validation'
 
 const agora = new Date('2026-11-07T15:00:00Z')
 const base = (o: Partial<Registro> = {}): Registro => ({
@@ -69,5 +70,13 @@ describe('mediaHistorica', () => {
   it('exige ao menos 3 valores positivos', () => {
     expect(mediaHistorica([1, 2])).toBeUndefined()
     expect(mediaHistorica([0, 0, 1, 2, 3])).toBe(2)
+  })
+})
+
+describe('lista de regras mostrada ao técnico', () => {
+  it('traz exatamente as regras V01 a V12 que o validador aplica (nenhuma a mais, nenhuma a menos)', () => {
+    const aplicadas = [...new Set([...codigoFonte.matchAll(/(?:erro|aviso)\('(V\d\d)'/g)].map((m) => m[1]!))].sort()
+    expect(REGRAS_VALIDACAO.map((r) => r.codigo)).toEqual(aplicadas)
+    expect(aplicadas).toHaveLength(12)
   })
 })

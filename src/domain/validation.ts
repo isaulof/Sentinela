@@ -34,8 +34,26 @@ export interface ResultadoValidacao {
 export const FATOR_OUTLIER = 5
 export const MAX_POR_UNIDADE = 100
 export const TOLERANCIA_GPS_M = 50
+/** Precisão do GPS acima da qual o registro ganha aviso (V12). */
+export const PRECISAO_MAX_GPS_M = 15
 /** Atraso máximo aceito para o carimbo de hora em relação ao relógio (relógio do aparelho errado). */
 export const TOLERANCIA_RELOGIO_MS = 5 * 60_000
+
+/** As regras em texto, para a tela do técnico. Um teste confere que são exatamente as que `validarRegistro` aplica. */
+export const REGRAS_VALIDACAO: readonly { codigo: string; gravidade: Gravidade; titulo: string; quando: string }[] = [
+  { codigo: 'V01', gravidade: 'erro', titulo: 'Coordenadas válidas', quando: 'O registro precisa de latitude e longitude válidas.' },
+  { codigo: 'V02', gravidade: 'erro', titulo: 'Estádio fenológico válido', quando: 'O estádio tem de ser VE, VC, V1 a V12 ou R1 a R8.' },
+  { codigo: 'V03', gravidade: 'erro', titulo: 'Fase do alvo', quando: 'A fase é obrigatória e tem de existir para o alvo (ex.: ninfa ou adulto).' },
+  { codigo: 'V04', gravidade: 'erro', titulo: 'Limites numéricos', quando: `Quantidade não pode ser negativa nem passar de ${MAX_POR_UNIDADE} por unidade; percentuais ficam entre 0 e 100.` },
+  { codigo: 'V05', gravidade: 'erro', titulo: 'Zero é um dado', quando: 'Ausência só vale se o amostrador confirmar "Nenhuma ocorrência"; e essa marca não convive com medidas preenchidas.' },
+  { codigo: 'V06', gravidade: 'erro', titulo: 'Ponto do plano', quando: 'O ponto precisa pertencer ao plano de amostragem do talhão.' },
+  { codigo: 'V07', gravidade: 'erro', titulo: 'Data e hora', quando: 'O carimbo não pode ser inválido nem estar no futuro (relógio do aparelho errado).' },
+  { codigo: 'V08', gravidade: 'aviso', titulo: 'Estádio fora da janela do alvo', quando: 'O alvo é avaliado só a partir de certo estádio; o registro é salvo, sem decisão.' },
+  { codigo: 'V09', gravidade: 'erro', titulo: 'Foto de evidência', quando: 'Nível de ação atingido ou detecção sem limite numérico exige foto: é o que o agrônomo usa para decidir.' },
+  { codigo: 'V10', gravidade: 'erro', titulo: 'Valor muito acima do histórico', quando: `Quantidade maior que ${FATOR_OUTLIER} vezes a média histórica (com pelo menos 3 registros) exige foto (erro sem foto, aviso com foto) e dupla checagem.` },
+  { codigo: 'V11', gravidade: 'aviso', titulo: 'Coerência espacial', quando: `Com GPS real, posição a mais de ${TOLERANCIA_GPS_M} m do talhão: confirme se é o talhão certo.` },
+  { codigo: 'V12', gravidade: 'aviso', titulo: 'Precisão do GPS', quando: `Precisão pior que ±${PRECISAO_MAX_GPS_M} m: espere melhorar ou aproxime-se do ponto.` },
+]
 
 /**
  * Regras de validação (Bloco 3.3). Cada regra tem um código estável (V01...), citado na tela
@@ -112,7 +130,7 @@ export function validarRegistro(r: Registro, ctx: ContextoValidacao): ResultadoV
     if (fora) aviso('V11', 'posicao', `A posição está a mais de ${TOLERANCIA_GPS_M} m do talhão. Confirme se você está no talhão certo.`)
   }
   // V12 precisão do GPS
-  if (!r.posicaoSimulada && r.precisaoM !== undefined && r.precisaoM > 15) {
+  if (!r.posicaoSimulada && r.precisaoM !== undefined && r.precisaoM > PRECISAO_MAX_GPS_M) {
     aviso('V12', 'precisaoM', `Precisão do GPS de ±${Math.round(r.precisaoM)} m. Para amostragem, espere melhorar ou aproxime-se do ponto.`)
   }
 

@@ -210,7 +210,7 @@ export function Diagnostico() {
 
         <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface ring-1 ring-line">
           <li><Link to="/biblioteca" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="livro" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Guia de pragas e doenças</span><span className="block text-apoio text-text-2">Já sabe o nome? Leia na Biblioteca.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>
-          <li><Link to="/diagnostico/tecnico" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="lista" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Material do técnico</span><span className="block text-apoio text-text-2">Árvores de decisão, sintoma × sinal e regras.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>
+          <li><Link to="/diagnostico/tecnico" className="flex min-h-14 items-center gap-3 px-4 transition active:bg-surface-2"><Icon name="lista" size={20} className="text-brand" /><span className="flex-1"><span className="block font-semibold">Material do técnico</span><span className="block text-apoio text-text-2">Como o app decide: níveis de ação, validação, diagnóstico e fontes.</span></span><Icon name="seta" size={18} className="text-text-2" /></Link></li>
         </ul>
       </div>
     </>

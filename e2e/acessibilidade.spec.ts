@@ -97,3 +97,19 @@ test('questionário e resultado do diagnóstico não têm violações WCAG 2.1 A
   const folha = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).include('dialog').analyze()
   expect(folha.violations.map((v) => `folha ${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
 })
+
+for (const tema of ['light', 'dark'] as const) {
+  test.describe(`acessibilidade · material do técnico, todas as seções · tema ${tema}`, () => {
+    test.use({ colorScheme: tema })
+    for (const secao of ['Visão geral', 'Amostragem', 'Níveis de ação', 'Validação', 'Diagnóstico', 'Árvores e regras', 'Fontes']) {
+      test(`sem violações WCAG 2.1 AA em "${secao}"`, async ({ page }) => {
+        await page.goto('/#/diagnostico/tecnico')
+        await page.getByRole('radio', { name: secao, exact: true }).click()
+        await page.waitForTimeout(300)
+        await esperarAnimacoes(page)
+        const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+        expect(r.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} elemento(s) · ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
+      })
+    }
+  })
+}
