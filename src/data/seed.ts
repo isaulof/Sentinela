@@ -4,7 +4,7 @@ import { generatePlan, recommendedPointCount, DEFAULT_BUFFER_M, type SamplingMet
 import { camposV2, type Registro } from '@/domain/registro'
 import { ALVOS, type AlvoId } from '@/knowledge/alvos'
 import { db } from './db'
-import { salvarFotoBruta } from './fotos'
+import { comprimirImagem, salvarFotoBruta } from './fotos'
 
 /**
  * Dados de demonstração da Fazenda Santa Aurora (fictícia, em Lucas do Rio Verde - MT).
@@ -39,15 +39,48 @@ function fotoDemo(titulo: string): Blob {
   return new Blob([svg], { type: 'image/svg+xml' })
 }
 
-export async function carregarDemonstracao(agora = new Date()): Promise<void> {
+/** Foto de referência (já presente no app, em public/imagens/diagnostico) de cada problema que a demonstração registra. */
+export const FOTOS_REAIS_DA_DEMO: Readonly<Record<string, string>> = {
+  'Percevejo-marrom': 'percevejo.jpg',
+  'Lagarta-falsa-medideira': 'lagarta.jpg',
+  'Ferrugem-asiática': 'ferrugem.jpg',
+  'Mancha-alvo': 'manchaalvo.jpg',
+}
+
+export interface FotoPronta { blob: Blob; largura: number; altura: number }
+export type BuscarFoto = (arquivo: string) => Promise<FotoPronta>
+
+/** Lê a foto real da própria aplicação (mesma origem: funciona offline depois da primeira visita) e a reduz como as fotos da câmera. */
+export const buscarFotoReal: BuscarFoto = async (arquivo) => {
+  const r = await fetch(`./imagens/diagnostico/${arquivo}`)
+  if (!r.ok) throw new Error(`Foto ${arquivo}: HTTP ${r.status}`)
+  return comprimirImagem(await r.blob())
+}
+
+/**
+ * Carrega a demonstração. As fotos dos pontos são fotos reais; se alguma não puder ser lida (por exemplo, primeira visita
+ * sem internet), aquele ponto usa a ilustração desenhada, e a demonstração carrega do mesmo jeito.
+ */
+export async function carregarDemonstracao(agora = new Date(), buscarFoto: BuscarFoto = buscarFotoReal): Promise<void> {
+  // As fotos são preparadas ANTES da transação: esperar rede ou canvas dentro dela faria o banco encerrá-la antes da hora.
+  const reais = new Map<string, FotoPronta>()
+  for (const [titulo, arquivo] of Object.entries(FOTOS_REAIS_DA_DEMO)) {
+    try { reais.set(titulo, await buscarFoto(arquivo)) } catch { /* sem a foto real: vale a ilustração */ }
+  }
+
   await db.transaction('rw', [db.talhoes, db.planos, db.registros, db.ordens, db.fotos], async () => {
     const talhoes: Talhao[] = []
     const planos: PlanoSalvo[] = []
     const regs: Registro[] = []
     const foto = new Map<string, string>()
 
-    const nova = async (titulo: string): Promise<string> => {
-      const id = await salvarFotoBruta(fotoDemo(titulo), 640, 480)
+    // Carregar de novo troca os registros da demonstração (mesmos ids): as fotos da carga anterior não podem ficar órfãs ocupando espaço.
+    const antigos = await db.registros.where('id').startsWith('DEMO-').toArray()
+    await db.fotos.bulkDelete(antigos.flatMap((r) => r.fotoIds))
+
+    const nova = async (titulo: string, base: string): Promise<string> => {
+      const real = reais.get(base)
+      const id = real ? await salvarFotoBruta(real.blob, real.largura, real.altura) : await salvarFotoBruta(fotoDemo(titulo), 640, 480)
       foto.set(titulo, id)
       return id
     }
@@ -66,7 +99,7 @@ export async function carregarDemonstracao(agora = new Date()): Promise<void> {
       const semNada = c.quantidade === 0 && !c.presente && !c.desfolhaPct && !c.severidadePct
       regs.push({
         id: `DEMO-${talhaoId}-${c.alvo}-${ponto.id}-${d}`, talhaoId, amostrador: 'Demonstração', criadoEm: dia(agora, d), estadio, finalidade: 'graos',
-        pontoId: ponto.id, posicao: ponto.position, posicaoSimulada: true, zero: semNada, ...camposV2({ posicao: ponto.position }, { metodo: ALVOS[c.alvo].coleta.metodo, parteDaPlanta: ALVOS[c.alvo].coleta.parte, planejada: ponto.position, inicio: new Date(dia(agora, d)), fim: new Date(dia(agora, d)), responsavel: 'Prof. responsável (demonstração)' }), fotoIds: fotoTitulo ? [await nova(`${fotoTitulo} · ${talhaoId} ${ponto.id}`)] : [],
+        pontoId: ponto.id, posicao: ponto.position, posicaoSimulada: true, zero: semNada, ...camposV2({ posicao: ponto.position }, { metodo: ALVOS[c.alvo].coleta.metodo, parteDaPlanta: ALVOS[c.alvo].coleta.parte, planejada: ponto.position, inicio: new Date(dia(agora, d)), fim: new Date(dia(agora, d)), responsavel: 'Prof. responsável (demonstração)' }), fotoIds: fotoTitulo ? [await nova(`${fotoTitulo} · ${talhaoId} ${ponto.id}`, fotoTitulo)] : [],
         observacao: '', ...c,
       })
     }
