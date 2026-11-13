@@ -4,7 +4,7 @@ import { novoId, repo } from '@/data/repo'
 import { carregarDemonstracao } from '@/data/seed'
 import { useClima } from '@/data/useClima'
 import { chuvaNasProximasHoras, diaEmCuiaba, instante, LIMIARES, resumoPorDia, riscoFerrugem, riscoMofo, type RiscoDoenca } from '@/domain/climate'
-import { ordemPorClima, ordemPorDrone, SLA_CHECAGEM_H, type AnomaliaDrone } from '@/domain/hibrido'
+import { ordemPorClima, SLA_CHECAGEM_H } from '@/domain/hibrido'
 import type { OrdemChecagem } from '@/domain/entidades'
 import { useNavigate } from '@tanstack/react-router'
 import { Icon } from '../components/Icon'
@@ -47,10 +47,10 @@ function BarrasMolhamento({ dias }: { dias: ReturnType<typeof resumoPorDia> }) {
 
 function Fluxo() {
   const passos = [
-    { rotulo: 'ALERTA', cor: 'warn' as Tom, titulo: 'Sensores e drone avisam', texto: 'Clima/IoT calcula risco; o drone aponta áreas com índice de vegetação baixo (NDRE/NDVI). Um alerta NÃO é um diagnóstico.' },
+    { rotulo: 'ALERTA', cor: 'warn' as Tom, titulo: 'O clima avisa', texto: 'O app calcula o risco de ferrugem e de mofo-branco pelo clima dos últimos dias. Um alerta NÃO é um diagnóstico.' },
     { rotulo: 'ORDEM', cor: 'info' as Tom, titulo: 'Ordem de checagem', texto: `O app liga o alerta ao ponto de amostragem mais próximo e abre uma ordem, com prazo de ${SLA_CHECAGEM_H} h.` },
     { rotulo: 'CONFIRMAÇÃO', cor: 'ok' as Tom, titulo: 'Inspeção em campo', texto: 'O amostrador vai ao ponto, procura sinais com lupa, fotografa e responde: biótica confirmada ou falso positivo (com a causa).' },
-    { rotulo: 'DECISÃO', cor: 'danger' as Tom, titulo: 'Agrônomo decide', texto: 'Com clima, imagem e confirmação em campo, o agrônomo decide aplicar ou não. Falso positivo vira "aplicação evitada".' },
+    { rotulo: 'DECISÃO', cor: 'danger' as Tom, titulo: 'Agrônomo decide', texto: 'Com clima e confirmação em campo, o agrônomo decide aplicar ou não. Falso positivo vira "aplicação evitada".' },
   ]
   return (
     <ol className="grid gap-3 md:grid-cols-4">
@@ -76,7 +76,6 @@ export function Alertas() {
   const ordens = useOrdens()
   const [tentativa, setTentativa] = useState(0)
   const [agora, setAgora] = useState(() => new Date())
-  const [voos, setVoos] = useState(0)
 
   const centro = useMemo(() => (talhao ? { lng: talhao.anel.reduce((a, p) => a + p[0], 0) / talhao.anel.length, lat: talhao.anel.reduce((a, p) => a + p[1], 0) / talhao.anel.length } : null), [talhao])
   const clima = useClima(centro?.lat ?? null, centro?.lng ?? null, tentativa)
@@ -89,7 +88,7 @@ export function Alertas() {
 
   if (talhoes === undefined) return null
   if (talhoes.length === 0) {
-    return (<><Titulo>Alertas</Titulo><Vazio icone="alerta" titulo="Nenhum talhão para monitorar" texto="Cadastre um talhão ou carregue a demonstração para ver clima, drone e ordens de checagem." acao={<Button onClick={() => void carregarDemonstracao()}>Carregar demonstração</Button>} /></>)
+    return (<><Titulo>Alertas</Titulo><Vazio icone="alerta" titulo="Nenhum talhão para monitorar" texto="Cadastre um talhão ou carregue a demonstração para ver o risco pelo clima e as ordens de checagem." acao={<Button onClick={() => void carregarDemonstracao()}>Carregar demonstração</Button>} /></>)
   }
 
   async function criarOrdemClima(d: 'ferrugem' | 'mofo', r: RiscoDoenca) {
@@ -100,15 +99,6 @@ export function Alertas() {
     mostrar('Ordem de checagem criada')
   }
 
-  /** Simula um voo: gera uma anomalia de NDRE perto de um ponto do plano (determinística por voo). */
-  async function simularDrone() {
-    if (!talhao || !plano || plano.pontos.length === 0) return
-    const alvo = plano.pontos[(voos * 3 + 2) % plano.pontos.length]!
-    const a: AnomaliaDrone = { posicao: [alvo.position[0] + 0.0002, alvo.position[1] - 0.00015], indice: 'NDRE', valor: 0.28 + (voos % 3) * 0.03, referencia: 0.5, areaM2: 1500 + voos * 350 }
-    const o = ordemPorDrone(talhao.id, plano, a, novoId('ORD'), new Date())
-    if (o) { await repo.salvarOrdem(o); setVoos(voos + 1); mostrar('Voo simulado: anomalia detectada') }
-  }
-
   const irAoPonto = (o: OrdemChecagem) => { setTalhao(o.talhaoId); setPontoFoco(o.pontoId); void navegar({ to: '/coleta' }) }
   const minutos = (iso: string) => Math.max(0, Math.round((agora.getTime() - Date.parse(iso)) / 60000))
   const idade = (iso: string) => { const m = minutos(iso); return m < 90 ? `${m} min` : m < 2880 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} dias` }
@@ -117,7 +107,7 @@ export function Alertas() {
 
   return (
     <>
-      <Titulo sub="Clima, drone e ordens de checagem: alerta, confirmação em campo e decisão do agrônomo.">Alertas</Titulo>
+      <Titulo sub="Risco pelo clima e ordens de checagem: alerta, confirmação em campo e decisão do agrônomo.">Alertas</Titulo>
 
       <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Talhão">
         {talhoes.map((t) => (
@@ -166,15 +156,12 @@ export function Alertas() {
         </Card>
 
         <Card className="space-y-4">
-          <div><h2 className="text-subtitulo">Drone e visão computacional</h2><p className="text-apoio text-text-2">Simulação: o app gera uma anomalia de índice de vegetação (NDRE) e a liga ao ponto mais próximo.</p></div>
-          <Button block icon="mapa" onClick={() => void simularDrone()} disabled={!plano}>Simular voo de drone</Button>
-          <p className="text-apoio text-text-2">O drone mostra <b className="text-text">onde</b> há algo diferente, não <b className="text-text">o quê</b>. Herbicida, compactação e estresse hídrico também derrubam o NDRE. Por isso o alerta vira uma ordem de checagem, não uma aplicação.</p>
+          <p className="text-apoio text-text-2">O clima mostra <b className="text-text">quando</b> as condições favorecem uma doença, não <b className="text-text">se</b> ela está na lavoura. Por isso o alerta vira uma ordem de checagem em campo, não uma aplicação.</p>
           <div>
             <h3 className="mb-1.5 font-semibold">Limitações do sistema</h3>
             <ul className="space-y-1.5 text-apoio text-text-2">
-              <li className="flex gap-2"><Icon name="info" size={18} className="mt-0.5 shrink-0" />Nuvens, sombra e resolução limitam a imagem do drone; o voo exige boas condições.</li>
               <li className="flex gap-2"><Icon name="info" size={18} className="mt-0.5 shrink-0" />Sem sinal de internet no campo, o app funciona offline, mas o clima novo e os mapas não carregados ficam indisponíveis.</li>
-              <li className="flex gap-2"><Icon name="info" size={18} className="mt-0.5 shrink-0" />A imagem não distingue doença de deficiência nutricional ou de herbicida; custo de drone e sensores exige escala.</li>
+              <li className="flex gap-2"><Icon name="info" size={18} className="mt-0.5 shrink-0" />O risco é calculado por modelo meteorológico, não por uma estação na fazenda; só a inspeção em campo confirma a doença.</li>
             </ul>
           </div>
         </Card>
@@ -182,7 +169,7 @@ export function Alertas() {
 
       <section className="mt-8 space-y-3" aria-labelledby="ordens">
         <h2 id="ordens" className="text-secao">Ordens de checagem</h2>
-        {(ordens ?? []).length === 0 && <p className="text-text-2">Nenhuma ordem ainda. Simule um voo de drone ou crie uma ordem a partir do risco climático.</p>}
+        {(ordens ?? []).length === 0 && <p className="text-text-2">Nenhuma ordem ainda. Crie uma ordem a partir do risco climático.</p>}
         <div className="grid gap-3 lg:grid-cols-2">
           {abertas.map((o) => (
             <Card key={o.id} className="space-y-2 border-warn">

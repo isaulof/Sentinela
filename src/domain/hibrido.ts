@@ -1,5 +1,4 @@
-import type { OrdemChecagem, PlanoSalvo } from './entidades'
-import { haversineM, type LngLat } from './geo'
+import type { OrdemChecagem } from './entidades'
 import type { Risco } from './climate'
 import type { Registro } from './registro'
 
@@ -8,34 +7,6 @@ import type { Registro } from './registro'
  * confirma; a decisão de aplicar é do agrônomo. Nenhuma função aqui "decide aplicar".
  */
 export const SLA_CHECAGEM_H = 24
-
-export interface AnomaliaDrone {
-  posicao: LngLat
-  indice: 'NDVI' | 'NDRE'
-  valor: number
-  /** Valor típico da área sadia do talhão, para dar contexto. */
-  referencia: number
-  areaM2: number
-}
-
-export function pontoMaisProximo(plano: Pick<PlanoSalvo, 'pontos'>, posicao: LngLat): { pontoId: string; distanciaM: number } | undefined {
-  let melhor: { pontoId: string; distanciaM: number } | undefined
-  for (const p of plano.pontos) {
-    const d = haversineM(p.position, posicao)
-    if (!melhor || d < melhor.distanciaM) melhor = { pontoId: p.id, distanciaM: d }
-  }
-  return melhor
-}
-
-export function ordemPorDrone(talhaoId: string, plano: Pick<PlanoSalvo, 'pontos'>, a: AnomaliaDrone, id: string, agora: Date): OrdemChecagem | undefined {
-  const alvo = pontoMaisProximo(plano, a.posicao)
-  if (!alvo) return undefined
-  const queda = Math.round((1 - a.valor / a.referencia) * 100)
-  return {
-    id, talhaoId, pontoId: alvo.pontoId, origem: 'drone', criadaEm: agora.toISOString(), status: 'aberta',
-    motivo: `${a.indice} ${a.valor.toFixed(2)} (${queda}% abaixo do talhão), anomalia de ${Math.round(a.areaM2)} m² a ${Math.round(alvo.distanciaM)} m do ponto ${alvo.pontoId}.`,
-  }
-}
 
 export function ordemPorClima(talhaoId: string, pontoId: string, doenca: 'ferrugem' | 'mofo', risco: Risco, id: string, agora: Date): OrdemChecagem | undefined {
   if (risco !== 'alto') return undefined

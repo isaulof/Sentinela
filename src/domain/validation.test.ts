@@ -74,9 +74,9 @@ describe('mediaHistorica', () => {
 })
 
 describe('lista de regras mostrada ao técnico', () => {
-  it('traz exatamente as regras V01 a V12 que o validador aplica (nenhuma a mais, nenhuma a menos)', () => {
+  it('traz exatamente as regras V01 a V13 que o validador aplica (nenhuma a mais, nenhuma a menos)', () => {
     const aplicadas = [...new Set([...codigoFonte.matchAll(/(?:erro|aviso)\('(V\d\d)'/g)].map((m) => m[1]!))].sort()
     expect(REGRAS_VALIDACAO.map((r) => r.codigo)).toEqual(aplicadas)
-    expect(aplicadas).toHaveLength(12)
+    expect(aplicadas).toHaveLength(13)
   })
 })

@@ -1,25 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { OrdemChecagem } from './entidades'
-import { calcularKpis, ordemPorClima, ordemPorDrone, pontoMaisProximo, resolverOrdem } from './hibrido'
+import { calcularKpis, ordemPorClima, resolverOrdem } from './hibrido'
 import type { Registro } from './registro'
 
-const plano = { pontos: [
-  { id: 'P01', order: 1, position: [-55.92, -13.05] as const },
-  { id: 'P02', order: 2, position: [-55.915, -13.052] as const },
-] }
 const t0 = new Date('2026-11-07T08:00:00Z')
 
 describe('ordens', () => {
-  it('drone: aponta o ponto mais próximo e explica a queda do índice', () => {
-    expect(pontoMaisProximo(plano, [-55.9151, -13.0521])?.pontoId).toBe('P02')
-    const o = ordemPorDrone('T-02', plano, { posicao: [-55.9151, -13.0521], indice: 'NDRE', valor: 0.3, referencia: 0.5, areaM2: 1800 }, 'o1', t0)!
-    expect(o.pontoId).toBe('P02')
-    expect(o.origem).toBe('drone')
-    expect(o.motivo).toMatch(/40% abaixo/)
-  })
-  it('drone: sem pontos no plano não gera ordem', () => {
-    expect(ordemPorDrone('T', { pontos: [] }, { posicao: [0, 0], indice: 'NDVI', valor: 0.2, referencia: 0.6, areaM2: 10 }, 'x', t0)).toBeUndefined()
-  })
   it('clima: só risco alto gera ordem', () => {
     expect(ordemPorClima('T', 'P01', 'ferrugem', 'moderado', 'x', t0)).toBeUndefined()
     expect(ordemPorClima('T', 'P01', 'mofo', 'alto', 'x', t0)?.motivo).toMatch(/mofo-branco/)

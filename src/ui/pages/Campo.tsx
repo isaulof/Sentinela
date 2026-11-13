@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { registrarSemOcorrencia } from '@/data/coleta'
+import { PlantasAnalisadas } from '../components/PlantasAnalisadas'
 import { ehFaltaDeEspaco, mensagemDeGravacao } from '@/data/erros'
 import { useFazenda, usePendencias, usePlano, useRegistros, useTalhoes } from '@/data/hooks'
 import { carregarDemonstracao } from '@/data/seed'
@@ -45,6 +46,7 @@ export function Campo() {
   const [ponto, setPonto] = useState<string | null>(pontoFoco)
   useEffect(() => { if (pontoFoco) setPontoFoco(null) }, [pontoFoco, setPontoFoco])
   const [painel, setPainel] = useState<Painel>(null)
+  const [plantasDigitadas, setPlantasDigitadas] = useState<Record<string, number | null>>({})
   const [nomeDigitado, setNomeDigitado] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [confirmacao, setConfirmacao] = useState<DadosConfirmacao | null>(null)
@@ -81,15 +83,19 @@ export function Campo() {
   const dist = gps.estado === 'ok' && pt ? Math.round(haversineM(gps.fix.posicao, pt.position)) : null
   const linhaGuia = navegando && gps.estado === 'ok' && pt ? { de: gps.fix.posicao, ate: pt.position } : null
   const regsPonto = rodada.filter((r) => r.pontoId === alvoPonto)
+  // Plantas analisadas: uma vez por ponto. Vale o que a pessoa digitou; sem digitar, o que já foi gravado neste ponto na rodada.
+  const chavePlantas = `${talhao?.id}:${alvoPonto}`
+  const plantas: number | null = chavePlantas in plantasDigitadas ? plantasDigitadas[chavePlantas]! : (regsPonto.find((r) => r.plantasAnalisadas)?.plantasAnalisadas ?? null)
+  const campoPlantas = <PlantasAnalisadas valor={plantas} onChange={(n) => setPlantasDigitadas((m) => ({ ...m, [chavePlantas]: n }))} />
   const pendPonto = (pendencias ?? []).filter((p) => p.pontoId === alvoPonto)
   const concluida = feitos === pontos.length
   const irPara = (i: number) => { const p = pontos[(i + pontos.length) % pontos.length]; if (p) setPonto(p.id) }
 
   async function semOcorrencia(nome: string) {
-    if (!alvoPonto || !pt || !plano || !talhao) return
+    if (!alvoPonto || !pt || !plano || !talhao || !plantas) return
     setSalvando(true)
     try {
-      const gravados = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, gps: gps.estado === 'ok' ? gps.fix : null, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) })
+      const gravados = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, plantasAnalisadas: plantas, gps: gps.estado === 'ok' ? gps.fix : null, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) })
       if (gravados.length === 0) { mostrar('Não foi possível registrar. Tente de novo.', 'erro'); return }
       mostrar(`Ponto ${pt.order}: sem ocorrência`)
       setConfirmacao({ ids: gravados.map((g) => g.id), pontoId: alvoPonto, ordem: pt.order, titulo: `Ponto ${pt.order}: sem ocorrência`, linhas: [`${gravados.length} alvos com zero: ${gravados.map((g) => ALVOS[g.alvo].nome).join(', ')}`, dataHoraBr(gravados[0]!.criadoEm, gravados[0]!.fusoHorario)] })
@@ -127,13 +133,14 @@ export function Campo() {
       </Folha>
       <Folha aberta={painel === 'acoes'} onFechar={() => setPainel(null)} titulo={`Ponto ${pt?.order ?? ''}: o que você encontrou?`}>
         <div className="grid gap-2.5">
-          <Button block icon="check" disabled={!alvoPonto || salvando} onClick={pedirSemOcorrencia}>{salvando ? 'Registrando…' : 'Sem ocorrência'}</Button>
-          <Button block variant="secondary" icon="lupa" disabled={!alvoPonto} onClick={() => setPainel('achado')}>Registrar achado</Button>
+          {campoPlantas}
+          <Button block icon="check" disabled={!alvoPonto || salvando || !plantas} onClick={pedirSemOcorrencia}>{salvando ? 'Registrando…' : 'Sem ocorrência'}</Button>
+          <Button block variant="secondary" icon="lupa" disabled={!alvoPonto || !plantas} onClick={() => setPainel('achado')}>Registrar achado</Button>
           <Button block variant="secondary" icon="duvida" disabled={!alvoPonto} onClick={() => setPainel('pendencia')}>Não sei o que é</Button>
         </div>
       </Folha>
       <Folha aberta={painel === 'achado'} onFechar={() => setPainel(null)} titulo="Registrar achado">
-        {alvoPonto && <FormRegistro talhao={talhao} plano={plano} pontoId={alvoPonto} registrosTalhao={registros ?? []} gps={gps.estado === 'ok' ? gps.fix : null} onSalvo={(r) => { setPainel(null); setConfirmacao({ ids: [r.id], pontoId: r.pontoId, ordem: pt?.order ?? 0, titulo: `Ponto ${pt?.order ?? ''}: registro salvo`, linhas: [resumoDoRegistro(r)] }); setPonto(navegando ? null : r.pontoId) }} />}
+        {alvoPonto && <FormRegistro talhao={talhao} plano={plano} pontoId={alvoPonto} registrosTalhao={registros ?? []} gps={gps.estado === 'ok' ? gps.fix : null} plantasAnalisadas={plantas ?? undefined} onSalvo={(r) => { setPainel(null); setConfirmacao({ ids: [r.id], pontoId: r.pontoId, ordem: pt?.order ?? 0, titulo: `Ponto ${pt?.order ?? ''}: registro salvo`, linhas: [resumoDoRegistro(r)] }); setPonto(navegando ? null : r.pontoId) }} />}
       </Folha>
       <Folha aberta={painel === 'pendencia'} onFechar={() => setPainel(null)} titulo="Guardar para diagnóstico">
         {alvoPonto && pt && <FormPendencia talhao={talhao} pontoId={alvoPonto} ordem={pt.order} onSalvo={() => { setPainel(null); setPonto(null) }} />}
@@ -204,9 +211,10 @@ export function Campo() {
               <span className="hidden text-apoio text-text-2 lg:inline">{gps.estado === 'ok' ? `${dist} m de você (GPS ±${Math.round(gps.fix.precisaoM)} m)` : gps.estado === 'erro' ? gps.motivo : 'Procurando GPS…'}</span>
             </div>
 
+            {campoPlantas}
             <div className="grid grid-cols-3 gap-2 lg:grid-cols-1 lg:gap-2.5">
-              <Button block icon="check" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-corpo" disabled={!alvoPonto || salvando} onClick={pedirSemOcorrencia}>{salvando ? 'Registrando…' : 'Sem ocorrência'}</Button>
-              <Button block variant="secondary" icon="lupa" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-corpo" disabled={!alvoPonto} onClick={() => setPainel('achado')}>Registrar achado</Button>
+              <Button block icon="check" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-corpo" disabled={!alvoPonto || salvando || !plantas} onClick={pedirSemOcorrencia}>{salvando ? 'Registrando…' : 'Sem ocorrência'}</Button>
+              <Button block variant="secondary" icon="lupa" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-corpo" disabled={!alvoPonto || !plantas} onClick={() => setPainel('achado')}>Registrar achado</Button>
               <Button block variant="secondary" icon="duvida" className="min-h-[4.25rem] flex-col gap-1 px-1.5 text-[0.8125rem] leading-tight !whitespace-normal text-center lg:min-h-12 lg:flex-row lg:gap-2 lg:px-5 lg:text-corpo" disabled={!alvoPonto} onClick={() => setPainel('pendencia')}>Não sei o que é</Button>
             </div>
           </Card>

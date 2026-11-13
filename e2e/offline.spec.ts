@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 import { test } from './fixtures'
-import { carregarDemo } from './ajuda'
+import { carregarDemo, informarPlantas } from './ajuda'
 
 test('funciona sem internet depois da primeira visita, com os dados salvos', async ({ page, context }) => {
   await carregarDemo(page)
@@ -16,6 +16,7 @@ test('funciona sem internet depois da primeira visita, com os dados salvos', asy
   await expect(page.getByText(/Sem internet/)).toBeVisible()
 
   // E dá para registrar offline.
+  await informarPlantas(page)
   await page.getByRole('button', { name: 'Registrar achado' }).click()
   await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
   await expect(page.getByRole('dialog')).toBeVisible()

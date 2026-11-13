@@ -69,6 +69,7 @@ export function camposDoRegistro(r: Registro, completo = false): CampoDoRegistro
   add('metodo', usado ? 'Método usado' : 'Método', usado || metodoDoRegistro(r), true)
   if (completo && usado) add('metodoProtocolo', 'Método do protocolo', metodoDoRegistro(r), true)
   if (completo) add('parte', 'Onde olhar', r.parteDaPlanta, true)
+  add('plantas', 'Plantas analisadas', r.plantasAnalisadas ? String(r.plantasAnalisadas) : undefined)
   add('amostra', 'Amostra', r.areaAmostrada)
   add('fase', 'Fase', r.fase)
   add('condicoes', 'Condições', condicoesDoRegistro(r))

@@ -7,6 +7,11 @@ export async function carregarDemo(page: Page) {
   await page.getByText('Demonstração carregada').waitFor()
 }
 
+/** Informa as plantas analisadas no ponto (obrigatório antes de registrar). Vale para todos os alvos do ponto. */
+export async function informarPlantas(page: Page, n = 10) {
+  await page.getByLabel('Plantas analisadas').fill(String(n))
+}
+
 export const ROTAS = ['/', '/talhoes', '/talhoes/novo', '/talhoes/T-01', '/talhoes/T-01/relatorio', '/coleta', '/alertas', '/diagnostico', '/diagnostico/tecnico', '/biblioteca', '/perfil'] as const
 
 /** Gera um PNG real no navegador (a compressão de fotos do app exige uma imagem decodificável). */

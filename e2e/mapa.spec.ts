@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { test } from './fixtures'
-import { carregarDemo, esperarAnimacoes } from './ajuda'
+import { carregarDemo, esperarAnimacoes, informarPlantas } from './ajuda'
 
 async function abrirMapaT01(page: Page) {
   await carregarDemo(page)
@@ -14,6 +14,7 @@ test.describe('mapa inteligente v2', () => {
     await page.goto('/#/coleta')
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
     await expect(page.getByText('0 de 10 pontos coletados')).toBeVisible()
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Sem ocorrência', exact: true }).click()
     const nome = page.getByRole('dialog').getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) { await nome.fill('Ana Teste'); await page.getByRole('button', { name: 'Continuar' }).click() }

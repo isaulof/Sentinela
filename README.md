@@ -16,7 +16,7 @@ Aplicativo web instalável (PWA) que funciona **offline**, em celular e computad
 | 1 | Caminhamento e amostragem | **Talhões**: desenhe o contorno no mapa; o app gera o plano (zigzag ou diagonais), com bordadura e nº de pontos por área. Editar e apagar talhão |
 | 2 | Diagnóstico diferencial | **Diagnóstico**: árvores de decisão, quadro sintoma × sinal, regras SE…ENTÃO com fonte |
 | 3 | Dados e decisão | **Coleta**: registro de 22 alvos (pragas e doenças) com validação, foto, método de coleta, condições do dia e trilha de auditoria (corrigir cria nova versão; desfazer anula; nada é apagado). **Guia até o ponto** pelo GPS em tela cheia. **Talhão**: mapa de calor, série temporal e nível de ação |
-| 4 | Sensores, drone e agrônomo | **Alertas**: risco climático (Open-Meteo), voo de drone simulado, ordens de checagem com prazo e KPIs |
+| 4 | Clima e agrônomo | **Alertas**: risco de ferrugem e mofo-branco pelo clima (Open-Meteo), ordens de checagem com prazo e KPIs |
 | 5 | Gestão | **Início** (clima, próxima ação, resumo), **Relatório do talhão em PDF** (croqui, resultado por alvo e uma ficha por ponto), exportação **CSV/GeoJSON** e backup |
 | — | Biblioteca | Ficha completa por praga e doença, com **fonte numerada em cada fato** (Embrapa, Sistemas de Produção 17). Sem marcas e sem doses; lacunas ditas com honestidade |
 

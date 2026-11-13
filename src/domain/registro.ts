@@ -56,6 +56,8 @@ export interface Registro {
   protocoloVersao?: string
   /** Repetições da amostragem (ex.: 5 batidas) e a área/comprimento amostrado (ex.: "5 batidas de 1 m"). */
   repeticoes?: number
+  /** Plantas olhadas no ponto (um número por visita ao ponto, igual para todos os alvos). Obrigatório nos registros novos; os antigos não têm e não recebem valor inventado. */
+  plantasAnalisadas?: number
   areaAmostrada?: string
   parteDaPlanta?: string
   /** Início e fim da amostragem no ponto (ISO UTC). `criadoEm` continua sendo o instante em que foi salvo. */
@@ -92,7 +94,7 @@ export const estaAtivo = (r: Pick<Registro, 'substituidoPorId' | 'anuladoEm'>): 
 export const ativos = <T extends Pick<Registro, 'substituidoPorId' | 'anuladoEm'>>(regs: readonly T[]): T[] => regs.filter(estaAtivo)
 
 /** Campos que uma correção pode mudar: a medida e a evidência. Quem, quando e onde nunca mudam. */
-export type Correcao = Partial<Pick<Registro, 'quantidade' | 'zero' | 'presente' | 'severidadePct' | 'desfolhaPct' | 'observacao' | 'fase' | 'fotoIds' | 'repeticoes' | 'areaAmostrada' | 'condicoes'>>
+export type Correcao = Partial<Pick<Registro, 'quantidade' | 'zero' | 'presente' | 'severidadePct' | 'desfolhaPct' | 'observacao' | 'fase' | 'fotoIds' | 'repeticoes' | 'plantasAnalisadas' | 'areaAmostrada' | 'condicoes'>>
 
 /**
  * Nova versão de um registro. Mantém `criadoEm` (o instante da medição, que define o dia da visita) e acrescenta

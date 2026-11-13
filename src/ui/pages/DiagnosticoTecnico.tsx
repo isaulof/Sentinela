@@ -28,9 +28,9 @@ const DaFonte = () => <Badge tom="ok" icon="check">Fonte Embrapa</Badge>
 const ETAPAS: { n: number; titulo: string; texto: string; onde: string; aba?: Aba }[] = [
   { n: 1, titulo: 'Plano de amostragem', texto: 'Do contorno desenhado no mapa, o app calcula quantos pontos amostrar e onde, andando em zigzag ou nas diagonais, longe da borda.', onde: 'Talhões', aba: 'amostragem' },
   { n: 2, titulo: 'Registro no ponto', texto: 'O amostrador conta ou avalia o alvo e o app grava junto estádio, data e hora, posição, método e responsável.', onde: 'Coleta' },
-  { n: 3, titulo: 'Validação', texto: 'Doze regras (V01 a V12) barram dado impossível e pedem foto quando há decisão em jogo.', onde: 'Coleta', aba: 'validacao' },
+  { n: 3, titulo: 'Validação', texto: 'Treze regras (V01 a V13) barram dado impossível e pedem foto quando há decisão em jogo.', onde: 'Coleta', aba: 'validacao' },
   { n: 4, titulo: 'Nível de ação', texto: 'Cada registro é comparado ao limite publicado pela Embrapa. Sem limite numérico, vira "detecção" para o agrônomo decidir.', onde: 'Coleta e Talhão', aba: 'niveis' },
-  { n: 5, titulo: 'Leitura do talhão', texto: 'Os pontos viram mapa de calor, série no tempo e resultado por alvo. Clima e drone abrem ordens de checagem.', onde: 'Talhão e Alertas' },
+  { n: 5, titulo: 'Leitura do talhão', texto: 'Os pontos viram mapa de calor, série no tempo e resultado por alvo. O risco pelo clima abre ordens de checagem.', onde: 'Talhão e Alertas' },
   { n: 6, titulo: 'Decisão do agrônomo', texto: 'O app nunca manda aplicar produto. Ele organiza a evidência (números, fotos, mapa, fonte) para quem decide.', onde: 'Relatório em PDF' },
 ]
 
@@ -334,7 +334,7 @@ function FontesEDecisoes() {
     ['Risco de ferrugem pelo clima', `Temperatura média de ${LIMIARES.ferrugem.tMin} a ${LIMIARES.ferrugem.tMax} °C e pelo menos ${LIMIARES.ferrugem.horasMolhadasDia} h molhadas por dia. Em ${LIMIARES.janelaDias} dias: ${LIMIARES.ferrugem.diasModerado} dias favoráveis = moderado; ${LIMIARES.ferrugem.diasAlto} = alto.`],
     ['Risco de mofo-branco pelo clima', `Temperatura média de ${LIMIARES.mofo.tMin} a ${LIMIARES.mofo.tMax} °C e pelo menos ${LIMIARES.mofo.horasMolhadasDia} h molhadas por dia. Em ${LIMIARES.janelaDias} dias: ${LIMIARES.mofo.diasModerado} dias favoráveis = moderado; ${LIMIARES.mofo.diasAlto} = alto.`],
     ['Hora "molhada"', `Umidade de ${LIMIARES.umidadeMolhadaPct}% ou mais, ou chuva de ${String(LIMIARES.chuvaMolhadaMm).replace('.', ',')} mm ou mais (aproximação do molhamento da folha).`],
-    ['Ordem de checagem', `O agrônomo tem ${SLA_CHECAGEM_H} horas para checar uma ordem aberta por clima ou drone.`],
+    ['Ordem de checagem', `O agrônomo tem ${SLA_CHECAGEM_H} horas para checar uma ordem de checagem aberta pelo risco do clima.`],
     ['Validação', `Valor maior que ${FATOR_OUTLIER}× a média histórica pede foto; limite de ${MAX_POR_UNIDADE} por unidade; GPS a mais de ${TOLERANCIA_GPS_M} m do talhão ou pior que ±${PRECISAO_MAX_GPS_M} m gera aviso.`],
     ['Diagnóstico', `Pesos das respostas, peso por fase da lavoura e por foto, índice de certeza (40% + 7 por resposta, teto de ${TETO_PCT}%). Ainda a calibrar com casos reais.`],
   ]

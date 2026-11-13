@@ -125,6 +125,7 @@ test.describe('guia até o ponto (GPS)', () => {
     await expect(gaveta.getByRole('button', { name: 'Registrar achado' })).toBeVisible()
     await expect(gaveta.getByRole('button', { name: 'Não sei o que é' })).toBeVisible()
 
+    await gaveta.getByLabel('Plantas analisadas').fill('10')
     await gaveta.getByRole('button', { name: 'Sem ocorrência' }).click()
     await page.getByLabel('Seu nome').fill('Ana Teste')
     await page.getByRole('button', { name: 'Continuar' }).click()

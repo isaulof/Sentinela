@@ -37,7 +37,8 @@ interface Props {
   pontoId: string
   registrosTalhao: readonly Registro[]
   gps: Fix | null
-  /** Guia ligado: a posição do registro é a do GPS mesmo que a preferência de demonstração esteja ativa. */
+  /** Plantas analisadas no ponto, informadas na Coleta (uma vez por ponto). */
+  plantasAnalisadas?: number | undefined
   /** Chamado depois de gravar, com o registro salvo (a tela mostra a confirmação e permite desfazer). */
   onSalvo: (registro: Registro) => void
 }
@@ -58,7 +59,7 @@ export function FormRegistro(props: Props) {
 
 interface PropsCampos extends Props { chave: string; inicial: RascunhoRegistro | null; onDescartar: () => void }
 
-function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onSalvo, chave, inicial, onDescartar }: PropsCampos) {
+function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, plantasAnalisadas, onSalvo, chave, inicial, onDescartar }: PropsCampos) {
   const { amostrador, setAmostrador } = useSessao()
   const mostrar = useToast((s) => s.mostrar)
   const ordens = useOrdens()
@@ -108,10 +109,10 @@ function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onSalvo,
       alvo: alvoId, fase, quantidade, zero, ...(presente !== undefined ? { presente } : {}),
       ...(severidade !== undefined ? { severidadePct: severidade } : {}), ...(desfolha !== undefined ? { desfolhaPct: desfolha } : {}),
       fotoIds: fotos, observacao: obs,
-      ...(metodoUsado ? { metodoUsado } : {}), repeticoes, areaAmostrada: descreverAmostra(alvo.tipo, repeticoes), ...(Object.keys(condicoes).length ? { condicoes } : {}),
+      ...(plantasAnalisadas ? { plantasAnalisadas } : {}), ...(metodoUsado ? { metodoUsado } : {}), repeticoes, areaAmostrada: descreverAmostra(alvo.tipo, repeticoes), ...(Object.keys(condicoes).length ? { condicoes } : {}),
       ...camposV2({ posicao: usaGps ? gps.posicao : ponto.position }, { metodo: alvo.coleta.metodo, parteDaPlanta: alvo.coleta.parte, planejada: ponto.position, inicio: t0, fim: t0, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) }),
     }),
-    [t0, fazenda, alvo, metodoUsado, repeticoes, condicoes, talhao, nome, estadio, pontoId, usaGps, gps, ponto, alvoId, fase, quantidade, zero, presente, severidade, desfolha, fotos, obs],
+    [t0, fazenda, alvo, plantasAnalisadas, metodoUsado, repeticoes, condicoes, talhao, nome, estadio, pontoId, usaGps, gps, ponto, alvoId, fase, quantidade, zero, presente, severidade, desfolha, fotos, obs],
   )
   const hist = useMemo(() => mediaHistorica(registrosTalhao.filter((r) => r.alvo === alvoId).map((r) => r.quantidade)), [registrosTalhao, alvoId])
   const v = useMemo(

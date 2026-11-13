@@ -7,8 +7,8 @@ Preparação: abrir o app, **Mais → Carregar demonstração**, deixar a aba em
 | 0:00–0:30 | **Problema.** Monitoramento no papel: amostragem sem padrão, dado sem prova, diagnóstico por achismo e aplicação desnecessária. | Painel (visão geral da Fazenda Santa Aurora) |
 | 0:30–1:30 | **Amostragem.** O talhão é desenhado no mapa; o app gera zigzag com bordadura e o nº de pontos por área, e avisa quando o plano é fraco. | Talhões → Novo talhão → desenhar → plano; trocar zigzag × diagonais |
 | 1:30–3:00 | **Doença × erro de aplicação.** Antes de pensar em fungicida, a triagem separa causa biótica de abiótica. Faixa retilínea sugere operação, não doença. | Diagnóstico → árvore de triagem até a conclusão; mostrar "decisão do agrônomo" |
-| 3:00–4:00 | **Dado confiável.** Registro com foto, validação (V01–V12), zero explícito e nível de ação por estádio. Mapa de calor e série temporal. | Campo → registrar (modo sala de aula); Painel → mapa de calor |
-| 4:00–5:00 | **Sensor + drone + agrônomo.** Clima e drone geram ordem de checagem com prazo de 24 h; o técnico confirma ou marca falso positivo; o app conta a aplicação evitada. | Alertas → ordem → Ir ao ponto e checar → falso positivo → KPI |
+| 3:00–4:00 | **Dado confiável.** Registro com foto, validação (V01–V13), zero explícito e nível de ação por estádio. Mapa de calor e série temporal. | Campo → registrar (modo sala de aula); Painel → mapa de calor |
+| 4:00–5:00 | **Clima + agrônomo.** O risco pelo clima gera ordem de checagem com prazo de 24 h; o técnico confirma ou marca falso positivo; o app conta a aplicação evitada. | Alertas → ordem → Ir ao ponto e checar → falso positivo → KPI |
 
 ## Falas-chave
 - "O app nunca recomenda aplicar. Ele organiza a evidência para o agrônomo decidir."

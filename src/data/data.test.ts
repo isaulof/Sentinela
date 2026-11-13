@@ -57,7 +57,7 @@ describe('coleta guiada', () => {
   it('"sem ocorrência" grava um zero válido para cada alvo de ROTINA (e só para eles)', async () => {
     const { registrarSemOcorrencia } = await import('./coleta')
     const { ALVOS_DE_ROTINA, LISTA_ALVOS } = await import('@/knowledge/alvos')
-    const gravados = await registrarSemOcorrencia({ talhao: talhao, plano: plano as never, pontoId: 'P01', amostrador: 'Amostrador Teste', agora: new Date('2026-11-07T15:00:00Z') }, repo)
+    const gravados = await registrarSemOcorrencia({ talhao: talhao, plano: plano as never, pontoId: 'P01', amostrador: 'Amostrador Teste', plantasAnalisadas: 10, agora: new Date('2026-11-07T15:00:00Z') }, repo)
     expect(gravados).toHaveLength(ALVOS_DE_ROTINA.length)
     expect(ALVOS_DE_ROTINA).toHaveLength(5)
     expect(LISTA_ALVOS.length).toBeGreaterThan(ALVOS_DE_ROTINA.length) // os demais não ganham zero: seriam dezenas de registros por toque
@@ -132,7 +132,7 @@ describe('Registro v2 e migração', () => {
     expect(longe.distanciaDoPontoM).toBeGreaterThan(100)
   })
   it('registro v2 completo é gravado e lido com todos os campos', async () => {
-    const r = reg({ schema: 2, metodo: 'Pano de batida de 1 m', protocoloVersao: '2026-11', fusoHorario: 'America/Cuiaba', posicaoPlanejada: [-55.915, -13.052], distanciaDoPontoM: 0 })
+    const r = reg({ schema: 2, plantasAnalisadas: 10, metodo: 'Pano de batida de 1 m', protocoloVersao: '2026-11', fusoHorario: 'America/Cuiaba', posicaoPlanejada: [-55.915, -13.052], distanciaDoPontoM: 0 })
     expect((await repo.salvarRegistro(r, ctx)).gravado).toBe(true)
     expect((await repo.listarRegistros('T-02'))[0]).toMatchObject({ schema: 2, metodo: 'Pano de batida de 1 m', fusoHorario: 'America/Cuiaba' })
   })

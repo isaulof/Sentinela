@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { test } from './fixtures'
-import { anexarFoto, carregarDemo } from './ajuda'
+import { anexarFoto, carregarDemo, informarPlantas } from './ajuda'
 
 /** Responde o questionário como quem vê ferrugem: pústulas por baixo das folhas de baixo, sem bicho nem mofo. */
 async function responderFunilFerrugem(page: Page) {
@@ -31,10 +31,11 @@ test.describe('fluxos de negócio', () => {
   test('registra um ponto com foto em modo demonstração', async ({ page }) => {
     await carregarDemo(page)
     await page.goto('/#/coleta')
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const dialogo = page.getByRole('dialog')
-    await expect(dialogo.getByText('Posição simulada (demonstração)')).toBeVisible()
+    await expect(dialogo.getByText('Sem GPS: usa a posição do ponto')).toBeVisible()
     const nome = dialogo.getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) await nome.fill('Aluno Teste')
     await dialogo.getByRole('radio', { name: 'Ninfa' }).click()
@@ -48,6 +49,7 @@ test.describe('fluxos de negócio', () => {
   test('bloqueia o salvamento sem foto quando o nível de ação é atingido', async ({ page }) => {
     await carregarDemo(page)
     await page.goto('/#/coleta')
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const dialogo = page.getByRole('dialog')
@@ -91,6 +93,7 @@ test.describe('fluxos de negócio', () => {
     const antes = await evitadas.count()
     await page.getByRole('button', { name: 'Ir ao ponto e checar' }).first().click()
     await expect(page).toHaveURL(/#\/coleta/)
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const dialogo = page.getByRole('dialog')
@@ -340,6 +343,7 @@ test.describe('fluxos de negócio', () => {
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
     await expect(page.getByText('0 de 10 pontos coletados')).toBeVisible()
     await expect(page.getByText('Ponto 1 de 10')).toBeVisible()
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Sem ocorrência' }).click()
     const nome = page.getByRole('dialog').getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) { await nome.fill('Aluno Teste'); await page.getByRole('button', { name: 'Continuar' }).click() }
@@ -533,7 +537,7 @@ test.describe('fluxos de negócio', () => {
   test('biblioteca: traz todos os assuntos do diagnóstico, com filtros e texto de cada um', async ({ page }) => {
     await page.goto('/#/biblioteca')
     const cards = page.getByRole('main').getByRole('link').filter({ hasText: /Praga|Doença|Falta de nutriente|Produto ou adubo|Clima ou solo/ })
-    expect(await cards.count()).toBeGreaterThanOrEqual(30)
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(30) // a página carrega aos poucos: espera a lista aparecer
     await page.getByRole('button', { name: 'Nutrientes' }).click()
     await expect(page.getByRole('link', { name: /Falta de manganês/ })).toBeVisible()
     await expect(page.getByRole('link', { name: /Ferrugem/ })).toHaveCount(0)

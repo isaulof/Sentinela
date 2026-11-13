@@ -36,6 +36,8 @@ export const MAX_POR_UNIDADE = 100
 export const TOLERANCIA_GPS_M = 50
 /** Precisão do GPS acima da qual o registro ganha aviso (V12). */
 export const PRECISAO_MAX_GPS_M = 15
+/** Teto de plantas analisadas num ponto (acima disso é quase certo erro de digitação). */
+export const MAX_PLANTAS_ANALISADAS = 1000
 /** Atraso máximo aceito para o carimbo de hora em relação ao relógio (relógio do aparelho errado). */
 export const TOLERANCIA_RELOGIO_MS = 5 * 60_000
 
@@ -53,6 +55,7 @@ export const REGRAS_VALIDACAO: readonly { codigo: string; gravidade: Gravidade; 
   { codigo: 'V10', gravidade: 'erro', titulo: 'Valor muito acima do histórico', quando: `Quantidade maior que ${FATOR_OUTLIER} vezes a média histórica (com pelo menos 3 registros) exige foto (erro sem foto, aviso com foto) e dupla checagem.` },
   { codigo: 'V11', gravidade: 'aviso', titulo: 'Coerência espacial', quando: `Com GPS real, posição a mais de ${TOLERANCIA_GPS_M} m do talhão: confirme se é o talhão certo.` },
   { codigo: 'V12', gravidade: 'aviso', titulo: 'Precisão do GPS', quando: `Precisão pior que ±${PRECISAO_MAX_GPS_M} m: espere melhorar ou aproxime-se do ponto.` },
+  { codigo: 'V13', gravidade: 'erro', titulo: 'Plantas analisadas', quando: `Todo registro novo diz quantas plantas foram analisadas no ponto: número inteiro de 1 a ${MAX_PLANTAS_ANALISADAS}. Vale para todos os alvos daquela visita.` },
 ]
 
 /**
@@ -94,6 +97,13 @@ export function validarRegistro(r: Registro, ctx: ContextoValidacao): ResultadoV
   const t = Date.parse(r.criadoEm)
   if (Number.isNaN(t)) erro('V07', 'criadoEm', 'Data e hora inválidas.')
   else if (t > ctx.agora.getTime() + TOLERANCIA_RELOGIO_MS) erro('V07', 'criadoEm', 'A data do registro está no futuro. Verifique o relógio do aparelho.')
+
+  // V13 plantas analisadas (registros v2 em diante; os antigos não tinham o campo)
+  if (r.schema === 2) {
+    const n = r.plantasAnalisadas
+    if (n === undefined || !Number.isInteger(n) || n < 1) erro('V13', 'plantasAnalisadas', 'Informe quantas plantas foram analisadas neste ponto.')
+    else if (n > MAX_PLANTAS_ANALISADAS) erro('V13', 'plantasAnalisadas', `Máximo de ${MAX_PLANTAS_ANALISADAS} plantas por ponto. Confira o número.`)
+  }
 
   // Avaliação agronômica (somente com dados válidos)
   const avaliacao = valido

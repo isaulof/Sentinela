@@ -17,16 +17,17 @@ export function ClimaAgora({ lat, lng }: { lat: number; lng: number }) {
   const hoje = dias[0]!
   const d = descreverTempo(agora.codigo, agora.ehDia)
   const chuva = chuvaDoDia(hoje)
-  const rotulo = `Clima agora: ${Math.round(agora.temperaturaC)} graus, ${d.texto.toLowerCase()}. Mínima ${Math.round(hoje.minC)}, máxima ${Math.round(hoje.maxC)}.${chuva.relevante ? ` ${chuva.texto}.` : ''}${t.doCache ? ' Dado guardado, sem internet.' : ''} Abrir o clima completo.`
+  const extra = `${t.doCache ? ' Dado guardado, sem internet.' : ''} Abrir o clima completo.`
 
   return (
-    <Link to="/clima" aria-label={rotulo} className={`${base} transition active:bg-surface-2`}>
+    <Link to="/clima" className={`${base} transition active:bg-surface-2`}>
       <Icon name={d.icone} size={30} className={`shrink-0 ${COR_ICONE_TEMPO[d.icone]}`} />
       <div className="min-w-0 flex-1">
         <p className="flex items-baseline gap-2 leading-tight"><span className="text-subtitulo font-bold tabular-nums">{grau(agora.temperaturaC)}</span><span className="truncate text-apoio font-semibold">{d.texto}</span></p>
         <p className="truncate text-rotulo text-text-2">Mín {grau(hoje.minC)} · Máx {grau(hoje.maxC)}{chuva.relevante && <span className="font-semibold text-info"> · {chuva.texto}</span>}</p>
       </div>
       <Icon name="seta" size={16} className="shrink-0 text-text-2" />
+      <span className="sr-only">{extra}</span>
     </Link>
   )
 }

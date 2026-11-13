@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect } from '@playwright/test'
 import { test } from './fixtures'
-import { carregarDemo, esperarAnimacoes, ROTAS } from './ajuda'
+import { carregarDemo, esperarAnimacoes, ROTAS, informarPlantas } from './ajuda'
 
 for (const tema of ['light', 'dark'] as const) {
   test.describe(`acessibilidade · tema ${tema}`, () => {
@@ -28,6 +28,7 @@ for (const tema of ['light', 'dark'] as const) {
 test('formulário de registro aberto não tem violações WCAG 2.1 AA', async ({ page }) => {
   await carregarDemo(page)
   await page.goto('/#/coleta')
+  await informarPlantas(page)
   await page.getByRole('button', { name: 'Registrar achado' }).click()
   await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
   await page.getByRole('dialog').waitFor()

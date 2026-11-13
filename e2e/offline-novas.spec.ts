@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 import { test } from './fixtures'
-import { carregarDemo } from './ajuda'
+import { carregarDemo, informarPlantas } from './ajuda'
 
 test('as telas novas funcionam sem internet: registro com confirmação e ficha, mapa, relatório e exportação', async ({ page, context }) => {
   test.slow()
@@ -16,6 +16,7 @@ test('as telas novas funcionam sem internet: registro com confirmação e ficha,
     await page.goto('/#/coleta')
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
     await expect(page.getByText('0 de 10 pontos coletados')).toBeVisible()
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Sem ocorrência', exact: true }).click()
     const nome = page.getByRole('dialog').getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) { await nome.fill('Ana Teste'); await page.getByRole('button', { name: 'Continuar' }).click() }

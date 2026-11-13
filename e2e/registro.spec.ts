@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Page } from '@playwright/test'
 import { test } from './fixtures'
-import { anexarFoto, carregarDemo } from './ajuda'
+import { anexarFoto, carregarDemo, informarPlantas } from './ajuda'
 
 async function abrirT04(page: Page) {
   await carregarDemo(page)
@@ -11,6 +11,7 @@ async function abrirT04(page: Page) {
 }
 
 async function registrarPercevejo(page: Page, quantidade: number) {
+  await informarPlantas(page)
   await page.getByRole('button', { name: 'Registrar achado' }).click()
   await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
   const d = page.getByRole('dialog')
@@ -33,6 +34,20 @@ test.describe('registro dos achados', () => {
     await expect(conf.getByRole('button', { name: /Desfazer/ })).toBeVisible()
   })
 
+  test('plantas analisadas: obrigatório, informado uma vez por ponto, e aparece na ficha', async ({ page }) => {
+    await abrirT04(page)
+    // Sem o número, não dá para registrar (nem "sem ocorrência", nem achado).
+    await expect(page.getByRole('button', { name: 'Registrar achado' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Sem ocorrência', exact: true })).toBeDisabled()
+    await expect(page.getByText('Informe para registrar')).toBeVisible()
+    await registrarPercevejo(page, 1)
+    // Depois de gravar, o número vale para os outros alvos do mesmo ponto: o campo continua preenchido.
+    await expect(page.getByLabel('Plantas analisadas')).toHaveValue('10')
+    await expect(page.getByRole('button', { name: 'Registrar achado' })).toBeEnabled()
+    await page.getByRole('button', { name: 'Ver ficha completa' }).click()
+    await expect(page.getByText('Plantas analisadas').last()).toBeVisible()
+  })
+
   test('vários achados no mesmo ponto: "Outro achado aqui" mantém o ponto e a ficha lista todos', async ({ page }) => {
     await abrirT04(page)
     await registrarPercevejo(page, 1)
@@ -53,6 +68,7 @@ test.describe('registro dos achados', () => {
 
   test('a ficha mostra método, amostra, condições, responsável, posição e hora local', async ({ page }) => {
     await abrirT04(page)
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const d = page.getByRole('dialog')
@@ -133,6 +149,7 @@ test.describe('rascunho do registro (app fechado no meio)', () => {
   }))
 
   async function preencher(page: Page) {
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const d = page.getByRole('dialog')
@@ -150,6 +167,7 @@ test.describe('rascunho do registro (app fechado no meio)', () => {
     await page.reload() // como se o celular travasse ou a aba fosse fechada
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
     await expect(page.getByText('Ponto 1 de 10')).toBeVisible()
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const d = page.getByRole('dialog')
@@ -176,6 +194,7 @@ test.describe('rascunho do registro (app fechado no meio)', () => {
     await preencher(page)
     await page.reload()
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     const d = page.getByRole('dialog')
@@ -187,6 +206,7 @@ test.describe('rascunho do registro (app fechado no meio)', () => {
 
   test('um formulário aberto e parado não gera rascunho', async ({ page }) => {
     await abrirT04(page)
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor() // o formulário só monta depois de ler o rascunho no aparelho: esperar, senão o campo de nome ainda não existe
     await page.waitForTimeout(1200)
@@ -197,6 +217,7 @@ test.describe('rascunho do registro (app fechado no meio)', () => {
 test.describe('outras pragas e doenças e método opcional', () => {
   async function abrirForm(page: Page) {
     await abrirT04(page)
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     const d = page.getByRole('dialog')
     await d.getByLabel('Estádio fenológico').waitFor()
@@ -345,6 +366,7 @@ test.describe('outras pragas e doenças e método opcional', () => {
     await page.reload()
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
     await expect(page.getByText('Ponto 1 de 10')).toBeVisible()
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     const d2 = page.getByRole('dialog')
     await expect(d2.getByText('Rascunho recuperado')).toBeVisible()
@@ -361,6 +383,7 @@ test.describe('outras pragas e doenças e método opcional', () => {
     await page.goto('/#/coleta')
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-01 Mirante' })
     await expect(page.getByText(/Ponto \d+ de \d+/).first()).toBeVisible()
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     const d = page.getByRole('dialog')
     await d.getByLabel('Estádio fenológico').waitFor()
@@ -378,6 +401,7 @@ test.describe('outras pragas e doenças e método opcional', () => {
 
   test('"Sem ocorrência" continua registrando zero só para os 5 alvos de rotina', async ({ page }) => {
     await abrirT04(page)
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Sem ocorrência', exact: true }).click()
     const nome = page.getByRole('dialog').getByPlaceholder('Nome e sobrenome')
     if (await nome.isVisible()) { await nome.fill('Ana Teste'); await page.getByRole('button', { name: 'Continuar' }).click() }

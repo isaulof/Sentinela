@@ -138,7 +138,7 @@ export function Painel() {
 
   const cartao: Cartao = ((): Cartao => {
     switch (acao.tipo) {
-      case 'ordens': return { tom: 'warn', icone: 'alerta', titulo: `${plural(acao.quantas, 'ponto', 'pontos')} para checar`, texto: 'O clima ou o drone apontou um possível problema. Confirme em campo.', botao: 'Ver pontos', ir: () => void navegar({ to: '/alertas' }) }
+      case 'ordens': return { tom: 'warn', icone: 'alerta', titulo: `${plural(acao.quantas, 'ponto', 'pontos')} para checar`, texto: 'O clima apontou um possível problema. Confirme em campo.', botao: 'Ver pontos', ir: () => void navegar({ to: '/alertas' }) }
       case 'diagnostico': return { tom: 'warn', icone: 'diag', titulo: `${plural(acao.quantas, 'achado', 'achados')} sem diagnóstico`, texto: 'Há fotos de algo que não foi identificado.', botao: 'Diagnosticar', ir: () => void navegar({ to: '/diagnostico' }) }
       case 'continuar': return { tom: 'ok', icone: 'campo', titulo: `Continue a coleta em ${acao.nome}`, texto: `${acao.feitos} de ${acao.total} pontos coletados.`, botao: 'Continuar', ir: () => abrir(acao.talhaoId, '/coleta') }
       case 'resultados': return { tom: 'warn', icone: 'alerta', titulo: `${plural(acao.criticos, 'ponto', 'pontos')} em atenção em ${acao.nome}`, texto: 'Veja onde está o problema e leve ao agrônomo.', botao: 'Ver mapa', ir: () => abrir(acao.talhaoId, '/talhoes/$id') }

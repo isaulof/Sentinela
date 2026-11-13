@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Page } from '@playwright/test'
 import { test } from './fixtures'
-import { carregarDemo } from './ajuda'
+import { carregarDemo, informarPlantas } from './ajuda'
 
 async function baixar(page: Page, nomeBotao: string): Promise<{ nome: string; texto: string }> {
   const [d] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: nomeBotao }).click()])
@@ -143,6 +143,7 @@ test.describe('exportação e relatório', () => {
     await page.goto('/#/coleta')
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
     await expect(page.getByText('Ponto 1 de 10')).toBeVisible()
+    await informarPlantas(page)
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     await page.getByRole('dialog').getByLabel('Estádio fenológico').waitFor()
     const d = page.getByRole('dialog')

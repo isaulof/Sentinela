@@ -99,7 +99,7 @@ export async function carregarDemonstracao(agora = new Date(), buscarFoto: Busca
       const semNada = c.quantidade === 0 && !c.presente && !c.desfolhaPct && !c.severidadePct
       regs.push({
         id: `DEMO-${talhaoId}-${c.alvo}-${ponto.id}-${d}`, talhaoId, amostrador: 'Demonstração', criadoEm: dia(agora, d), estadio, finalidade: 'graos',
-        pontoId: ponto.id, posicao: ponto.position, posicaoSimulada: true, zero: semNada, ...camposV2({ posicao: ponto.position }, { metodo: ALVOS[c.alvo].coleta.metodo, parteDaPlanta: ALVOS[c.alvo].coleta.parte, planejada: ponto.position, inicio: new Date(dia(agora, d)), fim: new Date(dia(agora, d)), responsavel: 'Prof. responsável (demonstração)' }), fotoIds: fotoTitulo ? [await nova(`${fotoTitulo} · ${talhaoId} ${ponto.id}`, fotoTitulo)] : [],
+        pontoId: ponto.id, posicao: ponto.position, posicaoSimulada: true, zero: semNada, plantasAnalisadas: 10, ...camposV2({ posicao: ponto.position }, { metodo: ALVOS[c.alvo].coleta.metodo, parteDaPlanta: ALVOS[c.alvo].coleta.parte, planejada: ponto.position, inicio: new Date(dia(agora, d)), fim: new Date(dia(agora, d)), responsavel: 'Prof. responsável (demonstração)' }), fotoIds: fotoTitulo ? [await nova(`${fotoTitulo} · ${talhaoId} ${ponto.id}`, fotoTitulo)] : [],
         observacao: '', ...c,
       })
     }
@@ -126,10 +126,10 @@ export async function carregarDemonstracao(agora = new Date(), buscarFoto: Busca
     }
 
     const ordens: OrdemChecagem[] = [
-      { id: 'ORD-demo-1', talhaoId: 'T-02', pontoId: p2[3]!.id, origem: 'drone', criadaEm: dia(agora, 0, 7), status: 'aberta',
-        motivo: 'NDRE 0,31 (38% abaixo do talhão), anomalia de 2.100 m² próxima ao ponto ' + p2[3]!.id + '.' },
-      { id: 'ORD-demo-0', talhaoId: 'T-01', pontoId: p1[8]!.id, origem: 'drone', criadaEm: dia(agora, 4, 7), status: 'falso_positivo', resolvidaEm: dia(agora, 4, 12),
-        causa: 'Compactação na faixa de tráfego de máquinas; sem sinais de doença.', motivo: 'NDRE baixo em faixa estreita (comparar com operações).' },
+      { id: 'ORD-demo-1', talhaoId: 'T-02', pontoId: p2[3]!.id, origem: 'clima', criadaEm: dia(agora, 0, 7), status: 'aberta',
+        motivo: 'Condições favoráveis a ferrugem-asiática nos últimos dias. Inspecione o ponto ' + p2[3]!.id + ' em busca de sinais.' },
+      { id: 'ORD-demo-0', talhaoId: 'T-01', pontoId: p1[8]!.id, origem: 'clima', criadaEm: dia(agora, 4, 7), status: 'falso_positivo', resolvidaEm: dia(agora, 4, 12),
+        causa: 'Folhas amarelas por compactação na faixa de tráfego de máquinas; sem sinais de doença.', motivo: 'Condições favoráveis a mofo-branco nos últimos dias. Inspecione o ponto ' + p1[8]!.id + ' em busca de sinais.' },
     ]
 
     await db.talhoes.bulkPut(talhoes)

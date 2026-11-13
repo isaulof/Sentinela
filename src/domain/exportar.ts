@@ -43,6 +43,7 @@ const COLUNAS: { nome: string; valor: (r: Registro, c: Contexto) => Linha[number
   { nome: 'metodo', valor: (r) => r.metodo },
   { nome: 'metodo_usado', valor: (r) => r.metodoUsado },
   { nome: 'protocolo_versao', valor: (r) => r.protocoloVersao },
+  { nome: 'plantas_analisadas', valor: (r) => r.plantasAnalisadas },
   { nome: 'repeticoes', valor: (r) => r.repeticoes },
   { nome: 'area_amostrada', valor: (r) => r.areaAmostrada },
   { nome: 'parte_da_planta', valor: (r) => r.parteDaPlanta },

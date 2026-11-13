@@ -8,6 +8,8 @@ export interface ParamsSemOcorrencia {
   plano: PlanoSalvo
   pontoId: string
   amostrador: string
+  /** Plantas analisadas no ponto (obrigatório): vale para todos os alvos gravados. */
+  plantasAnalisadas: number
   /** GPS real, quando houver; senão vale a posição planejada (modo demonstração). */
   gps?: { posicao: readonly [number, number]; precisaoM: number } | null
   agora?: Date
@@ -32,7 +34,7 @@ export async function registrarSemOcorrencia(p: ParamsSemOcorrencia, repo: Repo 
       id: novoId('REG'), talhaoId: p.talhao.id, amostrador: p.amostrador, criadoEm: agora.toISOString(), estadio: p.talhao.estadio, finalidade: p.talhao.finalidade,
       pontoId: p.pontoId, posicao, posicaoSimulada: !p.gps, ...(p.gps ? { precisaoM: p.gps.precisaoM } : {}),
       alvo: alvo.id, fase: alvo.fases[0]!, quantidade: 0, zero: true, ...(alvo.tipo === 'doenca' ? { presente: false } : {}),
-      fotoIds: [], observacao: '',
+      fotoIds: [], observacao: '', plantasAnalisadas: p.plantasAnalisadas,
       ...camposV2({ posicao }, { metodo: alvo.coleta.metodo, parteDaPlanta: alvo.coleta.parte, planejada: ponto.position, inicio: agora, fim: agora, ...(p.responsavel ? { responsavel: p.responsavel } : {}), ...(p.fuso ? { fuso: p.fuso } : {}) }),
     }
     const r = await repo.salvarRegistro(reg, { agora, anelTalhao: p.talhao.anel, pontosDoPlano: p.plano.pontos.map((x) => x.id) })
