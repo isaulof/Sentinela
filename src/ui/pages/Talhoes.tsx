@@ -166,7 +166,7 @@ export function TalhaoDetalhe() {
         <Link to="/talhoes" aria-label="Voltar para Talhões" className="-ml-2 grid size-11 shrink-0 place-items-center rounded-full text-text-2 transition active:bg-surface-2"><Icon name="voltar" size={24} /></Link>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-secao">{talhao.nome}</h1>
-          <p className="truncate text-apoio text-text-2">{polygonAreaHa(talhao.anel).toFixed(1)} ha · {talhao.cultivar} · {talhao.estadio}</p>
+          <p className="line-clamp-2 text-apoio text-text-2">{polygonAreaHa(talhao.anel).toFixed(1)} ha · {talhao.cultivar} · {talhao.estadio}</p>
         </div>
         <button type="button" aria-label="Editar talhão" onClick={() => setPainel('editar')} className="grid size-11 shrink-0 place-items-center rounded-full text-text-2 transition hover:bg-surface-2 active:bg-surface-2"><Icon name="lapis" size={20} /></button>
         {plano && <Link to="/coleta" onClick={() => setTalhao(talhao.id)} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 text-apoio font-semibold text-on-brand transition active:scale-95"><Icon name="campo" size={17} />Coletar</Link>}

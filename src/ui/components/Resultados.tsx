@@ -148,7 +148,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_23rem]">
       <div className="min-w-0 space-y-3">
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" role="group" aria-label="Alvo do mapa">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [mask-image:linear-gradient(to_right,#000_calc(100%-28px),transparent)] [scrollbar-width:none] sm:mx-0 sm:px-0 sm:[mask-image:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label="Alvo do mapa">
           {[{ id: null, nome: 'Só pontos' }, ...alvosVisiveis].map((a) => (
             <button key={a.id ?? 'todos'} type="button" aria-pressed={alvo === a.id} onClick={() => setEscolha(a.id)} className={`min-h-10 shrink-0 rounded-full px-4 text-apoio font-semibold transition active:scale-95 ${alvo === a.id ? 'bg-brand text-on-brand' : 'bg-surface text-text-2 ring-1 ring-line'}`}>{a.nome}</button>
           ))}

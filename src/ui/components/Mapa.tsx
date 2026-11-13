@@ -50,7 +50,7 @@ const pos = (p: LngLat): [number, number] => [p[0], p[1]]
 function selo(): HTMLElement {
   const b = document.createElement('span')
   b.setAttribute('aria-hidden', 'true')
-  b.style.cssText = 'position:absolute;right:-5px;top:-6px;width:16px;height:16px;border-radius:9999px;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 1.5px #0b1410'
+  b.style.cssText = 'position:absolute;right:-6px;top:-7px;width:14px;height:14px;border-radius:9999px;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 1.5px #0b1410'
   b.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0b1410" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg>'
   return b
 }
@@ -194,9 +194,9 @@ export function Mapa({ talhoes, selecionadoId, onSelecionar, pontos = [], marcad
       n.title = p.rotuloEstado ? `Ponto ${p.ordem} · ${p.rotuloEstado}` : p.id
       n.setAttribute('aria-label', p.rotuloEstado ? `Ponto ${p.ordem}, ${p.rotuloEstado}` : `Ponto ${p.ordem}`)
       n.setAttribute('aria-pressed', String(sel))
-      const tam = sel ? 38 : 30
+      const tam = sel ? 36 : 28
       const largo = (p.texto?.length ?? 0) > 2 // valores como "12,5" alargam o marcador em vez de estourar o círculo
-      n.style.cssText = `${largo ? `min-width:${tam}px;padding:0 6px!important;` : `width:${tam}px;`}height:${tam}px;border-radius:9999px;display:grid;place-items:center;font:700 ${sel ? 15 : 13}px system-ui;background:${cor.fundo};color:${cor.texto};border:${sel ? 4 : 2}px solid ${sel ? '#ffd666' : p.id === pontoProximo ? '#7cf0b0' : '#fff'};box-shadow:0 1px 5px #0008;cursor:${onPonto ? 'pointer' : 'default'};padding:0`
+      n.style.cssText = `${largo ? `min-width:${tam}px;padding:0 6px!important;` : `width:${tam}px;`}height:${tam}px;border-radius:9999px;display:grid;place-items:center;font:700 ${sel ? 15 : 13}px system-ui;background:${cor.fundo};color:${cor.texto};border:${sel ? 4 : 2}px solid ${sel ? '#ffd666' : p.id === pontoProximo ? '#7cf0b0' : '#fff'};box-shadow:0 1px 5px #0008;cursor:${onPonto ? 'pointer' : 'default'};padding:0;z-index:${sel ? 3 : 1}`
       n.addEventListener('click', (e) => { e.stopPropagation(); vivo.current.onPonto?.(p.id) })
       return new maplibregl.Marker({ element: n }).setLngLat(pos(p.posicao)).addTo(m)
     })
