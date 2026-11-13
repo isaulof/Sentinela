@@ -532,6 +532,23 @@ test.describe('fluxos de negócio', () => {
     await expect(page.getByText(/em conferência com agrônomo/)).toBeVisible()
   })
 
+  test('biblioteca: alvos novos (Spodoptera, broca, mela) têm ficha completa com fonte, sem marca nem dose', async ({ page }) => {
+    await page.goto('/#/biblioteca')
+    await page.getByRole('searchbox', { name: 'Buscar na biblioteca' }).fill('spodoptera')
+    await page.getByRole('main').getByRole('link').filter({ hasText: /Spodoptera/i }).first().click()
+    const ficha = page.getByRole('region', { name: 'Ficha completa' })
+    await expect(ficha).toBeVisible()
+    await expect(ficha.getByRole('heading', { name: 'Em que grupo está' })).toBeVisible()
+    await expect(ficha.getByRole('heading', { name: 'Níveis de ação e tolerância' })).toBeVisible()
+    await expect(ficha.getByText(/^\[\d/).first()).toBeVisible() // fato com fonte numerada
+    await expect(page.getByText(/Marcas e doses ficam de fora/)).toBeVisible()
+    await expect(page.getByRole('main')).not.toContainText(/\d+\s?(mL|L|g|kg)\s?\/\s?ha/i)
+    for (const slug of ['broca', 'mela']) {
+      await page.goto(`/#/biblioteca/${slug}`)
+      await expect(page.getByRole('region', { name: 'Ficha completa' })).toBeVisible()
+    }
+  })
+
   test('o resultado do diagnóstico leva ao texto do problema na Biblioteca', async ({ page }) => {
     await page.goto('/#/biblioteca/def_mn')
     await expect(page.getByRole('heading', { name: 'Falta de manganês', level: 1 })).toBeVisible()
