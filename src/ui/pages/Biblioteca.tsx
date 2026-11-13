@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import type { Candidato } from '@/domain/funil'
 import { ALVOS, LISTA_ALVOS } from '@/knowledge/alvos'
 import { CANDIDATOS } from '@/knowledge/diagnostico'
-import { ALVO_DO_CANDIDATO, ALVOS_SO_NA_BIBLIOTECA, AVISO_QUIMICO, FICHAS, ROTULO_MANEJO, type Fato, type Ficha, type GrupoManejo } from '@/knowledge/biblioteca'
+import { ALVO_DO_CANDIDATO, ALVOS_SO_NA_BIBLIOTECA, ASSUNTO_SO_FICHA, AVISO_QUIMICO, FICHAS, FICHAS_DE_ASSUNTO, ROTULO_MANEJO, type Fato, type FichaBase, type GrupoManejo } from '@/knowledge/biblioteca'
 import { FONTES, type FonteId } from '@/knowledge/fontes'
 import { categoriaDe, iconeDoCandidato, ROTULO_CATEGORIA, type Categoria } from '../components/categoriaCandidato'
 import { FOTO_CLASSE, fotosDoCandidato } from '../components/fotosDiagnostico'
@@ -24,6 +24,15 @@ const EXTRAS: Candidato[] = ALVOS_SO_NA_BIBLIOTECA.map((id) => {
     proximosPassos: ['Fotografe o problema de perto, junto com a planta inteira.', 'Conte ou estime no ponto e leve ao agrônomo, que decide o manejo.'],
     perfil: {},
   }
+})
+const CISTO = FICHAS_DE_ASSUNTO[ASSUNTO_SO_FICHA.id]!
+EXTRAS.push({
+  id: ASSUNTO_SO_FICHA.id, nome: ASSUNTO_SO_FICHA.nome, cientifico: ASSUNTO_SO_FICHA.cientifico, tipo: 'praga', fontes: ['ct76'], origem: 'fonte',
+  resumo: CISTO.classificacao.texto,
+  confundeCom: ['Nematoides de galhas', 'Podridões de raiz'],
+  comoConfirmar: CISTO.reconhecer.map((x) => x.texto),
+  proximosPassos: ['Fotografe a raiz de perto e marque a reboleira no mapa.', 'Leve ao agrônomo, que decide a coleta de amostra e o manejo.'],
+  perfil: {},
 })
 /** Tudo o que a Biblioteca lista: os problemas do diagnóstico e os alvos que só têm ficha. */
 const ASSUNTOS: Candidato[] = [...CANDIDATOS, ...EXTRAS]
@@ -116,7 +125,7 @@ function ListaDeFatos({ fatos, numeros, ordenada }: { fatos: Fato[]; numeros: Ma
 const GRUPOS: GrupoManejo[] = ['cultural', 'biologico', 'genetico', 'quimico', 'resistencia']
 
 /** Ficha completa do alvo: tudo o que a Embrapa publica, com a fonte ao lado de cada fato e as lacunas ditas com honestidade. */
-function FichaCompleta({ ficha, numeros }: { ficha: Ficha; numeros: Map<FonteId, number> }) {
+function FichaCompleta({ ficha, numeros }: { ficha: FichaBase; numeros: Map<FonteId, number> }) {
   const secao = (titulo: string, fatos: Fato[], dica?: string) => fatos.length > 0 && (
     <Card className="space-y-3" key={titulo}>
       <h2 className="text-secao">{titulo}</h2>
@@ -164,7 +173,7 @@ export function Artigo() {
   if (!c) return <Vazio icone="lupa" titulo="Assunto não encontrado" texto="Volte à Biblioteca e escolha outro assunto." acao={<Link to="/biblioteca" className="font-semibold text-brand">Ir para a Biblioteca</Link>} />
   const alvoId = c.alvo ?? ALVO_DO_CANDIDATO[c.id]
   const alvo = c.alvo ? ALVOS[c.alvo] : undefined
-  const ficha = alvoId ? FICHAS[alvoId] : undefined
+  const ficha = alvoId ? FICHAS[alvoId] : FICHAS_DE_ASSUNTO[c.id]
   const fontesDaFicha: FonteId[] = ficha ? [ficha.classificacao, ...ficha.dano, ...ficha.reconhecer, ...ficha.favorecem, ...ficha.monitorar, ...ficha.niveis, ...GRUPOS.flatMap((g) => ficha.manejo[g] ?? []), ...ficha.cuidados].flatMap((x) => x.fontes) : []
   const todasAsFontes: FonteId[] = [...new Set<FonteId>([...fontesDaFicha, ...(alvo?.fontes ?? []), ...c.fontes])]
   const numeros = numerar(todasAsFontes)

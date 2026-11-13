@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { NIVEL_ACAO } from '@/domain/decision'
 import { ALVOS, LISTA_ALVOS, type AlvoId } from './alvos'
-import { ALVO_DO_CANDIDATO, ALVOS_SO_NA_BIBLIOTECA, AVISO_QUIMICO, FICHAS, type Fato, type Ficha } from './biblioteca'
+import { ALVO_DO_CANDIDATO, ALVOS_SO_NA_BIBLIOTECA, ASSUNTO_SO_FICHA, AVISO_QUIMICO, FICHAS, FICHAS_DE_ASSUNTO, type Fato, type FichaBase } from './biblioteca'
 import { CANDIDATOS } from './diagnostico'
 import { FONTES } from './fontes'
 
-const fatosDe = (f: Ficha): Fato[] => [f.classificacao, ...f.dano, ...f.reconhecer, ...f.favorecem, ...f.monitorar, ...f.niveis, ...f.cuidados, ...Object.values(f.manejo).flat()]
-const todosOsTextos = (f: Ficha) => [...fatosDe(f).map((x) => x.texto), ...f.lacunas]
+const fatosDe = (f: FichaBase): Fato[] => [f.classificacao, ...f.dano, ...f.reconhecer, ...f.favorecem, ...f.monitorar, ...f.niveis, ...f.cuidados, ...Object.values(f.manejo).flat()]
+const todosOsTextos = (f: FichaBase) => [...fatosDe(f).map((x) => x.texto), ...f.lacunas]
 
 describe('fichas completas da Biblioteca', () => {
   it('todo alvo do registro tem a sua ficha, e a ficha aponta para o próprio alvo', () => {
@@ -15,7 +15,7 @@ describe('fichas completas da Biblioteca', () => {
     expect(Object.keys(FICHAS).sort()).toEqual(LISTA_ALVOS.map((a) => a.id).sort())
   })
   it('todo fato tem texto e pelo menos uma fonte que existe', () => {
-    for (const [id, f] of Object.entries(FICHAS)) {
+    for (const [id, f] of Object.entries({ ...FICHAS, ...FICHAS_DE_ASSUNTO })) {
       for (const x of fatosDe(f)) {
         expect(x.texto.length, `${id}: ${x.texto}`).toBeGreaterThan(15)
         expect(x.fontes.length, `${id}: ${x.texto}`).toBeGreaterThanOrEqual(1)
@@ -24,7 +24,7 @@ describe('fichas completas da Biblioteca', () => {
     }
   })
   it('cada ficha diz o que a Embrapa não publica quando falta nível de ação ou medida (nada é inventado para preencher)', () => {
-    for (const [id, f] of Object.entries(FICHAS)) {
+    for (const [id, f] of Object.entries({ ...FICHAS, ...FICHAS_DE_ASSUNTO })) {
       const vazia = f.niveis.length === 0 || Object.keys(f.manejo).length === 0
       if (vazia) expect(f.lacunas.length, id).toBeGreaterThanOrEqual(1)
     }
@@ -54,7 +54,7 @@ describe('fichas completas da Biblioteca', () => {
     const marcas = /\b(Intacta|Curatis|Tróia|Pladius|Fusão|Absoluto|Agris|Previnil|Strides|Áureo|Iharol|Agefix|Tridium)\b/
     // Doses de produto (L/ha, g/ha, mL/100 L); as perdas de produtividade (kg por hectare) são dano, não dose.
     const dose = /\d\s?(mL|L)\s?(\/|por)\s?(ha|hectare|100\s?L)|\d\s?g\s?\/\s?(ha|100\s?L)|dose de \d/i
-    for (const [id, f] of Object.entries(FICHAS)) {
+    for (const [id, f] of Object.entries({ ...FICHAS, ...FICHAS_DE_ASSUNTO })) {
       for (const txt of todosOsTextos(f)) {
         expect(txt, `${id}: ${txt}`).not.toMatch(manda)
         expect(txt, `${id}: ${txt}`).not.toMatch(marcas)
@@ -85,5 +85,15 @@ describe('fichas completas da Biblioteca', () => {
       const fontes = new Set(fatosDe(FICHAS[id]).flatMap((x) => x.fontes))
       expect(fontes.has('sp17pragas') || fontes.has('caderneta'), id).toBe(true)
     }
+  })
+  it('fichas só de leitura (nematoides): existem para um candidato ou assunto da Biblioteca, citam a CT 76 e dizem o que falta', () => {
+    for (const id of Object.keys(FICHAS_DE_ASSUNTO)) {
+      expect(CANDIDATOS.some((c) => c.id === id) || id === ASSUNTO_SO_FICHA.id, id).toBe(true)
+      expect(ALVO_DO_CANDIDATO[id], `${id} não deve ter alvo no registro`).toBeUndefined()
+      const fatos = fatosDe(FICHAS_DE_ASSUNTO[id]!)
+      expect(fatos.every((x) => x.fontes.includes('ct76')), id).toBe(true)
+      expect(FICHAS_DE_ASSUNTO[id]!.lacunas.length, id).toBeGreaterThanOrEqual(2)
+    }
+    expect(CANDIDATOS.some((c) => c.id === ASSUNTO_SO_FICHA.id)).toBe(false)
   })
 })

@@ -24,8 +24,7 @@ export const ROTULO_MANEJO: Record<GrupoManejo, string> = {
   resistencia: 'Resistência aos produtos',
 }
 
-export interface Ficha {
-  alvo: AlvoId
+export interface FichaBase {
   /** Onde o alvo se encaixa: praga principal, regionalmente importante ou secundária; doença e agente. */
   classificacao: Fato
   /** Dano e perdas. */
@@ -43,6 +42,11 @@ export interface Ficha {
   cuidados: Fato[]
   /** O que a Embrapa não publica (ou que este app não adotou): dito de forma honesta. */
   lacunas: string[]
+}
+
+/** Ficha de um alvo do registro. */
+export interface Ficha extends FichaBase {
+  alvo: AlvoId
 }
 
 const f = (texto: string, ...fontes: FonteId[]): Fato => ({ texto, fontes })
@@ -588,7 +592,7 @@ export const FICHAS: Record<AlvoId, Ficha> = {
       quimico: [f('Tratamento de sementes com fungicida ajuda contra Phytophthora (metalaxil) e contra o tombamento por Rhizoctonia.', SD)],
     },
     cuidados: [f('Podem ser confundidas com mofo-branco e com nematoides.', 'projeto')],
-    lacunas: ['Cada doença deste grupo tem medidas próprias; confirme qual é com o agrônomo (amostra de solo e planta). Nematoides de galhas e de cisto ainda não têm ficha neste app.'],
+    lacunas: ['Cada doença deste grupo tem medidas próprias; confirme qual é com o agrônomo (amostra de solo e planta). Os nematoides de galhas e de cisto têm ficha própria na Biblioteca.'],
   },
 }
 
@@ -609,3 +613,94 @@ export const ALVO_DO_CANDIDATO: Record<string, AlvoId> = {
 
 /** Alvos do registro que ainda não têm árvore de sintomas no diagnóstico: aparecem na Biblioteca só com a ficha. */
 export const ALVOS_SO_NA_BIBLIOTECA: AlvoId[] = ['spodoptera', 'broca', 'mela']
+
+/**
+ * Assuntos que a Embrapa descreve mas que o app NÃO mede no registro (sem alvo, sem nível de ação adotado):
+ * têm só a ficha de leitura. Chave = id do assunto na Biblioteca.
+ */
+const CT76 = 'ct76' as const
+const AVISO_2010 = 'A circular é de 2010: números como a quantidade de cultivares resistentes e a lista de raças mudam com o tempo. Confirme o que vale hoje com a Embrapa e com o agrônomo.'
+
+export const FICHAS_DE_ASSUNTO: Record<string, FichaBase> = {
+  nematoide: {
+    classificacao: f('Nematoide formador de galhas (Meloidogyne spp.). M. incognita e M. javanica são as espécies mais importantes para a soja no Brasil: M. javanica ocorre de forma generalizada e M. incognita predomina em áreas cultivadas antes com café ou algodão.', CT76),
+    dano: [
+      f('Pode não haver redução no tamanho das plantas, mas, no florescimento, nota-se intenso abortamento de vagens e amadurecimento prematuro das plantas.', CT76),
+      f('Em anos com veranicos na fase de enchimento de grãos, os danos tendem a ser maiores.', CT76),
+    ],
+    reconhecer: [
+      f('Manchas em reboleiras na lavoura, onde as plantas ficam pequenas e amareladas.', CT76),
+      f('Às vezes as folhas têm manchas cloróticas ou necroses entre as nervuras (folha "carijó").', CT76),
+      f('Nas raízes há galhas, em número e tamanho variados, conforme a suscetibilidade da cultivar e a densidade do nematoide no solo.', CT76),
+      f('Dentro das galhas ficam as fêmeas, de cor branco-pérola e formato de pêra.', CT76),
+    ],
+    favorecem: [
+      f('A maioria das espécies cultivadas multiplica os nematoides de galhas; o cultivo prévio de espécies hospedeiras aumenta os danos na soja semeada em seguida.', CT76),
+      f('A presença de plantas daninhas na área também permite a reprodução e a sobrevivência do parasita.', CT76),
+    ],
+    monitorar: [
+      f('Coletar solo e raízes com galhas em pontos diferentes da reboleira, até formar uma amostra composta de cerca de 200 g de solo e de pelo menos cinco sistemas radiculares.', CT76),
+      f('Enviar a amostra, com o histórico da área, o mais rápido possível a um laboratório de Nematologia. Identificar a espécie de Meloidogyne é o primeiro passo.', CT76),
+    ],
+    niveis: [],
+    manejo: {
+      cultural: [
+        f('Em lavouras de ciclo curto, todas as medidas devem ser feitas antes da semeadura: constatado o ataque, nada pode ser feito naquela safra, e os cuidados passam a valer para os próximos cultivos.', CT76),
+        f('As medidas mais eficientes são a rotação ou sucessão com culturas não ou más hospedeiras e o uso de cultivares de soja resistentes. A rotação precisa ser bem planejada.', CT76),
+        f('Em áreas com M. javanica, a Embrapa indica rotação com amendoim, algodão, mamona ou milho, sorgo e milheto resistentes. Com M. incognita, amendoim ou milho, sorgo e milheto resistentes.', CT76),
+        f('A adubação verde com crotalárias (C. spectabilis, C. grantiana, C. mucronata, C. paulinea), mucuna-preta, mucuna-cinza ou nabo forrageiro contribui para reduzir a população dos nematoides.', CT76),
+      ],
+      genetico: [
+        f('Quase todas as cerca de 80 cultivares resistentes ou moderadamente resistentes descendem de uma única fonte, a cultivar norte-americana Bragg. Como a resistência não é alta, com populações elevadas no solo a cultivar resistente deve vir depois de rotação com cultura não ou má hospedeira.', CT76),
+      ],
+    },
+    cuidados: [f('Os sintomas de campo se parecem com os de outros problemas de raiz. A espécie só se confirma em laboratório, e é dela que depende o programa de controle.', CT76)],
+    lacunas: [
+      'A circular não traz nível de ação nem densidade limite de nematoides de galhas.',
+      'A circular não traz controle biológico nem químico para este nematoide. Produtos e doses não entram no app.',
+      AVISO_2010,
+    ],
+  },
+  nematoide_cisto: {
+    classificacao: f('Nematoide de cisto da soja (NCS), Heterodera glycines, também chamado de "nanismo amarelo da soja". Foi detectado pela primeira vez no Brasil na safra 1991/92.', CT76),
+    dano: [
+      f('O NCS penetra nas raízes e dificulta a absorção de água e nutrientes, o que resulta em porte reduzido das plantas e clorose na parte aérea. Em muitos casos as plantas acabam morrendo.', CT76),
+    ],
+    reconhecer: [
+      f('Os sintomas aparecem em reboleiras, geralmente perto de estradas ou carreadores.', CT76),
+      f('Em regiões de solos mais férteis e boa distribuição de chuva, os sintomas na parte aérea podem não aparecer: o diagnóstico definitivo exige sempre olhar o sistema radicular.', CT76),
+      f('A raiz fica reduzida e, a partir de 30 a 40 dias após a semeadura, mostra fêmeas minúsculas, brancas, em formato de limão ligeiramente alongado.', CT76),
+      f('Com o tempo a fêmea passa a amarelo, marrom-claro e, por fim, vira uma estrutura dura marrom-escura, o cisto, que se solta da raiz e vai para o solo.', CT76),
+    ],
+    favorecem: [
+      f('Cada cisto tem em média cerca de 200 ovos. Por ser muito leve e resistente à deterioração e à dessecação, o cisto é uma unidade eficiente de disseminação e sobrevivência.', CT76),
+      f('A disseminação é principalmente pelo transporte de solo infestado: equipamentos agrícolas, sementes mal beneficiadas com partículas de solo, vento, água e até pássaros.', CT76),
+      f('Soja voluntária (tiguera) ou outras espécies hospedeiras na área durante a entressafra aumentam o inóculo para a safra de verão seguinte.', CT76),
+    ],
+    monitorar: [
+      f('Como os sintomas de folha podem faltar, olhe a raiz: procure as fêmeas brancas a partir de 30 a 40 dias após a semeadura.', CT76),
+    ],
+    niveis: [],
+    manejo: {
+      cultural: [
+        f('Onde o NCS já foi identificado, o produtor tem de conviver com ele, porque a erradicação é praticamente impossível. O ideal é combinar rotação com plantas não hospedeiras e cultivares resistentes.', CT76),
+        f('Entre as não hospedeiras de verão estão arroz, algodão, sorgo, mamona, milho e girassol. Trocar a soja por uma delas por uma safra reduz a população a um nível que, na maioria das condições, permite o retorno da soja na safra seguinte.', CT76),
+        f('Com um único cultivo de soja suscetível a população volta a crescer. Com dois ou três anos seguidos de milho, na maioria das situações se pode voltar com soja suscetível por dois anos sem risco de perda, com pH e saturação por bases nos níveis recomendados.', CT76),
+        f('Plantas não hospedeiras na entressafra (maio a agosto) não foram boa opção para reduzir a população: a rotação não deve ser trocada pela sucessão de culturas.', CT76),
+      ],
+      genetico: [
+        f('A resistência genética é o método de controle mais econômico e de melhor aceitação, mas não deve ser a única opção: o nematoide tem muita variabilidade e pode desenvolver novas raças. Já foram encontradas 11 raças no Brasil.', CT76),
+        f('Quase todas as cerca de 50 cultivares resistentes disponíveis eram adequadas apenas às raças 1 e 3. O esquema ideal combina não hospedeira, soja resistente e soja suscetível (por exemplo, milho, soja resistente, soja suscetível), para preservar a resistência.', CT76),
+      ],
+    },
+    cuidados: [f('Há propriedades sem o NCS mesmo em municípios considerados infestados: a prevenção ainda é importante.', CT76)],
+    lacunas: [
+      'A circular não traz nível de ação nem densidade limite do NCS, nem método de amostragem próprio para ele.',
+      'A circular não traz controle biológico nem químico para o NCS. Produtos e doses não entram no app.',
+      AVISO_2010,
+    ],
+  },
+}
+
+/** Assunto que só existe como ficha (não tem árvore de sintomas nem alvo no registro). */
+export const ASSUNTO_SO_FICHA = { id: 'nematoide_cisto', nome: 'Nematoide de cisto', cientifico: 'Heterodera glycines' } as const

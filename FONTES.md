@@ -69,3 +69,6 @@ Decisões de projeto, a calibrar com desfechos reais e a conferir com agrônomo 
 - **Foto como evidência fraca**: escolhida ×2,5; mostrada e não escolhida ×0,8; "nenhuma parece" ×0,6 nas mostradas.
 - **Percentual** = compatibilidade do primeiro colocado, limitada por 40% + 7 pontos por evidência, teto 95%. Índice, **não probabilidade calibrada**; some "viva × não viva" calculado do mesmo ranking.
 - **Causas reais da lavoura** modeladas: deficiências de K, Mg, Mn e N; deriva de hormonal (2,4-D); herbicida de contato; residual de herbicida; queima por calda/adubo; granizo. Fungicida não é causa isolada: o que ocorre é queima por calda/mistura/horário.
+
+## Nematoides (Biblioteca)
+- **CT 76** (Embrapa Soja, Nematóides em soja: identificação e controle, abr. 2010; https://www.infoteca.cnptia.embrapa.br/bitstream/doc/854178/1/CT76eletronica.pdf). Fonte única das fichas de nematoide de galhas e de cisto, lida no PDF. Não traz nível de ação, controle biológico nem químico; os números (cultivares resistentes, raças, área) são de 2010 e a ficha avisa.

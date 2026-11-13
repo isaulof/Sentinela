@@ -69,6 +69,6 @@ React 19 · TypeScript estrito · Vite · TanStack Router (hash) · Zustand · D
 - Fotos ficam no aparelho e **não** entram no backup JSON.
 - Testado em Chromium; Safari/iOS não foi testado em aparelho real.
 - Só a lagarta-da-soja, a lagarta-helicoverpa e outros alvos com nível publicado pela Embrapa têm nível de ação numérico. Nos demais (ferrugem, mofo-branco, mancha-alvo, spodoptera e outros), o app só registra e sinaliza **detecção**.
-- Spodoptera, broca e mela têm ficha na Biblioteca, mas ainda não têm árvore de sintomas no Diagnóstico. Faltam as fichas de nematoides e de pulgão.
+- Spodoptera, broca e mela têm ficha na Biblioteca, mas ainda não têm árvore de sintomas no Diagnóstico. Nematoides de galhas e de cisto têm ficha (Embrapa CT 76, de 2010), sem nível de ação; falta a ficha de pulgão.
 - Clima vem do Open-Meteo e precisa de internet; sem rede, o app segue funcionando e o bloco de clima some.
 - Bordadura de 30 m, número de pontos por área e índices de risco climático são **decisões de projeto**, rotuladas como tal no app.

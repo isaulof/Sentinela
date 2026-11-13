@@ -52,6 +52,13 @@ export const FONTES = {
     url: 'https://www.infoteca.cnptia.embrapa.br/infoteca/bitstream/doc/1164967/1/Circ-Tec-205-revista.pdf',
     tipo: 'confirmada',
   },
+  ct76: {
+    id: 'ct76',
+    rotulo: 'Embrapa Soja, CT 76 (nematoides)',
+    citacao: 'DIAS, W. P.; GARCIA, A.; SILVA, J. F. V.; CARNEIRO, G. E. de S. Nematóides em soja: identificação e controle. Circular Técnica 76. Londrina: Embrapa Soja, abr. 2010.',
+    url: 'https://www.infoteca.cnptia.embrapa.br/bitstream/doc/854178/1/CT76eletronica.pdf',
+    tipo: 'confirmada',
+  },
   sp17pragas: {
     id: 'sp17pragas',
     rotulo: 'Embrapa Soja, Sistemas de Produção 17 (pragas)',

@@ -549,6 +549,20 @@ test.describe('fluxos de negócio', () => {
     }
   })
 
+  test('biblioteca: nematoides de galhas e de cisto têm ficha completa da Embrapa (CT 76)', async ({ page }) => {
+    for (const [slug, titulo] of [['nematoide', 'Nematoides de galhas'], ['nematoide_cisto', 'Nematoide de cisto']] as const) {
+      await page.goto(`/#/biblioteca/${slug}`)
+      await expect(page.getByRole('heading', { name: titulo, level: 1 })).toBeVisible()
+      const ficha = page.getByRole('region', { name: 'Ficha completa' })
+      await expect(ficha.getByRole('heading', { name: 'Em que grupo está' })).toBeVisible()
+      await expect(ficha.getByRole('heading', { name: 'O que a Embrapa não publica' })).toBeVisible()
+      await expect(page.getByText(/CT 76/).first()).toBeVisible()
+    }
+    await page.goto('/#/biblioteca')
+    await page.getByRole('searchbox', { name: 'Buscar na biblioteca' }).fill('Heterodera')
+    await expect(page.getByRole('link', { name: /Nematoide de cisto/ })).toBeVisible()
+  })
+
   test('o resultado do diagnóstico leva ao texto do problema na Biblioteca', async ({ page }) => {
     await page.goto('/#/biblioteca/def_mn')
     await expect(page.getByRole('heading', { name: 'Falta de manganês', level: 1 })).toBeVisible()
