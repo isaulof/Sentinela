@@ -5,14 +5,14 @@ import { FONTES } from './fontes'
 import { METODOS_DE_COLETA, metodosPara } from './metodos'
 import { ESTADIOS } from '@/domain/phenology'
 
-const NOVOS: Record<string, string> = { anticarsia: 'anticarsia', helicoverpa: 'lagarta_vagem', moscaBranca: 'mosca_branca', vaquinha: 'vaquinha', acaro: 'acaro', pulgao: 'pulgao', tamandua: 'tamandua', elasmo: 'elasmo', coro: 'coro', oidio: 'oidio', finalCiclo: 'dfc', antracnose: 'antracnose', bacteriose: 'bacteriose', olhoDeRa: 'olho_de_ra', raizHaste: 'raiz_haste' }
+const NOVOS: Record<string, string> = { anticarsia: 'anticarsia', helicoverpa: 'lagarta_vagem', moscaBranca: 'mosca_branca', vaquinha: 'vaquinha', acaro: 'acaro', tamandua: 'tamandua', elasmo: 'elasmo', coro: 'coro', oidio: 'oidio', finalCiclo: 'dfc', antracnose: 'antracnose', bacteriose: 'bacteriose', olhoDeRa: 'olho_de_ra', raizHaste: 'raiz_haste' }
 
 describe('catálogo de alvos do registro', () => {
-  it('tem os 5 de rotina de sempre e mais 9 pragas e 6 doenças registráveis', () => {
+  it('tem os 5 de rotina de sempre e mais 10 pragas e 7 doenças registráveis', () => {
     expect(ALVOS_DE_ROTINA.map((a) => a.id)).toEqual(['percevejo', 'lagarta', 'ferrugem', 'mofo', 'manchaAlvo'])
-    expect(OUTRAS_PRAGAS).toHaveLength(9)
-    expect(OUTRAS_DOENCAS).toHaveLength(6)
-    expect(LISTA_ALVOS).toHaveLength(20)
+    expect(OUTRAS_PRAGAS).toHaveLength(10)
+    expect(OUTRAS_DOENCAS).toHaveLength(7)
+    expect(LISTA_ALVOS).toHaveLength(22)
   })
   it('cada alvo está completo: nomes, protocolo, fases, unidade, estádio e fonte válidos', () => {
     for (const [chave, a] of Object.entries(ALVOS)) {
@@ -33,6 +33,7 @@ describe('catálogo de alvos do registro', () => {
     expect(new Set(nomes).size).toBe(nomes.length)
   })
   it('os nomes e nomes científicos são os do catálogo do diagnóstico: as duas telas falam dos mesmos problemas', () => {
+    // Spodoptera, broca-das-axilas e mela ainda não têm árvore de sintomas no diagnóstico: só ficha na Biblioteca.
     for (const [alvoId, candidatoId] of Object.entries(NOVOS)) {
       const c = CANDIDATOS.find((x) => x.id === candidatoId)
       expect(c, candidatoId).toBeDefined()
@@ -41,12 +42,12 @@ describe('catálogo de alvos do registro', () => {
       expect(ALVOS[alvoId as AlvoId].tipo, alvoId).toBe(c!.tipo)
     }
   })
-  it('só os alvos com fonte numérica confirmada têm nível de ação; os demais são decisão de projeto', () => {
+  it('só os alvos com fonte da Embrapa têm nível de ação ou ficha; os demais são decisão de projeto', () => {
     const comFonte = LISTA_ALVOS.filter((a) => !a.fontes.includes('projeto')).map((a) => a.id).sort()
-    expect(comFonte).toEqual(['anticarsia', 'finalCiclo', 'ferrugem', 'lagarta', 'manchaAlvo', 'mofo', 'percevejo'].sort())
+    expect(comFonte).toEqual(['anticarsia', 'broca', 'finalCiclo', 'ferrugem', 'helicoverpa', 'lagarta', 'manchaAlvo', 'mela', 'mofo', 'percevejo', 'spodoptera', 'tamandua'].sort())
   })
   it('desfolha só nos que desfolham (lagartas e vaquinhas)', () => {
-    expect(LISTA_ALVOS.filter((a) => a.desfolha).map((a) => a.id).sort()).toEqual(['anticarsia', 'lagarta', 'vaquinha'])
+    expect(LISTA_ALVOS.filter((a) => a.desfolha).map((a) => a.id).sort()).toEqual(['anticarsia', 'helicoverpa', 'lagarta', 'spodoptera', 'vaquinha'])
   })
 })
 

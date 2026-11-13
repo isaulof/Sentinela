@@ -2,7 +2,7 @@ import type { Alvo, AlvoId } from '@/knowledge/alvos'
 import type { IconName } from './Icon'
 
 const ICONE_DA_PRAGA: Partial<Record<AlvoId, IconName>> = {
-  percevejo: 'percevejo', lagarta: 'lagarta', anticarsia: 'lagarta', helicoverpa: 'lagarta', elasmo: 'lagarta',
+  percevejo: 'percevejo', lagarta: 'lagarta', anticarsia: 'lagarta', helicoverpa: 'lagarta', spodoptera: 'lagarta', broca: 'lagarta', elasmo: 'lagarta',
   moscaBranca: 'mosquinha', vaquinha: 'besouro', tamandua: 'besouro', acaro: 'acaro', coro: 'larva',
 }
 

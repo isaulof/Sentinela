@@ -111,7 +111,7 @@ describe('resumo por ponto', () => {
 describe('medida em palavras para os alvos novos', () => {
   it('cada praga se lê na sua unidade, não sempre "por metro"', () => {
     expect(medidaDoRegistro(reg({ alvo: 'moscaBranca', quantidade: 4 }))).toBe('4 por folha')
-    expect(medidaDoRegistro(reg({ alvo: 'pulgao', quantidade: 2 }))).toBe('2 por planta')
+    expect(medidaDoRegistro(reg({ alvo: 'broca', quantidade: 30 }))).toBe('30 % das plantas')
     expect(medidaDoRegistro(reg({ alvo: 'coro', quantidade: 1 }))).toBe('1 por trincheira')
     expect(medidaDoRegistro(reg({ alvo: 'acaro', quantidade: 3 }))).toBe('3 em 10 folhas')
     expect(medidaDoRegistro(reg({ alvo: 'helicoverpa', quantidade: 2 }))).toBe('2 por metro')

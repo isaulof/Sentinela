@@ -86,17 +86,17 @@ describe('lagarta-da-soja (mesmo nível da falsa-medideira, pela Caderneta)', ()
 })
 
 describe('pragas sem nível de ação numérico: detecção para o agrônomo', () => {
-  const praga = (alvo: 'helicoverpa' | 'moscaBranca' | 'vaquinha' | 'acaro' | 'pulgao' | 'tamandua' | 'elasmo' | 'coro', quantidade: number) => avaliar({ alvo, estadio: 'V4', quantidade })
+  const praga = (alvo: 'moscaBranca' | 'vaquinha' | 'acaro' | 'elasmo' | 'coro', quantidade: number) => avaliar({ alvo, estadio: 'V4', quantidade })
   it('zero é "nenhuma ocorrência"; qualquer contagem vira detecção, nunca "nível de ação atingido"', () => {
-    for (const a of ['helicoverpa', 'moscaBranca', 'vaquinha', 'acaro', 'pulgao', 'tamandua', 'elasmo', 'coro'] as const) {
+    for (const a of ['moscaBranca', 'vaquinha', 'acaro', 'elasmo', 'coro'] as const) {
       expect(praga(a, 0).nivel, a).toBe('ausente')
       for (const q of [1, 5, 50, 500]) expect(praga(a, q).nivel, `${a} ${q}`).toBe('deteccao')
     }
   })
   it('a mensagem diz que não há limite numérico e que a decisão é do agrônomo, sem recomendar produto', () => {
-    const r = praga('helicoverpa', 3)
-    expect(r.titulo).toBe('Detecção: Lagartas das vagens')
-    expect(r.detalhe).toMatch(/3 lag\.\/m/)
+    const r = praga('vaquinha', 3)
+    expect(r.titulo).toBe('Detecção: Vaquinhas e besouros pequenos')
+    expect(r.detalhe).toMatch(/3 bes\.\/m/)
     expect(r.detalhe).toMatch(/Não há nível de ação numérico/)
     expect(r.detalhe).toMatch(/agrônomo, que decide o manejo/)
     expect(`${r.titulo} ${r.detalhe}`).not.toMatch(/aplicar|aplicação|inseticida|fungicida/i)
@@ -104,10 +104,48 @@ describe('pragas sem nível de ação numérico: detecção para o agrônomo', (
   it('traz a fonte do alvo (decisão de projeto)', () => expect(praga('acaro', 2).fontes).toEqual(['projeto']))
 })
 
+describe('níveis de ação da Embrapa (Sistemas de Produção 17)', () => {
+  const lag = (alvo: 'spodoptera' | 'helicoverpa', quantidade: number, estadio: string, desfolhaPct?: number) => avaliar({ alvo, estadio, quantidade, desfolhaPct })
+  it('lagartas-das-vagens (Spodoptera): 10 por metro', () => {
+    expect(lag('spodoptera', 9, 'R3').nivel).toBe('proximo')
+    expect(lag('spodoptera', 10, 'R3').nivel).toBe('atingido')
+    expect(lag('spodoptera', 3, 'R3').nivel).toBe('abaixo')
+    expect(lag('spodoptera', 0, 'R3').nivel).toBe('ausente')
+  })
+  it('lagarta-helicoverpa: 4 por metro no vegetativo e 2 no reprodutivo', () => {
+    expect(lag('helicoverpa', 3, 'V6').nivel).toBe('proximo')
+    expect(lag('helicoverpa', 4, 'V6').nivel).toBe('atingido')
+    expect(lag('helicoverpa', 2, 'R2').nivel).toBe('atingido')
+    expect(lag('helicoverpa', 1, 'R2').nivel).toBe('abaixo')
+  })
+  it('a desfolha vale para as duas: 30% no vegetativo, 15% no reprodutivo', () => {
+    expect(lag('spodoptera', 1, 'V6', 30).nivel).toBe('atingido')
+    expect(lag('helicoverpa', 1, 'R3', 15).nivel).toBe('atingido')
+    expect(lag('helicoverpa', 1, 'R3', 5).nivel).toBe('abaixo')
+  })
+  it('broca-das-axilas: % de plantas com ponteiros atacados', () => {
+    const b = (q: number) => avaliar({ alvo: 'broca', estadio: 'V6', quantidade: q }).nivel
+    expect([b(0), b(10), b(20), b(25), b(40)]).toEqual(['ausente', 'abaixo', 'proximo', 'atingido', 'atingido'])
+  })
+  it('tamanduá-da-soja: 1 adulto/m até V3, 2 de V4 a V6, nenhum depois de V6', () => {
+    const t = (q: number, e: string) => avaliar({ alvo: 'tamandua', estadio: e, quantidade: q }).nivel
+    expect(t(1, 'V2')).toBe('atingido')
+    expect(t(1, 'V5')).toBe('abaixo')
+    expect(t(2, 'V5')).toBe('atingido')
+    expect(t(5, 'V7')).toBe('nao_aplicavel')
+    expect(t(5, 'R2')).toBe('nao_aplicavel')
+  })
+  it('a fonte é o Sistemas de Produção 17, e o texto não manda aplicar nada', () => {
+    const r = lag('spodoptera', 12, 'R3')
+    expect(r.fontes).toEqual(['sp17pragas'])
+    expect(`${r.titulo} ${r.detalhe}`).not.toMatch(/\b(aplique|aplicar|pulverize)\b/i)
+  })
+})
+
 describe('doenças novas: detecção para o agrônomo', () => {
-  const doenca = (alvo: 'oidio' | 'antracnose' | 'bacteriose' | 'olhoDeRa' | 'raizHaste' | 'finalCiclo', o: { presente?: boolean; severidadePct?: number }, estadio = 'R3') => avaliar({ alvo, estadio, quantidade: 0, ...o })
+  const doenca = (alvo: 'oidio' | 'antracnose' | 'bacteriose' | 'olhoDeRa' | 'raizHaste' | 'finalCiclo' | 'mela', o: { presente?: boolean; severidadePct?: number }, estadio = 'R3') => avaliar({ alvo, estadio, quantidade: 0, ...o })
   it('sem sinais é ausente; com sinal ou severidade é detecção', () => {
-    for (const a of ['oidio', 'antracnose', 'bacteriose', 'olhoDeRa', 'raizHaste', 'finalCiclo'] as const) {
+    for (const a of ['oidio', 'antracnose', 'bacteriose', 'olhoDeRa', 'raizHaste', 'finalCiclo', 'mela'] as const) {
       expect(doenca(a, { presente: false }).nivel, a).toBe('ausente')
       expect(doenca(a, { presente: true, severidadePct: 3 }).nivel, a).toBe('deteccao')
     }

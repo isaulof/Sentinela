@@ -52,6 +52,20 @@ export const FONTES = {
     url: 'https://www.infoteca.cnptia.embrapa.br/infoteca/bitstream/doc/1164967/1/Circ-Tec-205-revista.pdf',
     tipo: 'confirmada',
   },
+  sp17pragas: {
+    id: 'sp17pragas',
+    rotulo: 'Embrapa Soja, Sistemas de Produção 17 (pragas)',
+    citacao: 'EMBRAPA SOJA. Tecnologias de produção de soja: Sistemas de Produção 17, 2020. Capítulo de manejo de pragas. Londrina: Embrapa Soja.',
+    url: 'https://www.alice.cnptia.embrapa.br/alice/bitstream/doc/1128403/1/p.-197-226-de-SP-17-2020-online.pdf',
+    tipo: 'confirmada',
+  },
+  sp17doencas: {
+    id: 'sp17doencas',
+    rotulo: 'Embrapa Soja, Sistemas de Produção 17 (doenças)',
+    citacao: 'EMBRAPA SOJA. Tecnologias de produção de soja: Sistemas de Produção 17, 2020. Capítulo de manejo de doenças. Londrina: Embrapa Soja.',
+    url: 'https://www.alice.cnptia.embrapa.br/alice/bitstream/doc/1128404/1/p.-227-264-de-SP-17-2-020-online.pdf',
+    tipo: 'confirmada',
+  },
   cercosporioseMilho: {
     id: 'cercosporioseMilho',
     rotulo: 'Embrapa Milho e Sorgo, Circ. 24',

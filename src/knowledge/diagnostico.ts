@@ -687,7 +687,7 @@ const BASE: Candidato[] = [
     },
   },
   {
-    id: 'lagarta_vagem', nome: 'Lagartas das vagens', cientifico: 'Helicoverpa spp.', tipo: 'praga', origem: 'projeto', fontes: ['projeto'],
+    id: 'lagarta_vagem', nome: 'Lagarta-helicoverpa', cientifico: 'Helicoverpa spp. e Chloridea virescens', tipo: 'praga', origem: 'projeto', fontes: ['sp17pragas'],
     resumo: 'Lagartas que atacam vagens e grãos, deixando furos. Também podem comer folhas e ponteiros.',
     confundeCom: ['Lagarta-falsa-medideira', 'Percevejos (vagens chochas)'],
     comoConfirmar: ['Abra as vagens furadas: a lagarta ou as fezes aparecem por dentro.', 'Faça o pano de batida para contar as lagartas.'],

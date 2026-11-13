@@ -19,7 +19,7 @@ export const ROTULO_CATEGORIA: Record<Categoria, string> = {
 /** Ícone do problema: o bicho certo para as pragas, folha para doença, gota para produto etc. */
 export function iconeDoCandidato(c: Candidato): IconName {
   if (c.id.startsWith('percevejo')) return 'percevejo'
-  if (['lagarta', 'lagarta_vagem', 'anticarsia', 'elasmo'].includes(c.id)) return 'lagarta'
+  if (['lagarta', 'lagarta_vagem', 'anticarsia', 'elasmo', 'spodoptera', 'broca'].includes(c.id)) return 'lagarta'
   if (c.id === 'coro') return 'larva'
   if (['vaquinha', 'tamandua'].includes(c.id)) return 'besouro'
   if (['mosca_branca', 'pulgao'].includes(c.id)) return 'mosquinha'

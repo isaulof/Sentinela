@@ -205,15 +205,15 @@ test.describe('outras pragas e doenças e método opcional', () => {
     return d
   }
 
-  test('os 5 alvos de rotina continuam em botões e as outras 15 pragas e doenças vêm num seletor agrupado', async ({ page }) => {
+  test('os 5 alvos de rotina continuam em botões e as outras 17 pragas e doenças vêm num seletor agrupado', async ({ page }) => {
     const d = await abrirForm(page)
     const alvos = d.getByRole('radiogroup', { name: 'Alvo' }).getByRole('radio')
     await expect(alvos).toHaveText(['Percevejo-marrom', 'Lagarta-falsa-medideira', 'Ferrugem-asiática', 'Mofo-branco', 'Mancha-alvo'])
     const outros = d.getByLabel('Outras pragas e doenças')
-    await expect(outros.locator('optgroup[label="Pragas"] option')).toHaveCount(9)
-    await expect(outros.locator('optgroup[label="Doenças"] option')).toHaveCount(6)
-    await expect(outros.locator('optgroup[label="Pragas"] option')).toContainText(['Lagarta-da-soja', 'Lagartas das vagens', 'Mosca-branca', 'Vaquinhas e besouros pequenos', 'Ácaros', 'Pulgões', 'Tamanduá-da-soja', 'Lagarta-elasmo', 'Corós (larvas no solo)'])
-    await expect(outros.locator('optgroup[label="Doenças"] option')).toContainText(['Oídio', 'Doenças de final de ciclo', 'Antracnose', 'Pústula e crestamento bacteriano', 'Mancha olho-de-rã', 'Podridões de raiz e haste'])
+    await expect(outros.locator('optgroup[label="Pragas"] option')).toHaveCount(10)
+    await expect(outros.locator('optgroup[label="Doenças"] option')).toHaveCount(7)
+    await expect(outros.locator('optgroup[label="Pragas"] option')).toContainText(['Lagarta-da-soja', 'Lagarta-helicoverpa', 'Lagartas-das-vagens', 'Broca-das-axilas', 'Mosca-branca', 'Vaquinhas e besouros pequenos', 'Ácaros', 'Tamanduá-da-soja', 'Lagarta-elasmo', 'Corós (larvas no solo)'])
+    await expect(outros.locator('optgroup[label="Doenças"] option')).toContainText(['Oídio', 'Doenças de final de ciclo', 'Antracnose', 'Pústula e crestamento bacteriano', 'Mancha olho-de-rã', 'Mela ou requeima', 'Podridões de raiz e haste'])
   })
 
   test('escolher outra praga troca as fases, a unidade e o protocolo, e avisa que não há nível de ação numérico', async ({ page }) => {
@@ -231,20 +231,20 @@ test.describe('outras pragas e doenças e método opcional', () => {
 
   test('registrar uma praga nova: sem foto bloqueia (é detecção), com foto salva e mostra "Detecção"', async ({ page }) => {
     const d = await abrirForm(page)
-    await d.getByLabel('Outras pragas e doenças').selectOption({ label: 'Lagartas das vagens' })
-    await d.getByRole('radio', { name: 'Lagarta grande' }).click()
+    await d.getByLabel('Outras pragas e doenças').selectOption({ label: 'Vaquinhas e besouros pequenos' })
+    await d.getByRole('radio', { name: 'Adulto' }).click()
     await d.getByRole('button', { name: 'Aumentar' }).click({ clickCount: 3 })
     const salvar = d.getByRole('button', { name: 'Salvar registro' })
     await expect(salvar).toBeDisabled()
     await expect(d.getByRole('alert').filter({ hasText: /foto/i })).toBeVisible()
-    await expect(d.getByText('Detecção: Lagartas das vagens').first()).toBeVisible()
+    await expect(d.getByText('Detecção: Vaquinhas e besouros pequenos').first()).toBeVisible()
     await anexarFoto(page)
     await expect(salvar).toBeEnabled()
     await salvar.click()
     await expect(d).toBeHidden()
     const conf = page.getByRole('region', { name: 'Registro salvo' })
-    await expect(conf).toContainText('Lagartas das vagens · 3 por metro')
-    await expect(conf).toContainText('Detecção: Lagartas das vagens')
+    await expect(conf).toContainText('Vaquinhas e besouros pequenos · 3 por metro')
+    await expect(conf).toContainText('Detecção: Vaquinhas e besouros pequenos')
   })
 
   test('a unidade de cada praga aparece certa na confirmação (mosca-branca é por folha)', async ({ page }) => {
@@ -338,9 +338,9 @@ test.describe('outras pragas e doenças e método opcional', () => {
 
   test('o rascunho guarda a praga e o método escolhidos se a página fechar', async ({ page }) => {
     const d = await abrirForm(page)
-    await d.getByLabel('Outras pragas e doenças').selectOption({ label: 'Pulgões' })
+    await d.getByLabel('Outras pragas e doenças').selectOption({ label: 'Mosca-branca' })
     await d.getByLabel('Como você coletou? (opcional)').selectOption({ label: 'Inspeção visual das plantas' })
-    await d.getByRole('radio', { name: 'Colônia sem asas' }).click()
+    await d.getByRole('radio', { name: 'Adulto' }).click()
     await expect.poll(() => page.evaluate(() => new Promise<unknown>((ok) => { const a = indexedDB.open('sentinela'); a.onsuccess = () => { const r = a.result.transaction('config').objectStore('config').getAll(); r.onsuccess = () => ok((r.result as { chave: string; valor: unknown }[]).find((x) => x.chave.startsWith('rascunho:registro:'))?.valor ?? null) } })), { timeout: 8000 }).not.toBeNull()
     await page.reload()
     await page.getByLabel('Talhão', { exact: true }).selectOption({ label: 'T-04 Cabeceira' })
@@ -348,9 +348,9 @@ test.describe('outras pragas e doenças e método opcional', () => {
     await page.getByRole('button', { name: 'Registrar achado' }).click()
     const d2 = page.getByRole('dialog')
     await expect(d2.getByText('Rascunho recuperado')).toBeVisible()
-    await expect(d2.getByLabel('Outras pragas e doenças')).toHaveValue('pulgao')
+    await expect(d2.getByLabel('Outras pragas e doenças')).toHaveValue('moscaBranca')
     await expect(d2.getByLabel('Como você coletou? (opcional)')).toHaveValue('Inspeção visual das plantas')
-    await expect(d2.getByRole('radio', { name: 'Colônia sem asas' })).toHaveAttribute('aria-checked', 'true')
+    await expect(d2.getByRole('radio', { name: 'Adulto' })).toHaveAttribute('aria-checked', 'true')
   })
 
   test('no mapa inteligente o novo alvo só aparece depois de ter registro no talhão', async ({ page }) => {

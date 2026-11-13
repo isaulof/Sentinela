@@ -204,6 +204,7 @@ function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGp
         <p><i>{alvo.cientifico}</i></p>
         <p className="mt-1"><b className="text-text">Método:</b> {alvo.coleta.metodo}</p>
         <p><b className="text-text">Onde olhar:</b> {alvo.coleta.parte}</p>
+        <p className="mt-1"><a href={`#/biblioteca/${alvo.id}`} target="_blank" rel="noreferrer" className="font-semibold text-brand underline">Ver ficha completa na Biblioteca<span className="sr-only"> (abre em outra aba)</span></a></p>
         {!naRotina && <p className="mt-1">{alvo.tipo === 'praga' ? 'Praga' : 'Doença'} fora da rotina: {alvo.fontes.includes('projeto') ? 'protocolo é decisão de projeto da equipe e não tem nível de ação numérico; o agrônomo decide.' : 'siga a fonte indicada no resultado.'}</p>}
       </div>
 

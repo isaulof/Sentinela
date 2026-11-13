@@ -8,8 +8,8 @@ import { diaLocal, fimDoDia } from './tempo'
 /** Valor numérico do registro para o mapa de calor: contagem (pragas) ou severidade (doenças). */
 export const valorDoRegistro = (r: Registro): number => (ALVOS[r.alvo].tipo === 'praga' ? r.quantidade : (r.severidadePct ?? (r.presente ? 1 : 0)))
 
-/** Nível de ação numérico, quando as fontes trazem um (doenças não têm). */
-export const LIMITE_ACAO: Partial<Record<AlvoId, number>> = { percevejo: NIVEL_ACAO.percevejo.graos, lagarta: NIVEL_ACAO.lagartaPorMetro, anticarsia: NIVEL_ACAO.lagartaPorMetro }
+/** Nível de ação numérico único, quando as fontes trazem um (doenças não têm; helicoverpa e tamanduá variam com o estádio e ficam de fora). */
+export const LIMITE_ACAO: Partial<Record<AlvoId, number>> = { percevejo: NIVEL_ACAO.percevejo.graos, lagarta: NIVEL_ACAO.lagartaPorMetro, anticarsia: NIVEL_ACAO.lagartaPorMetro, spodoptera: NIVEL_ACAO.spodopteraPorMetro, broca: NIVEL_ACAO.brocaPlantasPct }
 export const UNIDADE_ALVO = Object.fromEntries(LISTA_ALVOS.map((a) => [a.id, a.unidade])) as Record<AlvoId, string>
 
 /** Dia da visita = dia LOCAL da fazenda (não UTC): 21:30 em Cuiabá continua no mesmo dia. */

@@ -4,8 +4,8 @@ import type { FonteId } from './fontes'
 /** Os 5 de rotina (monitorados em todo ponto) e os que se registram quando aparecem. */
 export type AlvoId =
   | 'percevejo' | 'lagarta' | 'ferrugem' | 'mofo' | 'manchaAlvo'
-  | 'anticarsia' | 'helicoverpa' | 'moscaBranca' | 'vaquinha' | 'acaro' | 'pulgao' | 'tamandua' | 'elasmo' | 'coro'
-  | 'oidio' | 'finalCiclo' | 'antracnose' | 'bacteriose' | 'olhoDeRa' | 'raizHaste'
+  | 'anticarsia' | 'helicoverpa' | 'spodoptera' | 'broca' | 'moscaBranca' | 'vaquinha' | 'acaro' | 'tamandua' | 'elasmo' | 'coro'
+  | 'oidio' | 'finalCiclo' | 'antracnose' | 'bacteriose' | 'olhoDeRa' | 'raizHaste' | 'mela'
 
 export interface Alvo {
   id: AlvoId
@@ -40,7 +40,7 @@ export const ALVOS: Record<AlvoId, Alvo> = {
     tipo: 'praga',
     coleta: {
       metodo: 'Pano de batida branco de 1 m, batendo as plantas de uma fileira sobre o pano',
-      unidade: 'percevejos por metro (ninfas maiores que 0,5 cm e adultos)',
+      unidade: 'percevejos por metro (ninfas maiores que 0,3 cm e adultos, somando as espécies)',
       parte: 'Plantas da fileira, sobre o pano; contagem logo após a batida',
     },
     fases: ['Ninfa', 'Adulto'],
@@ -123,9 +123,19 @@ export const ALVOS: Record<AlvoId, Alvo> = {
     fases: ['Lagarta pequena (até 1,5 cm)', 'Lagarta grande (maior que 1,5 cm)'], estadioMin: 'V2', fontes: ['caderneta'], rotina: false, unidade: 'lag./m', desfolha: true,
   },
   helicoverpa: {
-    id: 'helicoverpa', nome: 'Lagartas das vagens', cientifico: 'Helicoverpa spp.', tipo: 'praga',
-    coleta: { metodo: 'Pano de batida de 1 m e inspeção de ponteiros, flores e vagens', unidade: 'lagartas por metro', parte: 'Ponteiros, flores e vagens' },
-    fases: ['Lagarta pequena', 'Lagarta grande'], estadioMin: 'VE', fontes: ['projeto'], rotina: false, unidade: 'lag./m',
+    id: 'helicoverpa', nome: 'Lagarta-helicoverpa', cientifico: 'Helicoverpa spp. e Chloridea virescens', tipo: 'praga',
+    coleta: { metodo: 'Pano de batida de 1 m, mais inspeção de ponteiros, flores e vagens e estimativa da desfolha', unidade: 'lagartas por metro; desfolha em %', parte: 'Ponteiros, flores e vagens; dossel inteiro para a desfolha' },
+    fases: ['Lagarta pequena', 'Lagarta grande'], estadioMin: 'VE', fontes: ['sp17pragas'], rotina: false, unidade: 'lag./m', desfolha: true,
+  },
+  spodoptera: {
+    id: 'spodoptera', nome: 'Lagartas-das-vagens', cientifico: 'Spodoptera eridania, S. cosmioides e S. albula', tipo: 'praga',
+    coleta: { metodo: 'Pano de batida de 1 m, mais inspeção de folhas e vagens e estimativa da desfolha', unidade: 'lagartas por metro; desfolha em %', parte: 'Dossel inteiro: folhas e vagens; lagartas caem no pano' },
+    fases: ['Lagarta pequena', 'Lagarta grande'], estadioMin: 'VE', fontes: ['sp17pragas'], rotina: false, unidade: 'lag./m', desfolha: true,
+  },
+  broca: {
+    id: 'broca', nome: 'Broca-das-axilas', cientifico: 'Crocidosema aporema', tipo: 'praga',
+    coleta: { metodo: 'Inspeção de plantas ao longo da fileira, olhando os ponteiros e as axilas das folhas', unidade: 'plantas com ponteiros atacados (%)', parte: 'Ponteiros, brotos novos e axilas das folhas' },
+    fases: ['Lagarta no ponteiro'], estadioMin: 'VE', fontes: ['sp17pragas', 'caderneta'], rotina: false, unidade: '% pl.', por: '% das plantas',
   },
   moscaBranca: {
     id: 'moscaBranca', nome: 'Mosca-branca', cientifico: 'Bemisia tabaci', tipo: 'praga',
@@ -142,15 +152,10 @@ export const ALVOS: Record<AlvoId, Alvo> = {
     coleta: { metodo: 'Inspeção visual de folhas com lupa de bolso (10x a 20x)', unidade: 'folhas com ácaros em 10 folhas inspecionadas', parte: 'Face inferior das folhas, de manchas bronzeadas ou com teia' },
     fases: ['Ninfa e adulto', 'Ovos'], estadioMin: 'VE', fontes: ['projeto'], rotina: false, unidade: 'folhas/10', por: 'em 10 folhas',
   },
-  pulgao: {
-    id: 'pulgao', nome: 'Pulgões', cientifico: 'Aphis spp.', tipo: 'praga',
-    coleta: { metodo: 'Inspeção visual de ponteiros e folhas novas', unidade: 'colônias por planta', parte: 'Ponteiros, brotos e folhas novas' },
-    fases: ['Colônia sem asas', 'Colônia com alados'], estadioMin: 'VE', fontes: ['projeto'], rotina: false, unidade: 'col./planta', por: 'por planta',
-  },
   tamandua: {
     id: 'tamandua', nome: 'Tamanduá-da-soja', cientifico: 'Sternechus subsignatus', tipo: 'praga',
     coleta: { metodo: 'Inspeção das plantas na fileira (adultos na base) e pano de batida', unidade: 'adultos por metro', parte: 'Base das plantas e solo ao redor; haste com galhas' },
-    fases: ['Adulto', 'Larva dentro da haste'], estadioMin: 'VE', fontes: ['projeto'], rotina: false, unidade: 'ad./m',
+    fases: ['Adulto', 'Larva dentro da haste'], estadioMin: 'VE', fontes: ['sp17pragas'], rotina: false, unidade: 'ad./m',
   },
   elasmo: {
     id: 'elasmo', nome: 'Lagarta-elasmo', cientifico: 'Elasmopalpus lignosellus', tipo: 'praga',
@@ -188,6 +193,11 @@ export const ALVOS: Record<AlvoId, Alvo> = {
     id: 'olhoDeRa', nome: 'Mancha olho-de-rã', cientifico: 'Cercospora sojina', tipo: 'doenca',
     coleta: { metodo: 'Inspeção visual de folhas; estimativa de severidade', unidade: 'presença/ausência de lesões e severidade estimada (%)', parte: 'Folhas do terço médio e superior' },
     fases: ['Lesões iniciais', 'Lesões com centro claro'], estadioMin: 'V4', fontes: ['projeto'], rotina: false, unidade: '% sev.',
+  },
+  mela: {
+    id: 'mela', nome: 'Mela ou requeima', cientifico: 'Rhizoctonia solani (AG1)', tipo: 'doenca',
+    coleta: { metodo: 'Inspeção visual de folhas, pecíolos e hastes, com atenção às folhas coladas por teias de micélio', unidade: 'presença/ausência de lesões e severidade estimada (%)', parte: 'Folhas do baixeiro e do terço médio, pecíolos e hastes' },
+    fases: ['Manchas de aspecto encharcado', 'Folhas coladas por micélio'], estadioMin: 'VE', fontes: ['sp17doencas'], rotina: false, unidade: '% sev.',
   },
   raizHaste: {
     id: 'raizHaste', nome: 'Podridões de raiz e haste', cientifico: 'Fusarium, Phytophthora, Rhizoctonia e outros', tipo: 'doenca',
