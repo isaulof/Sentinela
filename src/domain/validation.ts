@@ -3,7 +3,7 @@ import type { FonteId } from '@/knowledge/fontes'
 import { avaliar, type Avaliacao } from './decision'
 import { distanceToRingEdge, makeProjection, pointInRing, type LngLat } from './geo'
 import { atingiu, isEstadio } from './phenology'
-import type { Registro } from './registro'
+import { PROTOCOLO_VERSAO, type Registro } from './registro'
 
 export type Gravidade = 'erro' | 'aviso'
 export interface Problema {
@@ -55,7 +55,7 @@ export const REGRAS_VALIDACAO: readonly { codigo: string; gravidade: Gravidade; 
   { codigo: 'V10', gravidade: 'erro', titulo: 'Valor muito acima do histórico', quando: `Quantidade maior que ${FATOR_OUTLIER} vezes a média histórica (com pelo menos 3 registros) exige foto (erro sem foto, aviso com foto) e dupla checagem.` },
   { codigo: 'V11', gravidade: 'aviso', titulo: 'Coerência espacial', quando: `Com GPS real, posição a mais de ${TOLERANCIA_GPS_M} m do talhão: confirme se é o talhão certo.` },
   { codigo: 'V12', gravidade: 'aviso', titulo: 'Precisão do GPS', quando: `Precisão pior que ±${PRECISAO_MAX_GPS_M} m: espere melhorar ou aproxime-se do ponto.` },
-  { codigo: 'V13', gravidade: 'erro', titulo: 'Plantas analisadas', quando: `Todo registro novo diz quantas plantas foram analisadas no ponto: número inteiro de 1 a ${MAX_PLANTAS_ANALISADAS}. Vale para todos os alvos daquela visita.` },
+  { codigo: 'V13', gravidade: 'erro', titulo: 'Plantas analisadas', quando: `Todo registro novo diz quantas plantas foram analisadas no ponto: número inteiro de 1 a ${MAX_PLANTAS_ANALISADAS}. Vale para todos os alvos daquela visita. Registros antigos, sem o campo, continuam válidos.` },
 ]
 
 /**
@@ -98,8 +98,8 @@ export function validarRegistro(r: Registro, ctx: ContextoValidacao): ResultadoV
   if (Number.isNaN(t)) erro('V07', 'criadoEm', 'Data e hora inválidas.')
   else if (t > ctx.agora.getTime() + TOLERANCIA_RELOGIO_MS) erro('V07', 'criadoEm', 'A data do registro está no futuro. Verifique o relógio do aparelho.')
 
-  // V13 plantas analisadas (registros v2 em diante; os antigos não tinham o campo)
-  if (r.schema === 2) {
+  // V13 plantas analisadas: só no protocolo atual. Registros de protocolos anteriores não tinham o campo e continuam válidos (e corrigíveis).
+  if (r.schema === 2 && r.protocoloVersao === PROTOCOLO_VERSAO) {
     const n = r.plantasAnalisadas
     if (n === undefined || !Number.isInteger(n) || n < 1) erro('V13', 'plantasAnalisadas', 'Informe quantas plantas foram analisadas neste ponto.')
     else if (n > MAX_PLANTAS_ANALISADAS) erro('V13', 'plantasAnalisadas', `Máximo de ${MAX_PLANTAS_ANALISADAS} plantas por ponto. Confira o número.`)

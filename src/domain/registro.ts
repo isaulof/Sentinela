@@ -5,8 +5,8 @@ import { haversineM } from './geo'
 import type { Estadio } from './phenology'
 import { FUSO_PADRAO } from './tempo'
 
-/** Versão do protocolo de coleta usada nos registros novos (muda quando o método de algum alvo muda). */
-export const PROTOCOLO_VERSAO = '2026-11'
+/** Versão do protocolo de coleta usada nos registros novos (muda quando o método de algum alvo ou um campo obrigatório muda). 2026-11.2: passou a exigir as plantas analisadas no ponto. */
+export const PROTOCOLO_VERSAO = '2026-11.2'
 
 /** Condições do dia da amostragem (preenchidas no formulário completo; todas opcionais). */
 export interface CondicoesDia {

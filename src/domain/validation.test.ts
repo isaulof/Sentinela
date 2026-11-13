@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { LngLat } from './geo'
 import type { Registro } from './registro'
 import codigoFonte from './validation.ts?raw'
+import { PROTOCOLO_VERSAO } from './registro'
 import { mediaHistorica, REGRAS_VALIDACAO, validarRegistro, type ContextoValidacao } from './validation'
 
 const agora = new Date('2026-11-07T15:00:00Z')
@@ -78,5 +79,22 @@ describe('lista de regras mostrada ao técnico', () => {
     const aplicadas = [...new Set([...codigoFonte.matchAll(/(?:erro|aviso)\('(V\d\d)'/g)].map((m) => m[1]!))].sort()
     expect(REGRAS_VALIDACAO.map((r) => r.codigo)).toEqual(aplicadas)
     expect(aplicadas).toHaveLength(13)
+  })
+})
+
+describe('V13 plantas analisadas', () => {
+  const v2 = (o: Partial<Registro> = {}) => base({ schema: 2, protocoloVersao: PROTOCOLO_VERSAO, ...o })
+  const v13 = (r: Registro) => validarRegistro(r, ctx).problemas.filter((p) => p.regra === 'V13')
+  it('registro do protocolo atual sem o número é barrado; com número inteiro de 1 a 1000 passa', () => {
+    expect(v13(v2())).toHaveLength(1)
+    expect(v13(v2({ plantasAnalisadas: 0 }))).toHaveLength(1)
+    expect(v13(v2({ plantasAnalisadas: 2.5 }))).toHaveLength(1)
+    expect(v13(v2({ plantasAnalisadas: 1001 }))).toHaveLength(1)
+    expect(v13(v2({ plantasAnalisadas: 10 }))).toHaveLength(0)
+    expect(v13(v2({ plantasAnalisadas: 1000 }))).toHaveLength(0)
+  })
+  it('registro de protocolo anterior (sem o campo) continua válido e pode ser corrigido', () => {
+    expect(v13(base({ schema: 2, protocoloVersao: '2026-11' }))).toHaveLength(0)
+    expect(v13(base())).toHaveLength(0)
   })
 })

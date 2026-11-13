@@ -132,6 +132,21 @@ test.describe('registro dos achados', () => {
   })
 })
 
+test('corrigir as plantas analisadas cria uma nova versão com o número novo', async ({ page }) => {
+  await abrirT04(page)
+  await registrarPercevejo(page, 1)
+  await page.getByRole('region', { name: 'Registro salvo' }).getByRole('button', { name: 'Ver ficha' }).click()
+  const ficha = page.getByRole('dialog', { name: /Ficha do ponto 1/ })
+  await expect(ficha.locator('[data-estado="ativa"]')).toContainText('Plantas analisadas')
+  await ficha.getByRole('button', { name: 'Corrigir' }).click()
+  await expect(ficha.getByLabel('Plantas analisadas')).toHaveValue('10')
+  await ficha.getByLabel('Plantas analisadas').fill('12')
+  await ficha.getByLabel('Motivo da correção').fill('Contei de novo as plantas')
+  await ficha.getByRole('button', { name: 'Salvar correção' }).click()
+  await expect(ficha.getByText(/versão 2/)).toBeVisible()
+  await expect(ficha.locator('[data-estado="ativa"]')).toContainText('12')
+})
+
 test('mapa inteligente: a ficha completa do ponto abre a partir do ponto e mostra o histórico', async ({ page }) => {
   await carregarDemo(page)
   await page.goto('/#/talhoes/T-01')

@@ -36,6 +36,7 @@ function FormCorrecao({ registro, onFechar }: { registro: Registro; onFechar: ()
   const [severidade, setSeveridade] = useState(registro.severidadePct === undefined ? '' : String(registro.severidadePct))
   const [desfolha, setDesfolha] = useState(registro.desfolhaPct === undefined ? '' : String(registro.desfolhaPct))
   const [obs, setObs] = useState(registro.observacao)
+  const [plantas, setPlantas] = useState(registro.plantasAnalisadas === undefined ? '' : String(registro.plantasAnalisadas))
   const [motivo, setMotivo] = useState('')
   const [autor, setAutor] = useState(amostrador)
   const [erros, setErros] = useState<string[]>([])
@@ -46,8 +47,9 @@ function FormCorrecao({ registro, onFechar }: { registro: Registro; onFechar: ()
     const sev = severidade === '' ? undefined : Number(severidade)
     const desf = desfolha === '' ? undefined : Number(desfolha)
     const semNada = q === 0 && !(ehDoenca && presente) && (sev ?? 0) === 0 && (desf ?? 0) === 0
+    const pl = plantas === '' ? undefined : Math.floor(Number(plantas))
     const mudancas: Correcao = {
-      quantidade: q, zero: semNada, observacao: obs,
+      quantidade: q, zero: semNada, observacao: obs, ...(pl !== undefined && Number.isFinite(pl) ? { plantasAnalisadas: pl } : {}),
       ...(ehDoenca ? { presente, ...(sev !== undefined ? { severidadePct: sev } : {}) } : {}),
       ...(ALVOS[registro.alvo].desfolha && desf !== undefined ? { desfolhaPct: desf } : {}),
     }
@@ -75,6 +77,7 @@ function FormCorrecao({ registro, onFechar }: { registro: Registro; onFechar: ()
         </>
       )}
       {ALVOS[registro.alvo].desfolha && <Campo rotulo="Desfolha (%)"><Input type="number" inputMode="decimal" min={0} max={100} value={desfolha} onChange={(e) => setDesfolha(e.target.value)} /></Campo>}
+      <Campo rotulo="Plantas analisadas" ajuda={registro.plantasAnalisadas === undefined ? 'Este registro é antigo e não tem o número. Pode informar agora.' : 'Corrige só este registro; os outros alvos do ponto mantêm o próprio número.'}><Input type="number" inputMode="numeric" min={1} value={plantas} onChange={(e) => setPlantas(e.target.value)} /></Campo>
       <Campo rotulo="Observação"><Input value={obs} onChange={(e) => setObs(e.target.value)} /></Campo>
       <Campo rotulo="Motivo da correção" ajuda="Fica registrado na trilha de auditoria."><Input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ex.: contei de novo no pano" /></Campo>
       <Campo rotulo="Quem está corrigindo"><Input value={autor} onChange={(e) => setAutor(e.target.value)} placeholder="Nome e sobrenome" /></Campo>
