@@ -32,7 +32,7 @@ type Painel = null | 'acoes' | 'achado' | 'pendencia' | 'nome' | 'ficha'
 
 export function Campo() {
   const talhoes = useTalhoes()
-  const { talhaoId, setTalhao, gpsReal, pontoFoco, setPontoFoco, amostrador, setAmostrador, setDiagnosticoPara, setTalhaoAba } = useSessao()
+  const { talhaoId, setTalhao, pontoFoco, setPontoFoco, amostrador, setAmostrador, setDiagnosticoPara, setTalhaoAba } = useSessao()
   const mostrar = useToast((s) => s.mostrar)
   const talhao = talhoes?.find((t) => t.id === talhaoId) ?? talhoes?.[0]
   const plano = usePlano(talhao?.id)
@@ -40,7 +40,7 @@ export function Campo() {
   const registros = useRegistros(talhao?.id)
   const pendencias = usePendencias(talhao?.id)
   const [navegando, setNavegando] = useState(false)
-  const gps = useGps(gpsReal || navegando)
+  const gps = useGps(true)
   useTelaAcesa(navegando)
   const [ponto, setPonto] = useState<string | null>(pontoFoco)
   useEffect(() => { if (pontoFoco) setPontoFoco(null) }, [pontoFoco, setPontoFoco])
@@ -89,7 +89,7 @@ export function Campo() {
     if (!alvoPonto || !pt || !plano || !talhao) return
     setSalvando(true)
     try {
-      const gravados = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, gps: gps.estado === 'ok' && (gpsReal || navegando) ? gps.fix : null, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) })
+      const gravados = await registrarSemOcorrencia({ talhao, plano, pontoId: alvoPonto, amostrador: nome, gps: gps.estado === 'ok' ? gps.fix : null, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) })
       if (gravados.length === 0) { mostrar('Não foi possível registrar. Tente de novo.', 'erro'); return }
       mostrar(`Ponto ${pt.order}: sem ocorrência`)
       setConfirmacao({ ids: gravados.map((g) => g.id), pontoId: alvoPonto, ordem: pt.order, titulo: `Ponto ${pt.order}: sem ocorrência`, linhas: [`${gravados.length} alvos com zero: ${gravados.map((g) => ALVOS[g.alvo].nome).join(', ')}`, dataHoraBr(gravados[0]!.criadoEm, gravados[0]!.fusoHorario)] })
@@ -133,7 +133,7 @@ export function Campo() {
         </div>
       </Folha>
       <Folha aberta={painel === 'achado'} onFechar={() => setPainel(null)} titulo="Registrar achado">
-        {alvoPonto && <FormRegistro talhao={talhao} plano={plano} pontoId={alvoPonto} registrosTalhao={registros ?? []} gps={gps.estado === 'ok' ? gps.fix : null} forcarGps={navegando} onSalvo={(r) => { setPainel(null); setConfirmacao({ ids: [r.id], pontoId: r.pontoId, ordem: pt?.order ?? 0, titulo: `Ponto ${pt?.order ?? ''}: registro salvo`, linhas: [resumoDoRegistro(r)] }); setPonto(navegando ? null : r.pontoId) }} />}
+        {alvoPonto && <FormRegistro talhao={talhao} plano={plano} pontoId={alvoPonto} registrosTalhao={registros ?? []} gps={gps.estado === 'ok' ? gps.fix : null} onSalvo={(r) => { setPainel(null); setConfirmacao({ ids: [r.id], pontoId: r.pontoId, ordem: pt?.order ?? 0, titulo: `Ponto ${pt?.order ?? ''}: registro salvo`, linhas: [resumoDoRegistro(r)] }); setPonto(navegando ? null : r.pontoId) }} />}
       </Folha>
       <Folha aberta={painel === 'pendencia'} onFechar={() => setPainel(null)} titulo="Guardar para diagnóstico">
         {alvoPonto && pt && <FormPendencia talhao={talhao} pontoId={alvoPonto} ordem={pt.order} onSalvo={() => { setPainel(null); setPonto(null) }} />}
@@ -201,11 +201,7 @@ export function Campo() {
             <div className="flex flex-wrap items-center justify-center gap-2 lg:gap-2">
               <Badge tom={TOM_ESTADO[estadoPt]}>{ROTULO_ESTADO[estadoPt]}</Badge>
               {!navegando && <button type="button" disabled={!alvoPonto} onClick={() => setNavegando(true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-soft px-3.5 text-apoio font-semibold text-brand transition active:scale-95 disabled:opacity-40"><Icon name="local" size={16} />Ir até o ponto</button>}
-              {gpsReal ? (
-                <span className="hidden text-apoio text-text-2 lg:inline">{gps.estado === 'ok' ? `${dist} m de você (GPS ±${Math.round(gps.fix.precisaoM)} m)` : gps.estado === 'erro' ? gps.motivo : 'Procurando GPS…'}</span>
-              ) : (
-                <span className="hidden text-apoio text-text-2 lg:inline">Posição simulada (demonstração)</span>
-              )}
+              <span className="hidden text-apoio text-text-2 lg:inline">{gps.estado === 'ok' ? `${dist} m de você (GPS ±${Math.round(gps.fix.precisaoM)} m)` : gps.estado === 'erro' ? gps.motivo : 'Procurando GPS…'}</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 lg:grid-cols-1 lg:gap-2.5">

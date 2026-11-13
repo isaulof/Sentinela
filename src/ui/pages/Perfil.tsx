@@ -11,7 +11,7 @@ import { useSessao } from '../state/store'
 import { useToast } from '../state/toast'
 
 export function Perfil() {
-  const { amostrador, setAmostrador, gpsReal, setGpsReal } = useSessao()
+  const { amostrador, setAmostrador } = useSessao()
   const mostrar = useToast((s) => s.mostrar)
   const talhoes = useTalhoes()
   const registros = useTodosRegistros()
@@ -38,15 +38,6 @@ export function Perfil() {
           <Campo grupo rotulo="Aparência">
             <Segmentado rotulo="Aparência" valor={tema} onChange={definir} opcoes={[{ id: 'auto', nome: 'Automática' }, { id: 'claro', nome: 'Clara' }, { id: 'escuro', nome: 'Escura' }]} />
           </Campo>
-          <div className="flex items-start justify-between gap-4 rounded-xl bg-surface-2 p-4">
-            <div>
-              <p className="font-semibold">Usar GPS real</p>
-              <p className="text-apoio text-text-2">{gpsReal ? 'O registro usa a sua posição e avisa se você estiver longe do talhão.' : 'Demonstração: o registro usa a posição planejada do ponto, como se você estivesse lá. O guia até o ponto sempre usa o GPS real.'}</p>
-            </div>
-            <button type="button" role="switch" aria-checked={gpsReal} aria-label="Usar GPS real" onClick={() => setGpsReal(!gpsReal)} className={`relative h-8 w-14 shrink-0 rounded-full transition ${gpsReal ? 'bg-brand' : 'bg-line'}`}>
-              <span className={`absolute top-1 size-6 rounded-full bg-white shadow transition-all ${gpsReal ? 'left-7' : 'left-1'}`} />
-            </button>
-          </div>
         </Card>
 
         <Card className="space-y-3">

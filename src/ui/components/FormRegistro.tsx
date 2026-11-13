@@ -38,7 +38,6 @@ interface Props {
   registrosTalhao: readonly Registro[]
   gps: Fix | null
   /** Guia ligado: a posição do registro é a do GPS mesmo que a preferência de demonstração esteja ativa. */
-  forcarGps?: boolean
   /** Chamado depois de gravar, com o registro salvo (a tela mostra a confirmação e permite desfazer). */
   onSalvo: (registro: Registro) => void
 }
@@ -59,8 +58,8 @@ export function FormRegistro(props: Props) {
 
 interface PropsCampos extends Props { chave: string; inicial: RascunhoRegistro | null; onDescartar: () => void }
 
-function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGps = false, onSalvo, chave, inicial, onDescartar }: PropsCampos) {
-  const { amostrador, setAmostrador, gpsReal } = useSessao()
+function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, onSalvo, chave, inicial, onDescartar }: PropsCampos) {
+  const { amostrador, setAmostrador } = useSessao()
   const mostrar = useToast((s) => s.mostrar)
   const ordens = useOrdens()
   const fazenda = useFazenda()
@@ -100,7 +99,7 @@ function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGp
     const t = setTimeout(() => { if (!salvou.current) void repo.gravarConfig(chave, { ...r, salvoEm: new Date().toISOString() }) }, 400)
     return () => clearTimeout(t)
   }, [chave, alvoId, fase, quantidade, zero, presente, severidade, desfolha, obs, repeticoes, condicoes, estadio, fotos, metodoUsado])
-  const usaGps = (gpsReal || forcarGps) && gps
+  const usaGps = gps // GPS sempre ligado; sem sinal, vale a posição planejada do ponto (marcada como simulada)
 
   const rascunho: Registro = useMemo(
     () => ({
@@ -175,7 +174,7 @@ function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGp
       <div className="flex flex-wrap items-center gap-2 text-apoio text-text-2">
         <Badge tom="neutral" icon="campo">Ponto {pontoId}</Badge>
         <span>{talhao.nome}</span>
-        <Badge tom={usaGps ? 'ok' : 'info'}>{usaGps ? `GPS ±${Math.round(gps.precisaoM)} m` : 'Posição simulada (demonstração)'}</Badge>
+        <Badge tom={usaGps ? 'ok' : 'info'}>{usaGps ? `GPS ±${Math.round(gps.precisaoM)} m` : 'Sem GPS: usa a posição do ponto'}</Badge>
       </div>
 
       {ordem && (

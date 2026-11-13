@@ -422,10 +422,10 @@ test.describe('fluxos de negócio', () => {
     await expect(page.getByText('Ainda não há coleta neste talhão')).toBeVisible()
   })
 
-  test('perfil: sem exportação nem backup, com nome, GPS e demonstração', async ({ page }) => {
+  test('perfil: sem exportação nem backup e sem chave de GPS (o GPS é sempre real), com nome e demonstração', async ({ page }) => {
     await page.goto('/#/perfil')
     await expect(page.getByRole('heading', { name: 'Perfil', level: 1 })).toBeVisible()
-    await expect(page.getByLabel('Usar GPS real')).toBeVisible()
+    await expect(page.getByLabel('Usar GPS real')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Carregar demonstração' })).toBeVisible()
     await expect(page.getByText(/Backup|CSV|GeoJSON/)).toHaveCount(0)
   })

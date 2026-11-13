@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { useFazenda, useOrdens, usePlanos, useTalhoes, useTodasPendencias, useTodosRegistros } from '@/data/hooks'
 import { carregarDemonstracao } from '@/data/seed'
 import { daRodada, nivelPorPonto } from '@/domain/analise'
-import { LOCAL_PADRAO_CLIMA, type Talhao } from '@/domain/entidades'
+import { localDoClima, type Talhao } from '@/domain/entidades'
 import { panorama, type Panorama } from '@/domain/panorama'
 import { dataBr, diaDaSemanaEData, diaLocal, saudacao } from '@/domain/tempo'
 import { proximaAcao, type ProximaAcao } from '@/domain/proximaAcao'
@@ -96,9 +96,7 @@ export function Painel() {
 
   const primeiroNome = amostrador.trim().split(/\s+/)[0] ?? ''
   const hoje = diaLocal(agora, fazenda.fuso)
-  // O clima é do primeiro talhão (o centro do contorno); sem talhão ainda, vale o centro de Lucas do Rio Verde.
-  const t0 = talhoes[0]
-  const local = t0 && t0.anel.length > 0 ? { lat: t0.anel.reduce((a, p) => a + p[1], 0) / t0.anel.length, lng: t0.anel.reduce((a, p) => a + p[0], 0) / t0.anel.length } : LOCAL_PADRAO_CLIMA
+  const local = localDoClima(talhoes)
 
   // Cabeçalho de app: a fazenda (fixa) pequena no topo, a saudação grande e uma única linha de data.
   const cabecalho = (

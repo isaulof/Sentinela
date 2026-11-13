@@ -10,7 +10,7 @@ export function urlTempoAgora(lat: number, lng: number): string {
     current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,is_day',
     daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,weather_code',
     timezone: 'America/Cuiaba',
-    forecast_days: '2',
+    forecast_days: '5',
   })
   return `https://api.open-meteo.com/v1/forecast?${q}`
 }

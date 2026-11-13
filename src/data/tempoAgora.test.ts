@@ -14,7 +14,7 @@ describe('consulta do clima de agora', () => {
     expect(u.searchParams.get('latitude')).toBe('-13.0509')
     expect(u.searchParams.get('longitude')).toBe('-55.9096')
     expect(u.searchParams.get('timezone')).toBe('America/Cuiaba')
-    expect(u.searchParams.get('forecast_days')).toBe('2')
+    expect(u.searchParams.get('forecast_days')).toBe('5')
     expect(u.searchParams.get('current')).toContain('weather_code')
     expect(u.searchParams.get('daily')).toContain('precipitation_sum')
     expect(u.search).not.toMatch(/key|token|apikey/i) // sem chave: a API é livre

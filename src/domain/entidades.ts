@@ -86,3 +86,10 @@ export interface FotoMeta {
   largura: number
   altura: number
 }
+
+/** Onde o clima é consultado: o centro do contorno do primeiro talhão; sem talhão ainda, o centro de Lucas do Rio Verde. */
+export function localDoClima(talhoes: readonly { anel: readonly (readonly number[])[] }[]): { lat: number; lng: number } {
+  const anel = talhoes[0]?.anel ?? []
+  if (anel.length === 0) return LOCAL_PADRAO_CLIMA
+  return { lat: anel.reduce((a, p) => a + p[1]!, 0) / anel.length, lng: anel.reduce((a, p) => a + p[0]!, 0) / anel.length }
+}

@@ -4,11 +4,8 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 interface Sessao {
   talhaoId: string | null
   amostrador: string
-  /** false = modo demonstração: a posição do registro é a do ponto planejado (o guia até o ponto usa sempre o GPS real). */
-  gpsReal: boolean
   setTalhao: (id: string | null) => void
   setAmostrador: (nome: string) => void
-  setGpsReal: (v: boolean) => void
   /** Ponto para abrir no Campo (vindo de uma ordem de checagem). */
   pontoFoco: string | null
   setPontoFoco: (id: string | null) => void
@@ -26,10 +23,8 @@ export const useSessao = create<Sessao>()(
     (set) => ({
       talhaoId: null,
       amostrador: '',
-      gpsReal: false,
       setTalhao: (talhaoId) => set({ talhaoId }),
       setAmostrador: (amostrador) => set({ amostrador }),
-      setGpsReal: (gpsReal) => set({ gpsReal }),
       pontoFoco: null,
       setPontoFoco: (pontoFoco) => set({ pontoFoco }),
       talhaoAba: 'resultados',
