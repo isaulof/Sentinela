@@ -54,11 +54,14 @@ describe('repositório', () => {
 describe('coleta guiada', () => {
   const plano = { talhaoId: 'T-02', params: { method: 'zigzag' as const, bufferM: 30, targetPoints: 3 }, pontos: [{ id: 'P01', order: 1, position: [-55.915, -13.052] as const }], caminho: [], areaHa: 1, geradoEm: '2026-11-01T00:00:00Z' }
 
-  it('"sem ocorrência" grava um zero válido para cada alvo', async () => {
+  it('"sem ocorrência" grava um zero válido para cada alvo de ROTINA (e só para eles)', async () => {
     const { registrarSemOcorrencia } = await import('./coleta')
-    const { LISTA_ALVOS } = await import('@/knowledge/alvos')
+    const { ALVOS_DE_ROTINA, LISTA_ALVOS } = await import('@/knowledge/alvos')
     const gravados = await registrarSemOcorrencia({ talhao: talhao, plano: plano as never, pontoId: 'P01', amostrador: 'Amostrador Teste', agora: new Date('2026-11-07T15:00:00Z') }, repo)
-    expect(gravados).toHaveLength(LISTA_ALVOS.length)
+    expect(gravados).toHaveLength(ALVOS_DE_ROTINA.length)
+    expect(ALVOS_DE_ROTINA).toHaveLength(5)
+    expect(LISTA_ALVOS.length).toBeGreaterThan(ALVOS_DE_ROTINA.length) // os demais não ganham zero: seriam dezenas de registros por toque
+    expect(gravados.map((g) => g.alvo).sort()).toEqual(ALVOS_DE_ROTINA.map((a) => a.id).sort())
     const regs = await repo.listarRegistros('T-02')
     expect(regs.every((r) => r.zero && r.quantidade === 0 && r.posicaoSimulada)).toBe(true)
   })

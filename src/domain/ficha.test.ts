@@ -107,3 +107,37 @@ describe('resumo por ponto', () => {
     expect(r[1]).toMatchObject({ pontoId: 'P02', estado: 'a_coletar', registros: 0, ultimo: null })
   })
 })
+
+describe('medida em palavras para os alvos novos', () => {
+  it('cada praga se lê na sua unidade, não sempre "por metro"', () => {
+    expect(medidaDoRegistro(reg({ alvo: 'moscaBranca', quantidade: 4 }))).toBe('4 por folha')
+    expect(medidaDoRegistro(reg({ alvo: 'pulgao', quantidade: 2 }))).toBe('2 por planta')
+    expect(medidaDoRegistro(reg({ alvo: 'coro', quantidade: 1 }))).toBe('1 por trincheira')
+    expect(medidaDoRegistro(reg({ alvo: 'acaro', quantidade: 3 }))).toBe('3 em 10 folhas')
+    expect(medidaDoRegistro(reg({ alvo: 'helicoverpa', quantidade: 2 }))).toBe('2 por metro')
+    expect(medidaDoRegistro(reg({ alvo: 'anticarsia', quantidade: 6, desfolhaPct: 10 }))).toBe('6 por metro · desfolha 10%')
+    expect(medidaDoRegistro(reg({ alvo: 'oidio', quantidade: 0, presente: true, severidadePct: 4 }))).toBe('presente · 4%')
+  })
+})
+
+describe('método informado pela pessoa (opcional)', () => {
+  const base = reg({ schema: 2, metodo: 'Pano de batida branco de 1 m' })
+  it('sem método informado, vale o do protocolo e o rótulo continua "Método"', () => {
+    const c = camposDoRegistro(base, true)
+    expect(c.find((x) => x.chave === 'metodo')).toMatchObject({ rotulo: 'Método', valor: 'Pano de batida branco de 1 m' })
+    expect(c.find((x) => x.chave === 'metodoProtocolo')).toBeUndefined()
+  })
+  it('com método informado, aparece como "Método usado" e o do protocolo fica ao lado, no relatório', () => {
+    const r = reg({ schema: 2, metodo: 'Pano de batida branco de 1 m', metodoUsado: 'Inspeção visual das plantas' })
+    const completo = camposDoRegistro(r, true)
+    expect(completo.find((x) => x.chave === 'metodo')).toMatchObject({ rotulo: 'Método usado', valor: 'Inspeção visual das plantas', largo: true })
+    expect(completo.find((x) => x.chave === 'metodoProtocolo')).toMatchObject({ rotulo: 'Método do protocolo', valor: 'Pano de batida branco de 1 m' })
+    // Na ficha curta mostra só o método usado.
+    const curto = camposDoRegistro(r, false)
+    expect(curto.find((x) => x.chave === 'metodo')!.valor).toBe('Inspeção visual das plantas')
+    expect(curto.find((x) => x.chave === 'metodoProtocolo')).toBeUndefined()
+  })
+  it('método em branco ou só espaços conta como não informado', () => {
+    expect(camposDoRegistro(reg({ schema: 2, metodo: 'P', metodoUsado: '   ' }), true).find((x) => x.chave === 'metodo')!.rotulo).toBe('Método')
+  })
+})

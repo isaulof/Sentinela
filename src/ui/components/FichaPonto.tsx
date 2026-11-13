@@ -49,7 +49,7 @@ function FormCorrecao({ registro, onFechar }: { registro: Registro; onFechar: ()
     const mudancas: Correcao = {
       quantidade: q, zero: semNada, observacao: obs,
       ...(ehDoenca ? { presente, ...(sev !== undefined ? { severidadePct: sev } : {}) } : {}),
-      ...(registro.alvo === 'lagarta' && desf !== undefined ? { desfolhaPct: desf } : {}),
+      ...(ALVOS[registro.alvo].desfolha && desf !== undefined ? { desfolhaPct: desf } : {}),
     }
     setSalvando(true)
     try {
@@ -74,7 +74,7 @@ function FormCorrecao({ registro, onFechar }: { registro: Registro; onFechar: ()
           <Campo rotulo="Severidade (%)"><Input type="number" inputMode="decimal" min={0} max={100} value={severidade} onChange={(e) => setSeveridade(e.target.value)} /></Campo>
         </>
       )}
-      {registro.alvo === 'lagarta' && <Campo rotulo="Desfolha (%)"><Input type="number" inputMode="decimal" min={0} max={100} value={desfolha} onChange={(e) => setDesfolha(e.target.value)} /></Campo>}
+      {ALVOS[registro.alvo].desfolha && <Campo rotulo="Desfolha (%)"><Input type="number" inputMode="decimal" min={0} max={100} value={desfolha} onChange={(e) => setDesfolha(e.target.value)} /></Campo>}
       <Campo rotulo="Observação"><Input value={obs} onChange={(e) => setObs(e.target.value)} /></Campo>
       <Campo rotulo="Motivo da correção" ajuda="Fica registrado na trilha de auditoria."><Input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ex.: contei de novo no pano" /></Campo>
       <Campo rotulo="Quem está corrigindo"><Input value={autor} onChange={(e) => setAutor(e.target.value)} placeholder="Nome e sobrenome" /></Campo>

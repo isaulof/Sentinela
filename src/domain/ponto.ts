@@ -9,7 +9,7 @@ export const ROTULO_ESTADO: Record<EstadoPonto, string> = {
   sem_ocorrencia: 'Sem ocorrência',
   leve: 'Achado leve',
   acao: 'Acima do nível de ação',
-  doenca: 'Doença detectada',
+  doenca: 'Detectado (decisão do agrônomo)',
   diagnostico: 'Aguardando diagnóstico',
   diagnosticado: 'Diagnosticado',
 }

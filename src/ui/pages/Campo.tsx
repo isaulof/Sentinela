@@ -245,7 +245,7 @@ export function Campo() {
                     <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
                       <div>
                         <p className="font-semibold">{ALVOS[r.alvo].nome}</p>
-                        <p className="text-apoio text-text-2">{r.zero ? 'Nenhuma ocorrência' : r.presente !== undefined ? `Presente · ${r.severidadePct ?? 0}%` : `${r.quantidade} por metro`}{r.fotoIds.length ? ` · ${r.fotoIds.length} foto(s)` : ''}</p>
+                        <p className="text-apoio text-text-2">{r.zero ? 'Nenhuma ocorrência' : r.presente !== undefined ? `Presente · ${r.severidadePct ?? 0}%` : `${r.quantidade} ${ALVOS[r.alvo].por ?? 'por metro'}`}{r.fotoIds.length ? ` · ${r.fotoIds.length} foto(s)` : ''}</p>
                       </div>
                       <Badge tom={TOM[a.nivel] ?? 'neutral'}>{a.titulo}</Badge>
                     </li>

@@ -83,7 +83,7 @@ const LEGENDA: { nivel: Nivel | 'sem'; texto: string }[] = [
   { nivel: 'abaixo', texto: 'Abaixo do nível' },
   { nivel: 'proximo', texto: 'Próximo do nível' },
   { nivel: 'atingido', texto: 'Nível atingido' },
-  { nivel: 'deteccao', texto: 'Doença detectada' },
+  { nivel: 'deteccao', texto: 'Detectado' },
 ]
 
 export function LegendaCroqui() {

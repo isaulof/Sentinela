@@ -15,6 +15,8 @@ export interface RascunhoRegistro {
   condicoes: CondicoesDia
   estadio: string
   fotos: string[]
+  /** Método informado (opcional); ausente = seguir o protocolo. */
+  metodoUsado?: string
   salvoEm: string
 }
 
@@ -24,7 +26,7 @@ export const chaveRascunho = (talhaoId: string, pontoId: string): string => `ras
 /** Só vale guardar quando a pessoa já preencheu algo: formulário aberto e parado não gera rascunho. */
 export function rascunhoTemConteudo(r: Omit<RascunhoRegistro, 'salvoEm'>): boolean {
   return r.fase !== '' || r.quantidade > 0 || r.zero || r.presente !== undefined || r.severidade !== undefined || r.desfolha !== undefined
-    || r.obs.trim() !== '' || r.fotos.length > 0 || r.repeticoes !== 1 || Object.keys(r.condicoes).length > 0 || r.alvoId !== 'percevejo'
+    || r.obs.trim() !== '' || r.fotos.length > 0 || r.repeticoes !== 1 || Object.keys(r.condicoes).length > 0 || r.alvoId !== 'percevejo' || !!r.metodoUsado
 }
 
 export const VALIDADE_RASCUNHO_H = 24

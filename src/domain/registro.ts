@@ -51,6 +51,8 @@ export interface Registro {
   schema?: 1 | 2
   /** Método de coleta aplicado, copiado do protocolo do alvo no momento do registro. */
   metodo?: string
+  /** Como a coleta foi feita, quando a pessoa informou (pergunta opcional). Em branco vale o `metodo` do protocolo. */
+  metodoUsado?: string
   protocoloVersao?: string
   /** Repetições da amostragem (ex.: 5 batidas) e a área/comprimento amostrado (ex.: "5 batidas de 1 m"). */
   repeticoes?: number

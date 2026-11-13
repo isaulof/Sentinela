@@ -10,7 +10,8 @@ import { ESTADIOS } from '@/domain/phenology'
 import { dataHoraBr } from '@/domain/tempo'
 import { camposV2, descreverAmostra, type CondicoesDia, type Registro } from '@/domain/registro'
 import { mediaHistorica, validarRegistro } from '@/domain/validation'
-import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
+import { ALVOS, ALVOS_DE_ROTINA, OUTRAS_DOENCAS, OUTRAS_PRAGAS, type AlvoId } from '@/knowledge/alvos'
+import { metodosPara } from '@/knowledge/metodos'
 import { FONTES } from '@/knowledge/fontes'
 import { useSessao } from '../state/store'
 import { useToast } from '../state/toast'
@@ -78,6 +79,7 @@ function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGp
   const [obs, setObs] = useState(inicial?.obs ?? '')
   const [repeticoes, setRepeticoes] = useState(inicial?.repeticoes ?? 1)
   const [condicoes, setCondicoes] = useState<CondicoesDia>(inicial?.condicoes ?? {})
+  const [metodoUsado, setMetodoUsado] = useState(inicial?.metodoUsado ?? '')
   // Depois de salvar ou descartar, nenhum salvamento de rascunho que ainda esteja agendado pode reescrevê-lo.
   const salvou = useRef(false)
   const [nome, setNome] = useState(amostrador)
@@ -88,14 +90,16 @@ function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGp
 
   const alvo = ALVOS[alvoId]
   const ehDoenca = alvo.tipo === 'doenca'
+  const naRotina = alvo.rotina
+  function escolherAlvo(id: AlvoId) { setAlvoId(id); setFase(''); setRepeticoes(1); setMetodoUsado(''); setQuantidade(0); setZero(false); setPresente(undefined); setSeveridade(undefined); setDesfolha(undefined) }
 
   // Guarda o rascunho enquanto a pessoa preenche (com um pequeno atraso para não gravar a cada tecla).
   useEffect(() => {
-    const r = { alvoId, fase, quantidade, zero, ...(presente !== undefined ? { presente } : {}), ...(severidade !== undefined ? { severidade } : {}), ...(desfolha !== undefined ? { desfolha } : {}), obs, repeticoes, condicoes, estadio, fotos }
+    const r = { alvoId, fase, quantidade, zero, ...(presente !== undefined ? { presente } : {}), ...(severidade !== undefined ? { severidade } : {}), ...(desfolha !== undefined ? { desfolha } : {}), obs, repeticoes, condicoes, estadio, fotos, ...(metodoUsado ? { metodoUsado } : {}) }
     if (!rascunhoTemConteudo(r)) return
     const t = setTimeout(() => { if (!salvou.current) void repo.gravarConfig(chave, { ...r, salvoEm: new Date().toISOString() }) }, 400)
     return () => clearTimeout(t)
-  }, [chave, alvoId, fase, quantidade, zero, presente, severidade, desfolha, obs, repeticoes, condicoes, estadio, fotos])
+  }, [chave, alvoId, fase, quantidade, zero, presente, severidade, desfolha, obs, repeticoes, condicoes, estadio, fotos, metodoUsado])
   const usaGps = (gpsReal || forcarGps) && gps
 
   const rascunho: Registro = useMemo(
@@ -105,10 +109,10 @@ function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGp
       alvo: alvoId, fase, quantidade, zero, ...(presente !== undefined ? { presente } : {}),
       ...(severidade !== undefined ? { severidadePct: severidade } : {}), ...(desfolha !== undefined ? { desfolhaPct: desfolha } : {}),
       fotoIds: fotos, observacao: obs,
-      repeticoes, areaAmostrada: descreverAmostra(alvo.tipo, repeticoes), ...(Object.keys(condicoes).length ? { condicoes } : {}),
+      ...(metodoUsado ? { metodoUsado } : {}), repeticoes, areaAmostrada: descreverAmostra(alvo.tipo, repeticoes), ...(Object.keys(condicoes).length ? { condicoes } : {}),
       ...camposV2({ posicao: usaGps ? gps.posicao : ponto.position }, { metodo: alvo.coleta.metodo, parteDaPlanta: alvo.coleta.parte, planejada: ponto.position, inicio: t0, fim: t0, ...(fazenda?.responsavelTecnico ? { responsavel: fazenda.responsavelTecnico } : {}), ...(fazenda?.fuso ? { fuso: fazenda.fuso } : {}) }),
     }),
-    [t0, fazenda, alvo, repeticoes, condicoes, talhao, nome, estadio, pontoId, usaGps, gps, ponto, alvoId, fase, quantidade, zero, presente, severidade, desfolha, fotos, obs],
+    [t0, fazenda, alvo, metodoUsado, repeticoes, condicoes, talhao, nome, estadio, pontoId, usaGps, gps, ponto, alvoId, fase, quantidade, zero, presente, severidade, desfolha, fotos, obs],
   )
   const hist = useMemo(() => mediaHistorica(registrosTalhao.filter((r) => r.alvo === alvoId).map((r) => r.quantidade)), [registrosTalhao, alvoId])
   const v = useMemo(
@@ -188,14 +192,27 @@ function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGp
       </Campo>
 
       <Campo grupo rotulo="Alvo">
-        <Segmentado rotulo="Alvo" valor={alvoId} onChange={(id) => { setAlvoId(id); setFase(''); setRepeticoes(1); setQuantidade(0); setZero(false); setPresente(undefined); setSeveridade(undefined); setDesfolha(undefined) }} opcoes={LISTA_ALVOS.map((a) => ({ id: a.id, nome: a.nome }))} />
+        <Segmentado rotulo="Alvo" valor={alvoId} onChange={escolherAlvo} opcoes={ALVOS_DE_ROTINA.map((a) => ({ id: a.id, nome: a.nome }))} />
+        <Select aria-label="Outras pragas e doenças" className="mt-2.5" value={naRotina ? '' : alvoId} onChange={(e) => { if (e.target.value) escolherAlvo(e.target.value as AlvoId) }}>
+          <option value="">Outras pragas e doenças…</option>
+          <optgroup label="Pragas">{OUTRAS_PRAGAS.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}</optgroup>
+          <optgroup label="Doenças">{OUTRAS_DOENCAS.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}</optgroup>
+        </Select>
       </Campo>
 
       <div className="rounded-2xl bg-surface-2 p-4 text-apoio text-text-2">
         <p><i>{alvo.cientifico}</i></p>
         <p className="mt-1"><b className="text-text">Método:</b> {alvo.coleta.metodo}</p>
         <p><b className="text-text">Onde olhar:</b> {alvo.coleta.parte}</p>
+        {!naRotina && <p className="mt-1">{alvo.tipo === 'praga' ? 'Praga' : 'Doença'} fora da rotina: {alvo.fontes.includes('projeto') ? 'protocolo é decisão de projeto da equipe e não tem nível de ação numérico; o agrônomo decide.' : 'siga a fonte indicada no resultado.'}</p>}
       </div>
+
+      <Campo rotulo="Como você coletou? (opcional)" ajuda="Deixe em branco para seguir o método do protocolo acima.">
+        <Select value={metodoUsado} onChange={(e) => setMetodoUsado(e.target.value)}>
+          <option value="">Seguir o método do protocolo</option>
+          {metodosPara(alvo.tipo).map((m) => <option key={m.id} value={m.nome}>{m.nome}</option>)}
+        </Select>
+      </Campo>
 
       <Campo grupo rotulo="Fase">
         <Segmentado rotulo="Fase" valor={fase} onChange={setFase} opcoes={alvo.fases.map((f) => ({ id: f, nome: f }))} />
@@ -215,7 +232,7 @@ function CamposRegistro({ talhao, plano, pontoId, registrosTalhao, gps, forcarGp
         </Campo>
       )}
 
-      {(ehDoenca || alvoId === 'lagarta') && (
+      {(ehDoenca || alvo.desfolha) && (
         <Campo rotulo={ehDoenca ? 'Severidade (% da área foliar)' : 'Desfolha (%)'}>
           <Input type="number" inputMode="decimal" min={0} max={100} step={0.5} value={(ehDoenca ? severidade : desfolha) ?? ''} placeholder="0 a 100" onChange={(e) => alterar(() => { const n = e.target.value === '' ? undefined : Number(e.target.value); if (ehDoenca) setSeveridade(n); else setDesfolha(n) })} />
         </Campo>

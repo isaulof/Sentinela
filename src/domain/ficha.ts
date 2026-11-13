@@ -9,7 +9,7 @@ import type { EstadoPonto } from './ponto'
 export function medidaDoRegistro(r: Registro): string {
   if (r.zero) return 'nenhuma ocorrência'
   if (r.presente !== undefined) return `${r.presente ? 'presente' : 'não encontrado'} · ${r.severidadePct ?? 0}%`
-  const base = `${r.quantidade} por metro`
+  const base = `${r.quantidade} ${ALVOS[r.alvo].por ?? 'por metro'}`
   return r.desfolhaPct !== undefined ? `${base} · desfolha ${r.desfolhaPct}%` : base
 }
 
@@ -65,7 +65,9 @@ export function camposDoRegistro(r: Registro, completo = false): CampoDoRegistro
   const c: CampoDoRegistro[] = []
   const add = (chave: string, rotulo: string, valor: string | null | undefined, largo = false) => { if (valor) c.push({ chave, rotulo, valor, ...(largo ? { largo } : {}) }) }
   if (completo) add('estadio', 'Estádio da soja', r.estadio)
-  add('metodo', 'Método', metodoDoRegistro(r), true)
+  const usado = r.metodoUsado?.trim()
+  add('metodo', usado ? 'Método usado' : 'Método', usado || metodoDoRegistro(r), true)
+  if (completo && usado) add('metodoProtocolo', 'Método do protocolo', metodoDoRegistro(r), true)
   if (completo) add('parte', 'Onde olhar', r.parteDaPlanta, true)
   add('amostra', 'Amostra', r.areaAmostrada)
   add('fase', 'Fase', r.fase)

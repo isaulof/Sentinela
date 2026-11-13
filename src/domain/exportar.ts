@@ -41,6 +41,7 @@ const COLUNAS: { nome: string; valor: (r: Registro, c: Contexto) => Linha[number
   { nome: 'inicio_utc', valor: (r) => r.inicioEm },
   { nome: 'fim_utc', valor: (r) => r.fimEm },
   { nome: 'metodo', valor: (r) => r.metodo },
+  { nome: 'metodo_usado', valor: (r) => r.metodoUsado },
   { nome: 'protocolo_versao', valor: (r) => r.protocoloVersao },
   { nome: 'repeticoes', valor: (r) => r.repeticoes },
   { nome: 'area_amostrada', valor: (r) => r.areaAmostrada },

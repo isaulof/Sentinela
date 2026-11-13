@@ -1,4 +1,4 @@
-import { ALVOS, type AlvoId } from '@/knowledge/alvos'
+import { ALVOS, LISTA_ALVOS, type AlvoId } from '@/knowledge/alvos'
 import { daRodada, idwGrade, nivelPorPonto, PESO } from './analise'
 import { NIVEL_ACAO, type Nivel } from './decision'
 import { makeProjection, type LngLat } from './geo'
@@ -9,8 +9,8 @@ import { diaLocal, fimDoDia } from './tempo'
 export const valorDoRegistro = (r: Registro): number => (ALVOS[r.alvo].tipo === 'praga' ? r.quantidade : (r.severidadePct ?? (r.presente ? 1 : 0)))
 
 /** Nível de ação numérico, quando as fontes trazem um (doenças não têm). */
-export const LIMITE_ACAO: Partial<Record<AlvoId, number>> = { percevejo: NIVEL_ACAO.percevejo.graos, lagarta: NIVEL_ACAO.lagartaPorMetro }
-export const UNIDADE_ALVO: Record<AlvoId, string> = { percevejo: 'perc./m', lagarta: 'lag./m', ferrugem: '% sev.', mofo: '% sev.', manchaAlvo: '% sev.' }
+export const LIMITE_ACAO: Partial<Record<AlvoId, number>> = { percevejo: NIVEL_ACAO.percevejo.graos, lagarta: NIVEL_ACAO.lagartaPorMetro, anticarsia: NIVEL_ACAO.lagartaPorMetro }
+export const UNIDADE_ALVO = Object.fromEntries(LISTA_ALVOS.map((a) => [a.id, a.unidade])) as Record<AlvoId, string>
 
 /** Dia da visita = dia LOCAL da fazenda (não UTC): 21:30 em Cuiabá continua no mesmo dia. */
 const dia = (r: Registro) => diaLocal(r.criadoEm)

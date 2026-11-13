@@ -225,7 +225,7 @@ export function RelatorioTalhao() {
       <section aria-labelledby="r-metodo" className="print:break-inside-avoid">
         <h2 id="r-metodo" className="text-secao">Método de coleta</h2>
         <ul className="mt-2 space-y-1.5 text-apoio">
-          {LISTA_ALVOS.map((a) => <li key={a.id}><b>{a.nome}:</b> {a.coleta.metodo}. <span className="text-text-2">Unidade: {a.coleta.unidade}.</span></li>)}
+          {LISTA_ALVOS.filter((a) => a.rotina || todos.some((r) => r.alvo === a.id)).map((a) => <li key={a.id}><b>{a.nome}:</b> {a.coleta.metodo}. <span className="text-text-2">Unidade: {a.coleta.unidade}.</span></li>)}
         </ul>
         <p className="mt-2 text-rotulo text-text-2">Versão do protocolo: {PROTOCOLO_VERSAO}. Registros anteriores à versão 2 do app não guardam o método e aparecem como "Método não informado".</p>
       </section>

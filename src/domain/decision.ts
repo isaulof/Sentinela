@@ -4,8 +4,9 @@ import { atingiu, isReprodutivo, type Estadio } from './phenology'
 
 /**
  * Motor de decisão por alvo. Só afirma limites que a fonte sustenta (ver FONTES.md).
- * Alvos sem limite numérico publicado (ferrugem, mofo-branco, mancha-alvo) geram DETECÇÃO
- * para decisão do agrônomo, nunca uma recomendação de aplicação automática.
+ * Alvos sem limite numérico publicado (ferrugem, mofo-branco, mancha-alvo e todas as pragas e doenças que se registram
+ * só quando aparecem) geram DETECÇÃO para decisão do agrônomo, nunca uma recomendação de aplicação automática.
+ * Exceção: a lagarta-da-soja usa o mesmo nível da falsa-medideira (a Caderneta da Embrapa trata as duas juntas).
  */
 export type Finalidade = 'graos' | 'sementes'
 
@@ -14,7 +15,7 @@ export type Nivel =
   | 'abaixo' // abaixo do nível de ação
   | 'proximo' // >= 70% do nível de ação
   | 'atingido' // nível de ação atingido (praga)
-  | 'deteccao' // doença detectada: decisão do agrônomo
+  | 'deteccao' // detectado, sem limite numérico: decisão do agrônomo
   | 'ausente' // zero registrado
 
 export interface Observacao {
@@ -73,7 +74,8 @@ export function avaliar(o: Observacao): Avaliacao {
       }
       return porContagem(o.quantidade, nivel, `${nivel} percevejo(s)/m (${finalidade === 'graos' ? 'grãos' : 'sementes'})`, fontes)
     }
-    case 'lagarta': {
+    case 'lagarta':
+    case 'anticarsia': {
       const desf = o.desfolhaPct ?? 0
       const limDesf = isReprodutivo(o.estadio) ? NIVEL_ACAO.desfolhaReprodutiva : NIVEL_ACAO.desfolhaVegetativa
       const porLagarta = porContagem(o.quantidade, NIVEL_ACAO.lagartaPorMetro, `${NIVEL_ACAO.lagartaPorMetro} lagartas > 1,5 cm/m`, fontes)
@@ -96,10 +98,9 @@ export function avaliar(o: Observacao): Avaliacao {
       }
       return porLagarta
     }
-    case 'ferrugem':
-    case 'mofo':
-    case 'manchaAlvo':
-      return deteccao(o, fontes)
+    default:
+      // Sem nível de ação numérico nas fontes: registra a detecção e deixa a decisão com o agrônomo.
+      return alvo.tipo === 'praga' ? deteccaoPraga(o, fontes) : deteccao(o, fontes)
   }
 }
 
@@ -117,9 +118,21 @@ function deteccao(o: Observacao, fontes: FonteId[]): Avaliacao {
   }
   return {
     nivel: 'deteccao',
-    titulo: `${nome} detectada`,
+    titulo: `Detecção: ${nome}`,
     detalhe:
       'Não há limite numérico oficial para esta doença nas fontes consultadas. Confirme com foto e sinal (lupa) e encaminhe ao agrônomo, que decide a aplicação.',
+    fontes,
+  }
+}
+
+/** Praga sem nível de ação numérico: qualquer contagem acima de zero é uma detecção, para o agrônomo decidir. */
+function deteccaoPraga(o: Observacao, fontes: FonteId[]): Avaliacao {
+  const alvo = ALVOS[o.alvo]
+  if (o.quantidade === 0) return { nivel: 'ausente', titulo: 'Nenhuma ocorrência', detalhe: 'O zero é um dado: confirma que o ponto foi inspecionado.', fontes }
+  return {
+    nivel: 'deteccao',
+    titulo: `Detecção: ${alvo.nome}`,
+    detalhe: `${o.quantidade} ${alvo.unidade} registrado(s). Não há nível de ação numérico para este alvo nas fontes consultadas. Confirme com foto e encaminhe ao agrônomo, que decide o manejo.`,
     fontes,
   }
 }

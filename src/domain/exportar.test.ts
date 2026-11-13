@@ -90,3 +90,16 @@ describe('nome do PDF do relatório', () => {
     expect(nomeDoRelatorio({ ...talhao, nome: 'T-01 Mirante São José' }, new Date('2026-11-12T01:30:00Z'))).toBe('Relatorio_t-01-mirante-sao-jose_2026-11-11')
   })
 })
+
+describe('método usado no CSV e no GeoJSON', () => {
+  it('tem a coluna metodo_usado, vazia quando a pessoa não informou', () => {
+    expect(colunasDoCsv()).toContain('metodo_usado')
+    const [cab, a, b] = linhas(registrosParaCsv([reg({ id: 'x', metodoUsado: 'Rede de varredura' }), reg({ id: 'y' })], talhao, plano)).map((l) => l.split(';'))
+    const i = cab!.indexOf('metodo_usado')
+    expect([a![i], b![i]].sort()).toEqual(['', 'Rede de varredura'])
+  })
+  it('o GeoJSON leva a mesma propriedade', () => {
+    const g = registrosParaGeoJson([reg({ metodoUsado: 'Rede de varredura' })], talhao, plano, new Date('2026-11-11T17:00:00Z'))
+    expect(g.features[1]!.properties).toMatchObject({ metodo_usado: 'Rede de varredura' })
+  })
+})

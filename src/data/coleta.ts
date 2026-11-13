@@ -1,6 +1,6 @@
 import type { Pendencia, PlanoSalvo, Talhao } from '@/domain/entidades'
 import { camposV2, type Registro } from '@/domain/registro'
-import { LISTA_ALVOS } from '@/knowledge/alvos'
+import { ALVOS_DE_ROTINA } from '@/knowledge/alvos'
 import { novoId, repo as repoPadrao, type Repo } from './repo'
 
 export interface ParamsSemOcorrencia {
@@ -17,7 +17,8 @@ export interface ParamsSemOcorrencia {
 }
 
 /**
- * "Sem ocorrência" em um toque: grava o zero explícito de cada alvo monitorado no ponto.
+ * "Sem ocorrência" em um toque: grava o zero explícito de cada alvo de ROTINA no ponto (os que se registram só quando
+ * aparecem não ganham zero: seriam dezenas de registros por toque).
  * Cada zero passa pela mesma validação dos demais registros. Devolve os registros gravados (a tela mostra o que foi feito e permite desfazer).
  */
 export async function registrarSemOcorrencia(p: ParamsSemOcorrencia, repo: Repo = repoPadrao): Promise<Registro[]> {
@@ -26,7 +27,7 @@ export async function registrarSemOcorrencia(p: ParamsSemOcorrencia, repo: Repo 
   const agora = p.agora ?? new Date()
   const posicao = p.gps ? ([p.gps.posicao[0], p.gps.posicao[1]] as const) : ponto.position
   const gravados: Registro[] = []
-  for (const alvo of LISTA_ALVOS) {
+  for (const alvo of ALVOS_DE_ROTINA) {
     const reg: Registro = {
       id: novoId('REG'), talhaoId: p.talhao.id, amostrador: p.amostrador, criadoEm: agora.toISOString(), estadio: p.talhao.estadio, finalidade: p.talhao.finalidade,
       pontoId: p.pontoId, posicao, posicaoSimulada: !p.gps, ...(p.gps ? { precisaoM: p.gps.precisaoM } : {}),

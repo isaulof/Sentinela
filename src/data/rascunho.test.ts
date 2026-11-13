@@ -7,7 +7,7 @@ const agora = new Date('2026-11-11T17:00:00Z')
 describe('rascunho do registro', () => {
   it('formulário aberto e parado não gera rascunho', () => expect(rascunhoTemConteudo(vazio)).toBe(false))
   it('qualquer preenchimento gera', () => {
-    for (const mudanca of [{ fase: 'Adulto' }, { quantidade: 2 }, { zero: true }, { presente: false }, { severidade: 3 }, { desfolha: 5 }, { obs: ' manchas ' }, { fotos: ['f'] }, { repeticoes: 5 }, { condicoes: { tempo: 'nublado' as const } }, { alvoId: 'ferrugem' as const }])
+    for (const mudanca of [{ fase: 'Adulto' }, { quantidade: 2 }, { zero: true }, { presente: false }, { severidade: 3 }, { desfolha: 5 }, { obs: ' manchas ' }, { fotos: ['f'] }, { repeticoes: 5 }, { condicoes: { tempo: 'nublado' as const } }, { alvoId: 'ferrugem' as const }, { metodoUsado: 'Rede de varredura' }])
       expect(rascunhoTemConteudo({ ...vazio, ...mudanca }), JSON.stringify(mudanca)).toBe(true)
     expect(rascunhoTemConteudo({ ...vazio, obs: '   ' })).toBe(false)
   })

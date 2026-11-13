@@ -304,7 +304,7 @@ export function tendencia(serie: readonly { dia: string; media: number }[]): Ten
 }
 
 export const ROTULO_NIVEL: Record<Nivel | 'sem_leitura', string> = {
-  sem_leitura: 'Sem leitura', nao_aplicavel: 'Fora da janela', ausente: 'Sem ocorrência', abaixo: 'Abaixo do nível', proximo: 'Perto do nível', atingido: 'Nível atingido', deteccao: 'Doença detectada',
+  sem_leitura: 'Sem leitura', nao_aplicavel: 'Fora da janela', ausente: 'Sem ocorrência', abaixo: 'Abaixo do nível', proximo: 'Perto do nível', atingido: 'Nível atingido', deteccao: 'Detectado',
 }
 const ORDEM_NIVEL: (Nivel | 'sem_leitura')[] = ['ausente', 'abaixo', 'proximo', 'atingido', 'deteccao', 'nao_aplicavel', 'sem_leitura']
 

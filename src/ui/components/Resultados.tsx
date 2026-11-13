@@ -57,6 +57,8 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
 
   const regs = useMemo(() => registros ?? [], [registros])
   const dias = useMemo(() => visitas(regs), [regs])
+  // Os alvos de rotina sempre; os outros só quando já há registro deles neste talhão (senão seriam 20 botões).
+  const alvosVisiveis = useMemo(() => LISTA_ALVOS.filter((a) => a.rotina || regs.some((r) => r.alvo === a.id)), [regs])
   const i = diaSel === null ? dias.length - 1 : Math.min(diaSel, dias.length - 1)
   const dia = dias[i]
   const ehUltima = i === dias.length - 1
@@ -147,7 +149,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_23rem]">
       <div className="min-w-0 space-y-3">
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" role="group" aria-label="Alvo do mapa">
-          {[{ id: null, nome: 'Só pontos' }, ...LISTA_ALVOS].map((a) => (
+          {[{ id: null, nome: 'Só pontos' }, ...alvosVisiveis].map((a) => (
             <button key={a.id ?? 'todos'} type="button" aria-pressed={alvo === a.id} onClick={() => setEscolha(a.id)} className={`min-h-10 shrink-0 rounded-full px-4 text-apoio font-semibold transition active:scale-95 ${alvo === a.id ? 'bg-brand text-on-brand' : 'bg-surface text-text-2 ring-1 ring-line'}`}>{a.nome}</button>
           ))}
         </div>
@@ -276,7 +278,7 @@ export function Resultados({ talhao, plano }: { talhao: Talhao; plano: PlanoSalv
                   const a = avaliarRegistro(r)
                   return (
                     <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
-                      <div><p className="font-semibold">{ALVOS[r.alvo].nome}</p><p className="text-apoio text-text-2">{dataHoraBr(r.criadoEm)} · {r.zero ? 'nenhuma ocorrência' : r.presente !== undefined ? `presente · ${r.severidadePct ?? 0}%` : `${r.quantidade} por metro`}</p></div>
+                      <div><p className="font-semibold">{ALVOS[r.alvo].nome}</p><p className="text-apoio text-text-2">{dataHoraBr(r.criadoEm)} · {r.zero ? 'nenhuma ocorrência' : r.presente !== undefined ? `presente · ${r.severidadePct ?? 0}%` : `${r.quantidade} ${ALVOS[r.alvo].por ?? 'por metro'}`}</p></div>
                       <Badge tom={TOM[a.nivel] ?? 'neutral'}>{a.titulo}</Badge>
                     </li>
                   )

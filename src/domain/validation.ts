@@ -96,7 +96,7 @@ export function validarRegistro(r: Registro, ctx: ContextoValidacao): ResultadoV
   }
   // V09 evidência fotográfica obrigatória quando há decisão em jogo
   const exigeFoto = avaliacao.nivel === 'atingido' || avaliacao.nivel === 'deteccao'
-  if (exigeFoto && r.fotoIds.length === 0) erro('V09', 'foto', 'Foto de evidência obrigatória: este registro atingiu o nível de ação ou detectou doença.')
+  if (exigeFoto && r.fotoIds.length === 0) erro('V09', 'foto', 'Foto de evidência obrigatória: este registro atingiu o nível de ação ou teve detecção (sem limite numérico, o agrônomo decide com a foto).')
   // V10 outlier em relação ao histórico: foto + dupla checagem
   if (ctx.mediaHistorica && ctx.mediaHistorica > 0 && r.quantidade > FATOR_OUTLIER * ctx.mediaHistorica) {
     const msg = `Valor ${FATOR_OUTLIER}x acima da média histórica (${ctx.mediaHistorica.toFixed(1)}). Exige foto e dupla checagem.`
