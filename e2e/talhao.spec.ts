@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { readFileSync } from 'node:fs'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { test } from './fixtures'
 import { carregarDemo, esperarAnimacoes } from './ajuda'
 
 /** Contagens direto do banco do aparelho, para provar o que foi (e o que não foi) apagado. */

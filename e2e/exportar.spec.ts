@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { test } from './fixtures'
 import { carregarDemo } from './ajuda'
 
 async function baixar(page: Page, nomeBotao: string): Promise<{ nome: string; texto: string }> {

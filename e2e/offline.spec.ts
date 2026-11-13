@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './fixtures'
 import { carregarDemo } from './ajuda'
 
 test('funciona sem internet depois da primeira visita, com os dados salvos', async ({ page, context }) => {

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { test } from './fixtures'
 import { anexarFoto, carregarDemo } from './ajuda'
 
 async function abrirT04(page: Page) {

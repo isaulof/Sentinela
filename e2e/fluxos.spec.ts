@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { test } from './fixtures'
 import { anexarFoto, carregarDemo } from './ajuda'
 
 /** Responde o questionário como quem vê ferrugem: pústulas por baixo das folhas de baixo, sem bicho nem mofo. */

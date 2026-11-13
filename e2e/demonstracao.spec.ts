@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { test } from './fixtures'
 import { carregarDemo } from './ajuda'
 
 /** As fotos guardadas no aparelho, lidas direto do banco: tipo, tamanho em bytes e tamanho da imagem em pixels. */

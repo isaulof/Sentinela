@@ -21,6 +21,8 @@ export interface Fazenda {
 
 /** A fazenda do projeto. É fixa (decisão do usuário): não há cadastro; só a safra é calculada pela data. */
 export const FAZENDA_DO_PROJETO = { id: 'fazenda' as const, nome: 'Fazenda Santa Aurora', municipio: 'Lucas do Rio Verde', uf: 'MT', fuso: 'America/Cuiaba' }
+/** Centro de Lucas do Rio Verde (MT): onde o clima é consultado quando ainda não há talhão desenhado. */
+export const LOCAL_PADRAO_CLIMA = { lat: -13.0509, lng: -55.9096 }
 export const NOME_FAZENDA_PADRAO = FAZENDA_DO_PROJETO.nome
 
 export interface Talhao {

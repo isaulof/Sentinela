@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { test } from './fixtures'
 import { carregarDemo, esperarAnimacoes } from './ajuda'
 
 /** Posição planejada de um ponto, lida do IndexedDB (é de onde o app tira o destino do guia). */

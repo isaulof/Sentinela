@@ -3,11 +3,12 @@ import { useMemo, useState } from 'react'
 import { useFazenda, useOrdens, usePlanos, useTalhoes, useTodasPendencias, useTodosRegistros } from '@/data/hooks'
 import { carregarDemonstracao } from '@/data/seed'
 import { daRodada, nivelPorPonto } from '@/domain/analise'
-import type { Talhao } from '@/domain/entidades'
+import { LOCAL_PADRAO_CLIMA, type Talhao } from '@/domain/entidades'
 import { panorama, type Panorama } from '@/domain/panorama'
 import { dataBr, diaDaSemanaEData, diaLocal, saudacao } from '@/domain/tempo'
 import { proximaAcao, type ProximaAcao } from '@/domain/proximaAcao'
 import { ALVOS } from '@/knowledge/alvos'
+import { ClimaAgora } from '../components/ClimaAgora'
 import { Icon, type IconName } from '../components/Icon'
 import { MiniTalhao } from '../components/MiniTalhao'
 import { Badge, Button, Vazio, type Tom } from '../components/kit'
@@ -95,6 +96,9 @@ export function Painel() {
 
   const primeiroNome = amostrador.trim().split(/\s+/)[0] ?? ''
   const hoje = diaLocal(agora, fazenda.fuso)
+  // O clima é do primeiro talhão (o centro do contorno); sem talhão ainda, vale o centro de Lucas do Rio Verde.
+  const t0 = talhoes[0]
+  const local = t0 && t0.anel.length > 0 ? { lat: t0.anel.reduce((a, p) => a + p[1], 0) / t0.anel.length, lng: t0.anel.reduce((a, p) => a + p[0], 0) / t0.anel.length } : LOCAL_PADRAO_CLIMA
 
   // Cabeçalho de app: a fazenda (fixa) pequena no topo, a saudação grande e uma única linha de data.
   const cabecalho = (
@@ -113,6 +117,7 @@ export function Painel() {
       </div>
       <h1 className="mt-3 break-words text-hero">{saudacao(agora, fazenda.fuso)}{primeiroNome ? `, ${primeiroNome}` : ''}</h1>
       <p className="mt-1 text-subtitulo text-text-2 first-letter:uppercase">{diaDaSemanaEData(hoje)}</p>
+      <div className="mt-4"><ClimaAgora lat={local.lat} lng={local.lng} /></div>
     </header>
   )
 

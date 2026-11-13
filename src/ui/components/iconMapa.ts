@@ -1,5 +1,6 @@
 import {
   AlignJustify, ArrowDown, Share2, RotateCcw, ListChecks, ChevronLeft, Layers, Minus, Pencil, Image as Imagem, Play, Pause, Undo2, Trash2, LocateFixed, ArrowUp, Ban, Bell, BookOpen, Bug, Camera, Check, ChevronRight, Circle, CircleCheck, CircleHelp, Cloud, Download, Droplet,
+  CloudSun, CloudMoon, CloudRain, CloudLightning, CloudFog, CloudDrizzle, Wind, Droplets,
   Bean, Ruler, Ellipsis, Flame, Grid3x3, Grip, House, Info, Leaf, MapPin, Map as MapIcon, Moon, Plus, Search, Spline, Sprout, Stethoscope, Sun, Target, UserRound, Wifi, WifiOff, X,
   type LucideIcon,
 } from 'lucide-react'
@@ -14,6 +15,7 @@ export const ICONES_MAPA = {
   murcha: Sprout, raiz: Spline, livro: BookOpen, perfil: UserRound, cruzar: Ban,
   // Bichos e anatomia (ver iconesBichos.ts)
   lagarta: Lagarta, larva: Larva, besouro: Besouro, percevejo: Percevejo, mosquinha: Mosquinha, acaro: Acaro,
+  nuvemsol: CloudSun, nuvemlua: CloudMoon, chuva: CloudRain, raio: CloudLightning, neblina: CloudFog, garoa: CloudDrizzle, vento: Wind, umidade: Droplets,
   vagem: Bean, regua: Ruler, broto: Sprout,
 } as const satisfies Record<string, LucideIcon>
 
